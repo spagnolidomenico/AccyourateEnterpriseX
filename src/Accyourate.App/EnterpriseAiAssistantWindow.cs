@@ -23,7 +23,7 @@ public sealed class EnterpriseAiAssistantWindow : Window
         _user = user;
         _engine = new AiAssistantEngine(_database);
 
-        Title = "Accyourate Enterprise X 9.2 - AI Routing Assistant";
+        Title = "Accyourate Enterprise X 10.0 RC1 - AI Routing Assistant";
         Width = 1040;
         Height = 760;
         MinWidth = 860;
@@ -98,6 +98,9 @@ public sealed class EnterpriseAiAssistantWindow : Window
         var catalog = Quick("Catalogo intenti");
         catalog.Click += (_, _) => new AiIntentCatalogManagerWindow().Show();
         quick.Children.Add(catalog);
+        var action = Quick("Action Engine");
+        action.Click += (_, _) => new ActionEngineWindow(_database, _user).Show();
+        quick.Children.Add(action);
         quick.Children.Add(Quick("Manutenzioni aperte"));
         DockPanel.SetDock(quick, Dock.Top);
         root.Children.Add(quick);

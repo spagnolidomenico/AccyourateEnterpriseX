@@ -27,7 +27,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _user = user;
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
 
-        Title = "Accyourate Enterprise X 9.2 - AI Intent Catalog";
+        Title = "Accyourate Enterprise X 10.0 RC1 - Action Engine";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -124,6 +124,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         AddMenu(menu, AxIcons.ControlRoom, "Control Room", "control-room", "Enterprise Control Room");
         menu.Children.Add(ExternalButton("AI  Enterprise AI Assistant", () => new EnterpriseAiAssistantWindow(_database, _user).Show()));
         menu.Children.Add(ExternalButton("AI  AI Intent Catalog", () => new AiIntentCatalogManagerWindow().Show()));
+        menu.Children.Add(ExternalButton("AX  Action Engine", () => new ActionEngineWindow(_database, _user).Show()));
         AddMenu(menu, AxIcons.Dashboard, "Dashboard", "dashboard", "Dashboard");
         AddMenu(menu, AxIcons.Analytics, "Analytics", "analytics", "Analytics");
         AddMenu(menu, AxIcons.Medical, "Medical", "medical", "Medical Device Suite");
@@ -192,7 +193,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 9.2"), 2, 0);
+        Add(grid, StatusText("Versione: 10.0 RC1"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border
@@ -214,6 +215,12 @@ public sealed class EnterpriseWorkspaceWindow : Window
         if (moduleId == "ai-catalog")
         {
             new AiIntentCatalogManagerWindow().Show();
+            return;
+        }
+
+        if (moduleId == "action-engine")
+        {
+            new ActionEngineWindow(_database, _user).Show();
             return;
         }
 

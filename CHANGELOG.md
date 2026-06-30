@@ -1,5 +1,15 @@
 # Changelog
 
+## 10.0 RC1 Action Engine Foundation
+
+- Aggiunto Enterprise Action Engine.
+- Aggiunto Capability Registry.
+- Aggiunti ActionRequest, ActionResult, ActionContext.
+- Aggiunto PermissionValidator foundation.
+- Aggiunte prime capability Digital Twin.
+- Aggiunta finestra AX Action Engine.
+
+
 ## 9.2 AI Intent Catalog Manager
 
 - Aggiunto AiIntentCatalogStorage.

@@ -77,6 +77,7 @@ public sealed class CommandPaletteWindow : Window
             new ShellModuleDescriptor { Id = "control-room", Title = "Enterprise Control Room", Section = "Centro Operativo", Icon = "🧩" },
             new ShellModuleDescriptor { Id = "ai-assistant", Title = "Enterprise AI Assistant", Section = "Intelligence", Icon = "AI" },
             new ShellModuleDescriptor { Id = "ai-catalog", Title = "AI Intent Catalog", Section = "Intelligence", Icon = "AI" },
+            new ShellModuleDescriptor { Id = "action-engine", Title = "Action Engine", Section = "Intelligence", Icon = "AX" },
             new ShellModuleDescriptor { Id = "dashboard", Title = "Dashboard", Section = "Centro Operativo", Icon = "▥" },
             new ShellModuleDescriptor { Id = "analytics", Title = "Analytics", Section = "Centro Operativo", Icon = "▧" },
             new ShellModuleDescriptor { Id = "medical", Title = "Medical Device Suite", Section = "Medical", Icon = "⌁" },

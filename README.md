@@ -1,3 +1,39 @@
+# Accyourate Enterprise X - Versione 10.0 RC1 Action Engine Foundation
+
+## Novità
+
+- Enterprise Action Engine
+- Capability Registry
+- Action Request / Result / Context
+- Permission Validator foundation
+- Action Intent Parser
+- Prime capability Digital Twin
+- Finestra Action Engine
+- Integrazione con Workspace, AI Assistant e Command Palette
+
+## Test rapido
+
+```powershell
+dotnet clean AccyourateEnterpriseX.sln
+dotnet restore AccyourateEnterpriseX.sln
+dotnet build AccyourateEnterpriseX.sln
+dotnet run --project src\Accyourate.App\Accyourate.App.csproj
+```
+
+## Test funzionale
+
+1. Apri `AX Action Engine`.
+2. Verifica capability registrate.
+3. Prova:
+   - Apri il Digital Twin del dispositivo TOP001
+   - Mostrami dispositivi con batteria sotto il 20%
+   - Mostrami dispositivi offline
+   - Mostra telemetria TOP001
+   - Mostra ECG TOP001
+4. Verifica Workspace, Digital Twin e AI Assistant.
+
+---
+
 # Accyourate Enterprise X - Versione 9.2 AI Intent Catalog Manager
 
 ## Novità
@@ -1680,6 +1716,7 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
 
 
 
