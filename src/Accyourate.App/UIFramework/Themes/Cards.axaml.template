@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui">
+  <!-- Foundation template: standard card enterprise/apple-like. -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="#FFFFFF"/>
+    <Setter Property="CornerRadius" Value="18"/>
+    <Setter Property="Padding" Value="18"/>
+  </Style>
+</ResourceDictionary>

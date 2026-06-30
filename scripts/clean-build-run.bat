@@ -1,0 +1,13 @@
+@echo off
+cd /d "%~dp0\.."
+echo Pulizia...
+dotnet clean AccyourateEnterpriseX.sln
+echo Restore...
+dotnet restore AccyourateEnterpriseX.sln
+if errorlevel 1 pause & exit /b 1
+echo Build...
+dotnet build AccyourateEnterpriseX.sln
+if errorlevel 1 pause & exit /b 1
+echo Avvio...
+dotnet run --project src\Accyourate.App\Accyourate.App.csproj
+pause

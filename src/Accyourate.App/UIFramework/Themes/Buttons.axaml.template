@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui">
+  <!-- Foundation template: sarà collegato al progetto dopo validazione shell. -->
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="#0A84FF"/>
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="CornerRadius" Value="12"/>
+    <Setter Property="Padding" Value="14,10"/>
+  </Style>
+</ResourceDictionary>

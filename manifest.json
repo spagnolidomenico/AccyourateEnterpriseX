@@ -1,0 +1,15 @@
+{
+  "name": "Accyourate Enterprise X",
+  "version": "9.2-ai-intent-catalog-manager",
+  "features": [
+    "editable ai intent catalog",
+    "intent catalog storage",
+    "synonyms manager",
+    "restore default catalog",
+    "appdata intent catalog"
+  ],
+  "default_login": {
+    "username": "admin",
+    "password": "admin123"
+  }
+}

@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui">
+  <Color x:Key="AxBrandBlue">#0A84FF</Color>
+  <Color x:Key="AxBrandAccent">#B5162B</Color>
+  <Color x:Key="AxBackground">#F5F5F7</Color>
+  <Color x:Key="AxSurface">#FFFFFF</Color>
+  <Color x:Key="AxTextPrimary">#1D1D1F</Color>
+  <Color x:Key="AxTextSecondary">#6E6E73</Color>
+</ResourceDictionary>
