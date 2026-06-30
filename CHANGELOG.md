@@ -1,5 +1,14 @@
 # Changelog
 
+## 11.0.1 Workspace Foundation
+
+- Aggiunto ITabContent.
+- Aggiunto WorkspaceTab.
+- Aggiunto WorkspaceTabManager.
+- Aggiunto WorkspaceHost.
+- Nessun cambio di comportamento visibile.
+
+
 ## 10.1 RC1 Universal Command Bar
 
 - Aggiunta Universal Command Bar.

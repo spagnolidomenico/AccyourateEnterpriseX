@@ -1,3 +1,45 @@
+# Accyourate Enterprise X - Sprint 11.0.1 Workspace Foundation
+
+## Novità
+
+- ITabContent
+- WorkspaceTab
+- WorkspaceTabManager
+- WorkspaceHost
+- Documentazione sprint 11.0.1
+- ADR Workspace Tabs Foundation
+
+## Nota importante
+
+Questa versione **non cambia ancora il comportamento visibile della Workspace**.
+Introduce solo l'infrastruttura tecnica per le future schede.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+oppure:
+
+```powershell
+dotnet clean AccyourateEnterpriseX.sln
+dotnet restore AccyourateEnterpriseX.sln
+dotnet build AccyourateEnterpriseX.sln
+```
+
+## Test funzionale
+
+1. Avvia l'app.
+2. Apri Enterprise Workspace.
+3. Verifica che funzioni come nella 10.1 RC1.
+4. Apri Digital Twin.
+5. Apri Universal Command Bar.
+6. Apri AX Action Engine.
+7. Apri AI Assistant.
+
+---
+
 # Accyourate Enterprise X - Versione 10.1 RC1 Universal Command Bar
 
 ## Novità
@@ -1792,6 +1834,7 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
 
 
 

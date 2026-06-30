@@ -1,14 +1,15 @@
 {
-  "name": "Accyourate Repository Toolkit",
-  "version": "1.0",
-  "contents": [
-    "scripts/build.ps1",
-    "scripts/run.ps1",
-    "scripts/test-smoke.ps1",
-    "scripts/release-check.ps1",
-    "docs/development/PowerShell_Workflow.md",
-    "docs/development/Git_Workflow.md",
-    "docs/development/Release_Checklist.md",
-    "docs/development/Repository_Structure.md"
-  ]
+  "name": "Accyourate Enterprise X",
+  "version": "11.0.1-workspace-foundation",
+  "features": [
+    "ITabContent",
+    "WorkspaceTab",
+    "WorkspaceTabManager",
+    "WorkspaceHost",
+    "no visible behavior changes"
+  ],
+  "default_login": {
+    "username": "admin",
+    "password": "admin123"
+  }
 }
