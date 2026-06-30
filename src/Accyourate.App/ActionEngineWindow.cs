@@ -29,7 +29,7 @@ public sealed class ActionEngineWindow : Window
         DigitalTwinCapabilities.RegisterAll(registry);
         _engine = new EnterpriseActionEngine(registry);
 
-        Title = "Accyourate Enterprise X 10.0 RC1 - Action Engine";
+        Title = "Accyourate Enterprise X 10.0 RC1.1 - Action Engine";
         Width = 1180;
         Height = 820;
         MinWidth = 1040;

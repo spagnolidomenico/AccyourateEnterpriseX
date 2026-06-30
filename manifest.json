@@ -1,15 +1,11 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "10.0-rc1-action-engine-foundation",
-  "features": [
-    "enterprise action engine",
-    "capability registry",
-    "action request",
-    "action result",
-    "action context",
-    "permission validator foundation",
-    "digital twin capabilities",
-    "action intent parser"
+  "version": "10.0-rc1.1-action-engine-syntax-hotfix",
+  "base": "10.0-rc1-action-engine-foundation",
+  "fixes": [
+    "Fixed invalid C# boolean operator syntax in ActionIntentParser",
+    "Updated Action Engine parser to use ||",
+    "Updated RC version labels"
   ],
   "default_login": {
     "username": "admin",

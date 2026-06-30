@@ -10,11 +10,11 @@ public sealed class ActionIntentParser
         var lower = q.ToLowerInvariant();
 
         if (lower.Contains("batteria") &&
-    (
-        lower.Contains("20") ||
-        lower.Contains("bassa") ||
-        lower.Contains("sotto")
-    ))
+            (
+                lower.Contains("20") ||
+                lower.Contains("bassa") ||
+                lower.Contains("sotto")
+            ))
         {
             return new ActionRequest
             {
@@ -57,7 +57,12 @@ public sealed class ActionIntentParser
             };
         }
 
-        if (lower.Contains("apri") && (lower.Contains("digital twin") || lower.Contains("dispositivo") || lower.Contains("capo")))
+        if (lower.Contains("apri") &&
+            (
+                lower.Contains("digital twin") ||
+                lower.Contains("dispositivo") ||
+                lower.Contains("capo")
+            ))
         {
             return new ActionRequest
             {
@@ -68,7 +73,7 @@ public sealed class ActionIntentParser
             };
         }
 
-        if (lower.Contains("cerca") || lower.Contains("trova") || lower.Contains("mostra"))
+        if (lower.Contains("cerca") || lower.Contains("trova") || lower.Contains("mostra") || lower.Contains("mostrami"))
         {
             return new ActionRequest
             {

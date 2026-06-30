@@ -478,7 +478,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 10.0 RC1: Action Engine Foundation."
+            Text = "Versione 10.0 RC1.1: Action Engine Syntax Hotfix."
         });
 
         var cards = new Grid
@@ -518,7 +518,7 @@ public sealed class MainWindow : Window
                     new TextBlock { Text = "• Breadcrumb superiore" },
                     new TextBlock { Text = "• Moduli registrati in ModuleRegistry" },
                     new TextBlock { Text = "• Finestra CRUD standard riutilizzabile" },
-                    new TextBlock { Text = "• Capability Registry e Action Engine" }
+                    new TextBlock { Text = "• Action Engine syntax hotfix" }
                 }
             }
         });

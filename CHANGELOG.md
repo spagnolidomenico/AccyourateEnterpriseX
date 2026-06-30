@@ -1,5 +1,12 @@
 # Changelog
 
+## 10.0 RC1.1 Action Engine Syntax Hotfix
+
+- Corretto errore di sintassi in ActionIntentParser.
+- Sostituito `or` non valido con operatori C# `||`.
+- Stabilizzato parser Action Engine.
+
+
 ## 10.0 RC1 Action Engine Foundation
 
 - Aggiunto Enterprise Action Engine.

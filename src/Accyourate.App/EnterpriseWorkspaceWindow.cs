@@ -27,7 +27,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _user = user;
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
 
-        Title = "Accyourate Enterprise X 10.0 RC1 - Action Engine";
+        Title = "Accyourate Enterprise X 10.0 RC1.1 - Action Engine";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -193,7 +193,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 10.0 RC1"), 2, 0);
+        Add(grid, StatusText("Versione: 10.0 RC1.1"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border

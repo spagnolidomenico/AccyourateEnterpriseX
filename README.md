@@ -1,3 +1,42 @@
+# Accyourate Enterprise X - Versione 10.0 RC1.1 Action Engine Syntax Hotfix
+
+## Correzione
+
+Questa hotfix corregge l'errore di sintassi in:
+
+```text
+src/Accyourate.App/ActionEngine/ActionIntentParser.cs
+```
+
+## Corretto
+
+- sostituita sintassi non valida `or` con operatori C# validi `||`;
+- stabilizzato il parsing per batteria, offline, ECG, telemetria e apertura dispositivo;
+- aggiornata versione a `10.0 RC1.1`.
+
+## Test rapido
+
+```powershell
+dotnet clean AccyourateEnterpriseX.sln
+dotnet restore AccyourateEnterpriseX.sln
+dotnet build AccyourateEnterpriseX.sln
+dotnet run --project src\Accyourate.App\Accyourate.App.csproj
+```
+
+## Test Action Engine
+
+Prova:
+
+```text
+Apri il Digital Twin del dispositivo TOP001
+Mostrami dispositivi con batteria sotto il 20%
+Mostrami dispositivi offline
+Mostra telemetria TOP001
+Mostra ECG TOP001
+```
+
+---
+
 # Accyourate Enterprise X - Versione 10.0 RC1 Action Engine Foundation
 
 ## Novità
@@ -1716,6 +1755,7 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
 
 
 
