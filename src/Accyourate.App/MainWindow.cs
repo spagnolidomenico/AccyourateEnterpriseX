@@ -179,6 +179,14 @@ public sealed class MainWindow : Window
             win.Show();
         }, PermissionCodes.DashboardView);
 
+        AddMenuButton(stack, "⌕ Universal Command Bar", () =>
+        {
+            SetBreadcrumb("Centro Operativo > Universal Command Bar");
+            var win = new UniversalCommandBarWindow(_database, _user);
+            win.Show();
+        }, PermissionCodes.DashboardView);
+
+
 
 
 
@@ -478,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 10.0 RC1.1: Action Engine Syntax Hotfix."
+            Text = "Versione 10.1 RC1: Universal Command Bar."
         });
 
         var cards = new Grid
@@ -518,7 +526,7 @@ public sealed class MainWindow : Window
                     new TextBlock { Text = "• Breadcrumb superiore" },
                     new TextBlock { Text = "• Moduli registrati in ModuleRegistry" },
                     new TextBlock { Text = "• Finestra CRUD standard riutilizzabile" },
-                    new TextBlock { Text = "• Action Engine syntax hotfix" }
+                    new TextBlock { Text = "• Enterprise Search Service e Command Bar" }
                 }
             }
         });

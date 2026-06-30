@@ -1,11 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "10.0-rc1.1-action-engine-syntax-hotfix",
-  "base": "10.0-rc1-action-engine-foundation",
-  "fixes": [
-    "Fixed invalid C# boolean operator syntax in ActionIntentParser",
-    "Updated Action Engine parser to use ||",
-    "Updated RC version labels"
+  "version": "10.1-rc1-universal-command-bar",
+  "features": [
+    "universal command bar",
+    "enterprise search service",
+    "search provider interface",
+    "digital twin search provider",
+    "action engine integration"
   ],
   "default_login": {
     "username": "admin",

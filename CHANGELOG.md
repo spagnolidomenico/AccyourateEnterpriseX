@@ -1,5 +1,14 @@
 # Changelog
 
+## 10.1 RC1 Universal Command Bar
+
+- Aggiunta Universal Command Bar.
+- Aggiunto Enterprise Search Service.
+- Aggiunto ISearchProvider.
+- Aggiunto DigitalTwinSearchProvider.
+- Aggiunta integrazione con Action Engine.
+
+
 ## 10.0 RC1.1 Action Engine Syntax Hotfix
 
 - Corretto errore di sintassi in ActionIntentParser.

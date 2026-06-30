@@ -1,3 +1,40 @@
+# Accyourate Enterprise X - Versione 10.1 RC1 Universal Command Bar
+
+## Novità
+
+- Universal Command Bar
+- Enterprise Search Service
+- ISearchProvider
+- DigitalTwinSearchProvider
+- SearchResult standardizzato
+- Integrazione con Action Engine
+- Accesso da Workspace, Command Palette e menu principale
+
+## Test rapido
+
+```powershell
+dotnet clean AccyourateEnterpriseX.sln
+dotnet restore AccyourateEnterpriseX.sln
+dotnet build AccyourateEnterpriseX.sln
+dotnet run --project src\Accyourate.App\Accyourate.App.csproj
+```
+
+## Test funzionale
+
+1. Apri `Universal Command Bar`.
+2. Prova a cercare:
+   - TOP
+   - TOP001
+   - offline
+   - batteria
+   - ECG
+   - telemetria
+3. Seleziona un risultato.
+4. Verifica messaggio di esecuzione Action Engine.
+5. Verifica regressione su AX Action Engine e Digital Twin.
+
+---
+
 # Accyourate Enterprise X - Versione 10.0 RC1.1 Action Engine Syntax Hotfix
 
 ## Correzione
@@ -1755,6 +1792,7 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
 
 
 

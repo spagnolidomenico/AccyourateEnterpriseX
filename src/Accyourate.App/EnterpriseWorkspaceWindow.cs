@@ -27,7 +27,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _user = user;
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
 
-        Title = "Accyourate Enterprise X 10.0 RC1.1 - Action Engine";
+        Title = "Accyourate Enterprise X 10.1 RC1 - Universal Command Bar";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -69,7 +69,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         {
             Height = 76,
             Background = UiTokens.Brush(UiTokens.Surface),
-            ColumnDefinitions = new ColumnDefinitions("340,*,120,130,120,130,170")
+            ColumnDefinitions = new ColumnDefinitions("340,*,120,120,130,120,130,170")
         };
 
         Add(grid, new TextBlock
@@ -84,9 +84,10 @@ public sealed class EnterpriseWorkspaceWindow : Window
 
         Add(grid, SearchBox(), 1, 0);
         Add(grid, TopButton(AxIcons.Command + "K Comandi", OpenCommandPalette), 2, 0);
-        Add(grid, TopButton("AI", () => new EnterpriseAiAssistantWindow(_database, _user).Show()), 3, 0);
-        Add(grid, TopButton(AxIcons.Notifications + " Notifiche", () => new NotificationsWindow().Show()), 4, 0);
-        Add(grid, TopButton("◐ Tema", ToggleTheme), 5, 0);
+        Add(grid, TopButton("⌕ Command", () => new UniversalCommandBarWindow(_database, _user, Navigate).Show()), 3, 0);
+        Add(grid, TopButton("AI", () => new EnterpriseAiAssistantWindow(_database, _user).Show()), 4, 0);
+        Add(grid, TopButton(AxIcons.Notifications + " Notifiche", () => new NotificationsWindow().Show()), 5, 0);
+        Add(grid, TopButton("◐ Tema", ToggleTheme), 6, 0);
         Add(grid, new TextBlock
         {
             Text = $"👤 {_user.Username}",
@@ -95,7 +96,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             Margin = new Avalonia.Thickness(0, 0, 20, 0)
-        }, 6, 0);
+        }, 7, 0);
 
         return new Border
         {
@@ -125,6 +126,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         menu.Children.Add(ExternalButton("AI  Enterprise AI Assistant", () => new EnterpriseAiAssistantWindow(_database, _user).Show()));
         menu.Children.Add(ExternalButton("AI  AI Intent Catalog", () => new AiIntentCatalogManagerWindow().Show()));
         menu.Children.Add(ExternalButton("AX  Action Engine", () => new ActionEngineWindow(_database, _user).Show()));
+        menu.Children.Add(ExternalButton("⌕  Universal Command Bar", () => new UniversalCommandBarWindow(_database, _user, Navigate).Show()));
         AddMenu(menu, AxIcons.Dashboard, "Dashboard", "dashboard", "Dashboard");
         AddMenu(menu, AxIcons.Analytics, "Analytics", "analytics", "Analytics");
         AddMenu(menu, AxIcons.Medical, "Medical", "medical", "Medical Device Suite");
@@ -193,7 +195,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 10.0 RC1.1"), 2, 0);
+        Add(grid, StatusText("Versione: 10.1 RC1"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border
@@ -221,6 +223,12 @@ public sealed class EnterpriseWorkspaceWindow : Window
         if (moduleId == "action-engine")
         {
             new ActionEngineWindow(_database, _user).Show();
+            return;
+        }
+
+        if (moduleId == "universal-command-bar")
+        {
+            new UniversalCommandBarWindow(_database, _user, Navigate).Show();
             return;
         }
 
