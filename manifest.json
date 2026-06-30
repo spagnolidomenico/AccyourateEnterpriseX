@@ -1,15 +1,14 @@
 {
-  "name": "Accyourate Enterprise X",
-  "version": "10.1-rc1-universal-command-bar",
-  "features": [
-    "universal command bar",
-    "enterprise search service",
-    "search provider interface",
-    "digital twin search provider",
-    "action engine integration"
-  ],
-  "default_login": {
-    "username": "admin",
-    "password": "admin123"
-  }
+  "name": "Accyourate Repository Toolkit",
+  "version": "1.0",
+  "contents": [
+    "scripts/build.ps1",
+    "scripts/run.ps1",
+    "scripts/test-smoke.ps1",
+    "scripts/release-check.ps1",
+    "docs/development/PowerShell_Workflow.md",
+    "docs/development/Git_Workflow.md",
+    "docs/development/Release_Checklist.md",
+    "docs/development/Repository_Structure.md"
+  ]
 }
