@@ -2,31 +2,47 @@
 
 ## Branch principali
 
-- `main`: solo versioni stabili.
-- `develop`: sviluppo quotidiano.
+```text
+main
+develop
+feature/*
+fix/*
+release/*
+```
 
-## Flusso consigliato
-
-1. Lavora su `develop`.
-2. Copia o modifica i file.
-3. Esegui:
+## Flusso standard feature
 
 ```powershell
-.\scripts\test-smoke.ps1
+git checkout develop
+git pull
+git checkout -b feature/nome-feature
 ```
 
-4. Se tutto è OK, commit:
+Dopo sviluppo e test:
 
-```text
-AX-001: descrizione modifica
+```powershell
+git status
+git add .
+git commit -m "UI-003: Short description"
+git push -u origin feature/nome-feature
 ```
 
-5. Push origin.
+Poi aprire Pull Request verso `develop`.
 
-## Quando creare una Release GitHub
+## Release stabile
 
-Solo per milestone importanti:
+Quando `develop` è validato:
 
-- v10.0
-- v11.0
-- v12.0 Beta
+```powershell
+git checkout main
+git merge develop
+git tag -a vX.Y.Z-stable -m "Release X.Y.Z Stable"
+git push origin main
+git push origin vX.Y.Z-stable
+```
+
+## Regole
+
+- `main` deve sempre compilare.
+- ogni tag deve puntare a una versione validata.
+- ogni sprint deve avere checklist.

@@ -1,19 +1,30 @@
 ---
 name: Feature request
-about: Richiesta nuova funzionalità
+about: Proposta nuova funzionalità
 title: "[FEATURE] "
 labels: enhancement
-assignees: ''
+assignees: ""
 ---
 
 ## Descrizione
 
-## Obiettivo
+Descrivere la funzionalità richiesta.
 
-## Modulo interessato
+## Valore per l'utente
+
+Perché è utile?
 
 ## Criteri di accettazione
 
 - [ ] 
+- [ ] 
+- [ ] 
 
-## Note
+## Moduli coinvolti
+
+- [ ] Workspace
+- [ ] Asset Management
+- [ ] Master Data
+- [ ] AI
+- [ ] Digital Twin
+- [ ] Altro
