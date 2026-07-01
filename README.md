@@ -1,12 +1,24 @@
-# Accyourate Enterprise X - 11.1.0 RC1 Workspace Module Registry
+# Accyourate Enterprise X - 11.1.0 RC2.2.1 Ambiguous References Hotfix
+
+## Correzione
+
+Risolti riferimenti ambigui tra namespace `WorkspaceModules` e `WorkspaceTabs`.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
+# Accyourate Enterprise X - 11.1.0 RC2.2 Dashboard Module Registration
 
 ## Novità
 
-- Aggiunto `IWorkspaceModule`.
-- Aggiunto `DelegateWorkspaceModule`.
-- Aggiunto `WorkspaceModuleRegistry`.
-- Dashboard, Digital Twin e AI Assistant registrati come moduli Workspace.
-- AI Assistant da top bar/sidebar ora apre una tab interna.
+- Dashboard registrata come primo `IWorkspaceModule`.
+- Aggiunto `DashboardWorkspaceModule`.
+- Primo uso reale del `WorkspaceModuleRegistry`.
 
 ## Test rapido
 
@@ -16,12 +28,45 @@ powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
 
 ## Test funzionale
 
-1. Avvia l'app.
-2. Apri Enterprise Workspace.
-3. Apri Dashboard, Digital Twin e AI Assistant.
-4. Verifica che vengano aperti come tab.
-5. Clicca più volte sugli stessi moduli e verifica che non vengano duplicati.
-6. Verifica Universal Command Bar, AX Action Engine, AI Intent Catalog e Control Room.
+Verifica:
+
+- Dashboard
+- Digital Twin
+- AI Assistant
+- Action Engine
+- Universal Command Bar
+- Control Room
+
+La Dashboard deve comportarsi come prima.
+
+---
+
+# Accyourate Enterprise X - 11.1.0 RC2.1 OpenModule API Foundation
+
+## Novità
+
+- Introduzione del contratto `IWorkspaceModule`.
+- Introduzione del `WorkspaceModuleRegistry`.
+- Fondamenta per la futura API `OpenModule()`.
+- Nessun cambiamento visibile previsto.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+## Test funzionale
+
+Verifica che funzionino ancora:
+
+- Enterprise Workspace
+- Dashboard
+- Digital Twin
+- AI Assistant
+- Action Engine
+- Universal Command Bar
+- Control Room
 
 ---
 
@@ -1970,6 +2015,8 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
+
 
 
 

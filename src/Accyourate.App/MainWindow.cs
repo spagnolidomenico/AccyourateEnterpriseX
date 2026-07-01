@@ -486,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 11.1.0 RC1: Workspace Module Registry."
+            Text = "Versione 11.1.0 RC2.2: Dashboard Module Registration."
         });
 
         var cards = new Grid
@@ -526,7 +526,7 @@ public sealed class MainWindow : Window
                     new TextBlock { Text = "• Breadcrumb superiore" },
                     new TextBlock { Text = "• Moduli registrati in ModuleRegistry" },
                     new TextBlock { Text = "• Finestra CRUD standard riutilizzabile" },
-                    new TextBlock { Text = "• Workspace Module Registry" }
+                    new TextBlock { Text = "• Dashboard registrata come IWorkspaceModule" }
                 }
             }
         });

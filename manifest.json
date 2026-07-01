@@ -1,14 +1,9 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "11.1.0-rc1-workspace-module-registry",
-  "features": [
-    "IWorkspaceModule",
-    "DelegateWorkspaceModule",
-    "WorkspaceModuleRegistry",
-    "registered dashboard digital-twin ai-assistant"
-  ],
-  "default_login": {
-    "username": "admin",
-    "password": "admin123"
-  }
+  "version": "11.1.0-rc2.2.1-ambiguous-references-hotfix",
+  "type": "hotfix",
+  "fixes": [
+    "Ambiguous IWorkspaceModule reference",
+    "Ambiguous WorkspaceModuleRegistry reference"
+  ]
 }

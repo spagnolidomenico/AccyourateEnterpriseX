@@ -7,6 +7,9 @@ using Accyourate.App.UIFramework.Shell;
 using Accyourate.App.UIFramework.Tokens;
 using Accyourate.App.UIFramework.Icons;
 using Accyourate.App.UIFramework.WorkspaceTabs;
+using WorkspaceModuleRegistryCore = Accyourate.App.UIFramework.WorkspaceModules.WorkspaceModuleRegistry;
+using WorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.IWorkspaceModule;
+using DashboardWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.DashboardWorkspaceModule;
 
 namespace Accyourate.App;
 
@@ -15,6 +18,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
     private readonly DatabaseService _database;
     private readonly CurrentUser _user;
     private readonly WorkspaceModuleFactory _moduleFactory;
+    private readonly WorkspaceModuleRegistryCore _moduleRegistry = new();
     private readonly NavigationState _navigation = new();
 
     private readonly ContentControl _content = new();
@@ -27,7 +31,6 @@ public sealed class EnterpriseWorkspaceWindow : Window
     private WorkspaceHost? _digitalTwinTabHost;
     private readonly WorkspaceTabManager _workspaceTabManager = new();
     private WorkspaceHost? _workspaceTabHost;
-    private readonly WorkspaceModuleRegistry _workspaceModuleRegistry = new();
 
     public EnterpriseWorkspaceWindow(DatabaseService database, CurrentUser user)
     {
@@ -36,7 +39,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
         RegisterWorkspaceModules();
 
-        Title = "Accyourate Enterprise X 11.1.0 RC1 - Module Registry";
+        Title = "Accyourate Enterprise X 11.1.0 RC2.2.1 - Ambiguous References Hotfix";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -46,6 +49,12 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Content = BuildLayout();
 
         Navigate("workspace-home", "Workspace Home");
+    }
+
+
+    private void RegisterWorkspaceModules()
+    {
+        _moduleRegistry.Register(new DashboardWorkspaceModuleCore(_moduleFactory));
     }
 
     private Control BuildLayout()
@@ -94,7 +103,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, SearchBox(), 1, 0);
         Add(grid, TopButton(AxIcons.Command + "K Comandi", OpenCommandPalette), 2, 0);
         Add(grid, TopButton("⌕ Command", () => new UniversalCommandBarWindow(_database, _user, Navigate).Show()), 3, 0);
-        Add(grid, TopButton("AI", () => Navigate("ai-assistant", "AI Assistant")), 4, 0);
+        Add(grid, TopButton("AI", () => new EnterpriseAiAssistantWindow(_database, _user).Show()), 4, 0);
         Add(grid, TopButton(AxIcons.Notifications + " Notifiche", () => new NotificationsWindow().Show()), 5, 0);
         Add(grid, TopButton("◐ Tema", ToggleTheme), 6, 0);
         Add(grid, new TextBlock
@@ -132,7 +141,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
 
         AddMenu(menu, AxIcons.Home, "Home", "workspace-home", "Workspace Home");
         AddMenu(menu, AxIcons.ControlRoom, "Control Room", "control-room", "Enterprise Control Room");
-        AddMenu(menu, "AI", "Enterprise AI Assistant", "ai-assistant", "AI Assistant");
+        menu.Children.Add(ExternalButton("AI  Enterprise AI Assistant", () => new EnterpriseAiAssistantWindow(_database, _user).Show()));
         menu.Children.Add(ExternalButton("AI  AI Intent Catalog", () => new AiIntentCatalogManagerWindow().Show()));
         menu.Children.Add(ExternalButton("AX  Action Engine", () => new ActionEngineWindow(_database, _user).Show()));
         menu.Children.Add(ExternalButton("⌕  Universal Command Bar", () => new UniversalCommandBarWindow(_database, _user, Navigate).Show()));
@@ -189,54 +198,6 @@ public sealed class EnterpriseWorkspaceWindow : Window
         return dock;
     }
 
-
-    private void RegisterWorkspaceModules()
-    {
-        _workspaceModuleRegistry.Register(new DelegateWorkspaceModule(
-            "dashboard",
-            "Dashboard",
-            AxIcons.Dashboard,
-            canClose: false,
-            isPinned: true,
-            createView: () => _moduleFactory.Create("dashboard")));
-
-        _workspaceModuleRegistry.Register(new DelegateWorkspaceModule(
-            "digital-twin",
-            "Digital Twin",
-            "DT",
-            canClose: true,
-            isPinned: false,
-            createView: () => _moduleFactory.Create("digital-twin")));
-
-        _workspaceModuleRegistry.Register(new DelegateWorkspaceModule(
-            "ai-assistant",
-            "AI Assistant",
-            "AI",
-            canClose: true,
-            isPinned: false,
-            createView: () => new EnterpriseAiAssistantView(_database, _user)));
-    }
-
-    private bool OpenRegisteredWorkspaceModule(string moduleId)
-    {
-        if (!_workspaceModuleRegistry.TryGet(moduleId, out var module))
-            return false;
-
-        _navigation.CurrentModuleId = module.Id;
-        _navigation.CurrentTitle = module.Title;
-        _navigation.History.Add(module.Id);
-
-        _content.Content = OpenWorkspaceCustomTab(
-            module.Id,
-            module.Title,
-            module.Icon,
-            module.CreateView(),
-            module.CanClose,
-            module.IsPinned);
-
-        return true;
-    }
-
     private Control BuildStatusBar()
     {
         var grid = new Grid
@@ -252,7 +213,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 11.1.0 RC1"), 2, 0);
+        Add(grid, StatusText("Versione: 11.1.0 RC2.2.1"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border
@@ -265,8 +226,17 @@ public sealed class EnterpriseWorkspaceWindow : Window
 
     private void Navigate(string moduleId, string title)
     {
-        if (OpenRegisteredWorkspaceModule(moduleId))
+        if (moduleId == "ai-assistant")
+        {
+            _content.Content = OpenWorkspaceCustomTab(
+                "ai-assistant",
+                "AI Assistant",
+                "AI",
+                new EnterpriseAiAssistantView(_database, _user),
+                true,
+                false);
             return;
+        }
 
         if (moduleId == "ai-catalog")
         {
@@ -292,6 +262,26 @@ public sealed class EnterpriseWorkspaceWindow : Window
 
         _breadcrumb.Text = $"Workspace > {title}";
         _status.Text = $"Modulo attivo: {title} | Cronologia: {_navigation.History.Count}";
+
+        if (moduleId == "dashboard")
+        {
+            var dashboardModule = _moduleRegistry.Find("dashboard");
+            if (dashboardModule is not null)
+            {
+                _content.Content = OpenWorkspaceRegisteredModuleTab(dashboardModule);
+            }
+            else
+            {
+                _content.Content = OpenWorkspaceModuleTab("dashboard", "Dashboard", AxIcons.Dashboard, false, true);
+            }
+            return;
+        }
+
+        if (moduleId == "digital-twin")
+        {
+            _content.Content = OpenWorkspaceModuleTab("digital-twin", "Digital Twin", "DT", true, false);
+            return;
+        }
 
         if (moduleId == "control-room")
         {
@@ -354,7 +344,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
                 IsPinned = isPinned
             });
 
-            _status.Text = $"Modulo attivo: {title} | Schede Workspace: {_workspaceTabManager.Tabs.Count} | Moduli registrati: {_workspaceModuleRegistry.Modules.Count}";
+            _status.Text = $"Modulo attivo: {title} | Schede Workspace: {_workspaceTabManager.Tabs.Count}";
         }
         catch (Exception ex)
         {
@@ -384,6 +374,53 @@ public sealed class EnterpriseWorkspaceWindow : Window
         return _workspaceTabHost;
     }
 
+    private Control OpenWorkspaceRegisteredModuleTab(WorkspaceModuleCore module)
+    {
+        _workspaceTabHost ??= new WorkspaceHost(_workspaceTabManager);
+
+        try
+        {
+            _workspaceTabManager.OpenOrActivate(new WorkspaceTab
+            {
+                Id = module.Id,
+                Title = module.Title,
+                Icon = module.Icon,
+                Content = module.CreateView(),
+                CanClose = module.CanClose,
+                IsPinned = module.IsPinned
+            });
+
+            _breadcrumb.Text = $"Workspace > {module.Title}";
+            _status.Text = $"Modulo attivo: {module.Title} | Schede Workspace: {_workspaceTabManager.Tabs.Count}";
+        }
+        catch (Exception ex)
+        {
+            _workspaceTabManager.OpenOrActivate(new WorkspaceTab
+            {
+                Id = $"error-{module.Id}",
+                Title = "Errore modulo",
+                Icon = "!",
+                Content = new Border
+                {
+                    Margin = new Avalonia.Thickness(24),
+                    Padding = new Avalonia.Thickness(18),
+                    Background = UiTokens.Brush(UiTokens.Surface),
+                    CornerRadius = new Avalonia.CornerRadius(18),
+                    Child = new TextBlock
+                    {
+                        Text = $"Impossibile aprire il modulo {module.Title}: {ex.Message}",
+                        TextWrapping = TextWrapping.Wrap,
+                        Foreground = UiTokens.Brush(UiTokens.Danger)
+                    }
+                },
+                CanClose = true,
+                IsPinned = false
+            });
+        }
+
+        return _workspaceTabHost;
+    }
+
     private Control OpenWorkspaceCustomTab(string id, string title, string icon, Control content, bool canClose, bool isPinned)
     {
         _workspaceTabHost ??= new WorkspaceHost(_workspaceTabManager);
@@ -399,7 +436,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         });
 
         _breadcrumb.Text = $"Workspace > {title}";
-        _status.Text = $"Modulo attivo: {title} | Schede Workspace: {_workspaceTabManager.Tabs.Count} | Moduli registrati: {_workspaceModuleRegistry.Modules.Count}";
+        _status.Text = $"Modulo attivo: {title} | Schede Workspace: {_workspaceTabManager.Tabs.Count}";
         return _workspaceTabHost;
     }
 

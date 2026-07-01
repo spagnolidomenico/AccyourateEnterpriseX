@@ -1,12 +1,26 @@
 # Changelog
 
-## 11.1.0 RC1 Workspace Module Registry
+## 11.1.0 RC2.2.1 Ambiguous References Hotfix
 
-- Aggiunto IWorkspaceModule.
-- Aggiunto DelegateWorkspaceModule.
-- Aggiunto WorkspaceModuleRegistry.
-- Dashboard, Digital Twin e AI Assistant registrati nel Module Registry.
-- AI Assistant da top bar/sidebar apre tab interna.
+- Risolti riferimenti ambigui per `IWorkspaceModule` e `WorkspaceModuleRegistry`.
+- Aggiunti alias espliciti in `EnterpriseWorkspaceWindow.cs`.
+
+
+## 11.1.0 RC2.2 Dashboard Module Registration
+
+- Aggiunto `DashboardWorkspaceModule`.
+- Dashboard registrata nel `WorkspaceModuleRegistry`.
+- Apertura Dashboard tramite registry con fallback al comportamento precedente.
+- Nessun cambiamento visivo previsto.
+
+
+## 11.1.0 RC2.1 OpenModule API Foundation
+
+- Aggiunto `IWorkspaceModule`.
+- Aggiunto `WorkspaceModule`.
+- Aggiunto `WorkspaceModuleDescriptor`.
+- Aggiunto `WorkspaceModuleRegistry`.
+- Nessun cambiamento visibile alla Workspace.
 
 
 ## 11.0.5 AI Assistant Tab
