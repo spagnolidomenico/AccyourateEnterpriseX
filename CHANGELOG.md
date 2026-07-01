@@ -1,5 +1,13 @@
 # Changelog
 
+## 11.0.2 Dashboard Tab
+
+- Dashboard migrata come prima scheda interna della Workspace.
+- Aggiunto uso reale di WorkspaceHost e WorkspaceTabManager.
+- Dashboard pinnata e non chiudibile.
+- Nessuna modifica agli altri moduli principali.
+
+
 ## 11.0.1 Workspace Foundation
 
 - Aggiunto ITabContent.

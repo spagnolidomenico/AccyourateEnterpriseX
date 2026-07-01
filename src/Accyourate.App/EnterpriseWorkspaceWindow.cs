@@ -5,8 +5,8 @@ using Accyourate.App.Data;
 using Accyourate.App.Models;
 using Accyourate.App.UIFramework.Shell;
 using Accyourate.App.UIFramework.Tokens;
-using Accyourate.App.UIFramework.WorkspaceTabs;
 using Accyourate.App.UIFramework.Icons;
+using Accyourate.App.UIFramework.WorkspaceTabs;
 
 namespace Accyourate.App;
 
@@ -20,9 +20,9 @@ public sealed class EnterpriseWorkspaceWindow : Window
     private readonly ContentControl _content = new();
     private readonly TextBlock _breadcrumb = new();
     private readonly TextBlock _status = new();
-    private readonly WorkspaceTabManager _tabManager = new();
-    private WorkspaceTabHost? _tabHost;
     private UiThemeMode _themeMode = UiThemeMode.Light;
+    private readonly WorkspaceTabManager _dashboardTabManager = new();
+    private WorkspaceHost? _dashboardTabHost;
 
     public EnterpriseWorkspaceWindow(DatabaseService database, CurrentUser user)
     {
@@ -30,7 +30,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _user = user;
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
 
-        Title = "Accyourate Enterprise X 11.0 RC1 - Workspace Tabs";
+        Title = "Accyourate Enterprise X 11.0.2 - Dashboard Tab";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -157,7 +157,6 @@ public sealed class EnterpriseWorkspaceWindow : Window
         };
     }
 
-
     private Control BuildContentArea()
     {
         var dock = new DockPanel();
@@ -166,7 +165,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         {
             Height = 58,
             Background = UiTokens.Brush(UiTokens.Background),
-            ColumnDefinitions = new ColumnDefinitions("*,160,160")
+            ColumnDefinitions = new ColumnDefinitions("*,160")
         };
 
         _breadcrumb.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
@@ -176,14 +175,11 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(header, _breadcrumb, 0, 0);
 
         Add(header, TopButton("Aggiorna", () => Navigate(_navigation.CurrentModuleId, _navigation.CurrentTitle)), 1, 0);
-        Add(header, TopButton("Chiudi tab", () => _tabManager.Close(_tabManager.ActiveTab?.Id ?? "")), 2, 0);
 
         DockPanel.SetDock(header, Dock.Top);
         dock.Children.Add(header);
 
-        _tabHost = new WorkspaceTabHost(_tabManager);
-        dock.Children.Add(_tabHost);
-
+        dock.Children.Add(_content);
         return dock;
     }
 
@@ -202,7 +198,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 11.0 RC1"), 2, 0);
+        Add(grid, StatusText("Versione: 11.0.2"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border
@@ -213,12 +209,11 @@ public sealed class EnterpriseWorkspaceWindow : Window
         };
     }
 
-
     private void Navigate(string moduleId, string title)
     {
         if (moduleId == "ai-assistant")
         {
-            OpenWorkspaceTab("ai-assistant", "AI Assistant", "AI", new EnterpriseAiAssistantWindow(_database, _user).Content as Control ?? _moduleFactory.Create("workspace-home"));
+            new EnterpriseAiAssistantWindow(_database, _user).Show();
             return;
         }
 
@@ -230,7 +225,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
 
         if (moduleId == "action-engine")
         {
-            OpenWorkspaceTab("action-engine", "Action Engine", "AX", new ActionEngineWindow(_database, _user).Content as Control ?? _moduleFactory.Create("workspace-home"));
+            new ActionEngineWindow(_database, _user).Show();
             return;
         }
 
@@ -245,49 +240,40 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _navigation.History.Add(moduleId);
 
         _breadcrumb.Text = $"Workspace > {title}";
-        _status.Text = $"Modulo attivo: {title} | Schede aperte: {_tabManager.Tabs.Count} | Cronologia: {_navigation.History.Count}";
+        _status.Text = $"Modulo attivo: {title} | Cronologia: {_navigation.History.Count}";
 
-        var icon = moduleId switch
+        if (moduleId == "dashboard")
         {
-            "workspace-home" => "⌂",
-            "control-room" => "◈",
-            "dashboard" => "▥",
-            "analytics" => "▧",
-            "medical" => "♡",
-            "digital-twin" => "DT",
-            "branding" => "◇",
-            "design-system" => "◐",
-            "architecture" => "⌬",
-            _ => "□"
-        };
+            _content.Content = BuildDashboardTabHost();
+            return;
+        }
 
-        Control content;
         if (moduleId == "control-room")
         {
             var builder = new Accyourate.App.UIFramework.Widgets.WidgetControlRoomBuilder(_database, _user);
-            content = builder.Build(() => Navigate("control-room", "Enterprise Control Room"));
+            _content.Content = builder.Build(() => Navigate("control-room", "Enterprise Control Room"));
         }
         else
         {
-            content = _moduleFactory.Create(moduleId);
+            _content.Content = _moduleFactory.Create(moduleId);
         }
-
-        OpenWorkspaceTab(moduleId, title, icon, content, moduleId == "workspace-home");
     }
 
-    private void OpenWorkspaceTab(string id, string title, string icon, Control content, bool pinned = false)
+    private Control BuildDashboardTabHost()
     {
-        _tabManager.OpenOrActivate(new WorkspaceTab
+        _dashboardTabHost ??= new WorkspaceHost(_dashboardTabManager);
+
+        _dashboardTabManager.OpenOrActivate(new WorkspaceTab
         {
-            Id = id,
-            Title = title,
-            Icon = icon,
-            Content = content,
-            CanClose = !pinned
+            Id = "dashboard",
+            Title = "Dashboard",
+            Icon = AxIcons.Dashboard,
+            Content = _moduleFactory.Create("dashboard"),
+            CanClose = false,
+            IsPinned = true
         });
 
-        _breadcrumb.Text = $"Workspace > {title}";
-        _status.Text = $"Modulo attivo: {title} | Schede aperte: {_tabManager.Tabs.Count}";
+        return _dashboardTabHost;
     }
 
     private void AddMenu(StackPanel menu, string icon, string text, string moduleId, string title)

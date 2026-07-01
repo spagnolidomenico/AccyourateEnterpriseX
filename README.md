@@ -1,3 +1,29 @@
+# Accyourate Enterprise X - Sprint 11.0.2 Dashboard Tab
+
+## Novità
+
+- Dashboard migrata come prima scheda interna della Workspace.
+- Uso reale di `WorkspaceTabManager` e `WorkspaceHost`.
+- Scheda Dashboard pinnata e non chiudibile.
+- Nessuna modifica funzionale agli altri moduli.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+## Test funzionale
+
+1. Avvia l'app.
+2. Apri Enterprise Workspace.
+3. Clicca `Dashboard`.
+4. Verifica che la Dashboard sia mostrata dentro una scheda.
+5. Clicca nuovamente `Dashboard` e verifica che non venga duplicata.
+6. Verifica Digital Twin, Universal Command Bar, AX Action Engine e AI Assistant.
+
+---
+
 # Accyourate Enterprise X - Sprint 11.0.1 Workspace Foundation
 
 ## Novità
@@ -1834,6 +1860,7 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
 
 
 
