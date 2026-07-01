@@ -44,7 +44,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
         RegisterWorkspaceModules();
 
-        Title = "Accyourate Enterprise X 12.0.2.1 - Asset UX Polish";
+        Title = "Accyourate Enterprise X 12.0.3.1 - Asset Dialog Hotfix";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -224,7 +224,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 12.0.2.1"), 2, 0);
+        Add(grid, StatusText("Versione: 12.0.3.1"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border

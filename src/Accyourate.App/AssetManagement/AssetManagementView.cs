@@ -17,6 +17,7 @@ public sealed class AssetManagementView : UserControl
     private readonly StackPanel _rows = new();
     private readonly StackPanel _kpis = new();
     private readonly ContentControl _details = new();
+    private readonly TextBlock _message = new();
 
     private IReadOnlyList<Asset> _assets = Array.Empty<Asset>();
     private Asset? _selected;
@@ -57,6 +58,10 @@ public sealed class AssetManagementView : UserControl
         _kpis.Spacing = 12;
         header.Children.Add(_kpis);
 
+        _message.TextWrapping = TextWrapping.Wrap;
+        _message.Foreground = UiTokens.Brush(UiTokens.BrandBlue);
+        header.Children.Add(_message);
+
         DockPanel.SetDock(header, Dock.Top);
         root.Children.Add(header);
 
@@ -81,7 +86,7 @@ public sealed class AssetManagementView : UserControl
         Add(toolbar, _category, 1, 0);
         Add(toolbar, _status, 2, 0);
         Add(toolbar, ToolbarButton("↻ Aggiorna", "Ricarica asset", Load), 3, 0);
-        Add(toolbar, ToolbarButton("+ Nuovo", "Prossimo sprint: creazione asset"), 4, 0);
+        Add(toolbar, ToolbarButton("+ Nuovo", "Crea un nuovo asset", OpenNewAsset), 4, 0);
         Add(toolbar, ToolbarButton("Importa Excel", "Prossimo sprint: importazione Excel"), 5, 0);
         Add(toolbar, ToolbarButton("Esporta Excel", "Prossimo sprint: esportazione Excel"), 6, 0);
 
@@ -145,11 +150,16 @@ public sealed class AssetManagementView : UserControl
 
     private void Load()
     {
+        var keepCode = _selected?.AssetCode;
+
         _assets = _service.GetAssets();
         RefreshKpis();
         RefreshRows();
 
-        _selected = _assets.FirstOrDefault();
+        _selected = !string.IsNullOrWhiteSpace(keepCode)
+            ? _assets.FirstOrDefault(a => a.AssetCode == keepCode)
+            : _assets.FirstOrDefault();
+
         _details.Content = _selected is not null ? DetailsCard(_selected) : EmptyDetails();
     }
 
@@ -216,7 +226,7 @@ public sealed class AssetManagementView : UserControl
         var button = new Button
         {
             Content = grid,
-            Background = Brushes.Transparent,
+            Background = _selected?.Id == asset.Id ? UiTokens.Brush(UiTokens.PremiumSelected) : Brushes.Transparent,
             Padding = new Thickness(8),
             CornerRadius = new CornerRadius(12)
         };
@@ -225,7 +235,10 @@ public sealed class AssetManagementView : UserControl
         {
             _selected = asset;
             _details.Content = DetailsCard(asset);
+            RefreshRows();
         };
+
+        button.DoubleTapped += (_, _) => OpenEditAsset(asset);
 
         return button;
     }
@@ -250,6 +263,15 @@ public sealed class AssetManagementView : UserControl
             TextWrapping = TextWrapping.Wrap
         });
 
+        var actions = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            Margin = new Thickness(0, 4, 0, 8)
+        };
+        Add(actions, SmallButton("Modifica", () => OpenEditAsset(asset)), 0, 0);
+        Add(actions, SmallButton("Elimina", () => DeleteAsset(asset), true), 1, 0);
+        stack.Children.Add(actions);
+
         stack.Children.Add(Info("Categoria", asset.Category));
         stack.Children.Add(Info("Stato", asset.Status));
         stack.Children.Add(Info("Seriale", asset.SerialNumber));
@@ -272,7 +294,7 @@ public sealed class AssetManagementView : UserControl
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Scheda completa, assegnazioni, manutenzioni, documenti, QR Code e import/export Excel.",
+            Text = "Assegnazioni, manutenzioni, documenti, QR Code e import/export Excel.",
             TextWrapping = TextWrapping.Wrap,
             Foreground = UiTokens.Brush(UiTokens.TextSecondary)
         });
@@ -288,6 +310,102 @@ public sealed class AssetManagementView : UserControl
             TextWrapping = TextWrapping.Wrap,
             Foreground = UiTokens.Brush(UiTokens.TextSecondary)
         });
+    }
+
+    private async void OpenNewAsset()
+    {
+        try
+        {
+            var dialog = new AssetEditDialog();
+            var result = await ShowAssetDialog(dialog);
+            if (result is null)
+                return;
+
+            SaveAsset(result);
+        }
+        catch (Exception ex)
+        {
+            ShowMessage($"Errore apertura Nuovo Asset: {ex.Message}", true);
+        }
+    }
+
+    private async void OpenEditAsset(Asset asset)
+    {
+        try
+        {
+            var dialog = new AssetEditDialog(asset);
+            var result = await ShowAssetDialog(dialog);
+            if (result is null)
+                return;
+
+            SaveAsset(result);
+        }
+        catch (Exception ex)
+        {
+            ShowMessage($"Errore apertura Modifica Asset: {ex.Message}", true);
+        }
+    }
+
+    private async Task<Asset?> ShowAssetDialog(AssetEditDialog dialog)
+    {
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        if (owner is not null)
+            return await dialog.ShowDialog<Asset?>(owner);
+
+        dialog.Show();
+        return null;
+    }
+
+    private void SaveAsset(Asset asset)
+    {
+        try
+        {
+            if (_service.AssetCodeExists(asset.AssetCode, asset.Id))
+            {
+                ShowMessage($"Esiste già un asset con codice {asset.AssetCode}.", true);
+                return;
+            }
+
+            if (asset.Id == 0)
+            {
+                var id = _service.CreateAsset(asset);
+                _selected = _service.GetAssetById(id);
+                ShowMessage($"Asset {asset.AssetCode} creato.");
+            }
+            else
+            {
+                _service.UpdateAsset(asset);
+                _selected = _service.GetAssetById(asset.Id);
+                ShowMessage($"Asset {asset.AssetCode} aggiornato.");
+            }
+
+            Load();
+        }
+        catch (Exception ex)
+        {
+            ShowMessage($"Errore salvataggio asset: {ex.Message}", true);
+        }
+    }
+
+    private void DeleteAsset(Asset asset)
+    {
+        try
+        {
+            _service.DeleteAsset(asset.Id);
+            _selected = null;
+            ShowMessage($"Asset {asset.AssetCode} eliminato.");
+            Load();
+        }
+        catch (Exception ex)
+        {
+            ShowMessage($"Errore eliminazione asset: {ex.Message}", true);
+        }
+    }
+
+    private void ShowMessage(string text, bool isError = false)
+    {
+        _message.Text = text;
+        _message.Foreground = UiTokens.Brush(isError ? UiTokens.Danger : UiTokens.BrandBlue);
     }
 
     private static Border Kpi(string icon, string value, string label)
@@ -401,6 +519,22 @@ public sealed class AssetManagementView : UserControl
             b.Click += (_, _) => action();
 
         ToolTip.SetTip(b, tooltip);
+        return b;
+    }
+
+    private static Button SmallButton(string text, Action action, bool danger = false)
+    {
+        var b = new Button
+        {
+            Content = text,
+            Background = UiTokens.Brush(danger ? UiTokens.SurfaceAlt : UiTokens.BrandBlue),
+            Foreground = danger ? UiTokens.Brush(UiTokens.Danger) : Brushes.White,
+            FontWeight = FontWeight.Bold,
+            Padding = new Thickness(10, 8),
+            CornerRadius = new CornerRadius(12),
+            Margin = new Thickness(4)
+        };
+        b.Click += (_, _) => action();
         return b;
     }
 

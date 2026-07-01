@@ -280,6 +280,25 @@ public sealed class AssetService
         command.ExecuteNonQuery();
     }
 
+
+    public bool AssetCodeExists(string assetCode, int excludedAssetId = 0)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM Assets
+            WHERE AssetCode = $assetCode
+              AND Id <> $excludedAssetId;
+        """;
+        command.Parameters.AddWithValue("$assetCode", assetCode);
+        command.Parameters.AddWithValue("$excludedAssetId", excludedAssetId);
+
+        return Convert.ToInt32(command.ExecuteScalar()) > 0;
+    }
+
     public int CountAssets()
     {
         using var connection = new SqliteConnection(ConnectionString);

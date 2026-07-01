@@ -486,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 12.0.2.1: Asset UX Polish."
+            Text = "Versione 12.0.3.1: Asset Dialog Hotfix."
         });
 
         var cards = new Grid

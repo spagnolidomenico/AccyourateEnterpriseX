@@ -1,3 +1,36 @@
+# Accyourate Enterprise X - 12.0.3.1 Asset Dialog Hotfix
+
+## Correzione
+
+Risolto il problema che poteva chiudere l'app cliccando `+ Nuovo` nel modulo Asset Management.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
+# Accyourate Enterprise X - 12.0.3 Asset Detail & Edit Foundation
+
+## Novità
+
+- Nuovo Asset.
+- Modifica Asset.
+- Eliminazione Asset.
+- Validazione campi obbligatori.
+- Controllo duplicati codice asset.
+- Doppio click su riga per modifica.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
 # Accyourate Enterprise X - 12.0.2.1 Asset UX Polish
 
 ## Novità
@@ -2113,6 +2146,8 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
+
 
 
 

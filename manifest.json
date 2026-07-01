@@ -1,11 +1,9 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "12.0.2.1-asset-ux-polish",
+  "version": "12.0.3.1-asset-dialog-hotfix",
   "type": "hotfix",
-  "features": [
-    "scrollable asset details panel",
-    "independent asset list scroll",
-    "asset toolbar refresh button",
-    "responsive asset layout"
+  "fixes": [
+    "Crash opening New Asset dialog",
+    "Duplicate Note field parent in AssetEditDialog"
   ]
 }

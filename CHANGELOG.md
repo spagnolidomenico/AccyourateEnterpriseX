@@ -1,5 +1,22 @@
 # Changelog
 
+## 12.0.3.1 Asset Dialog Hotfix
+
+- Corretto crash all'apertura di `+ Nuovo` Asset.
+- Rimossa creazione duplicata del campo Note in `AssetEditDialog`.
+- Aggiunta gestione difensiva errori su Nuovo/Modifica Asset.
+
+
+## 12.0.3 Asset Detail & Edit Foundation
+
+- Aggiunto `AssetEditDialog`.
+- Creazione asset da UI.
+- Modifica asset da UI.
+- Eliminazione asset da UI.
+- Aggiunto controllo duplicati su AssetCode.
+- Aggiornamento automatico lista e dettagli dopo salvataggio.
+
+
 ## 12.0.2.1 Asset UX Polish
 
 - Pannello dettagli Asset Management reso scrollabile.
