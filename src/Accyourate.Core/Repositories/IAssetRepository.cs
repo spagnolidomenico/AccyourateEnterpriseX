@@ -2,11 +2,9 @@ using Accyourate.Domain.Assets;
 
 namespace Accyourate.Core.Repositories;
 
-public interface IAssetRepository
+public interface IAssetRepository : IRepository<Asset>
 {
-    IReadOnlyList<Asset> GetAll();
-    Asset? GetById(int id);
-    int Create(Asset asset);
-    void Update(Asset asset);
-    void Delete(int id);
+    IReadOnlyList<Asset> Search(string query);
+    IReadOnlyList<Asset> GetByStatus(string status);
+    IReadOnlyList<Asset> GetAvailableForAssignment();
 }

@@ -2,11 +2,8 @@ using Accyourate.Domain.Employees;
 
 namespace Accyourate.Core.Repositories;
 
-public interface IEmployeeRepository
+public interface IEmployeeRepository : IRepository<Employee>
 {
-    IReadOnlyList<Employee> GetAll();
-    Employee? GetById(int id);
-    int Create(Employee employee);
-    void Update(Employee employee);
-    void Delete(int id);
+    IReadOnlyList<Employee> Search(string query);
+    IReadOnlyList<Employee> GetActive();
 }

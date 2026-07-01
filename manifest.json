@@ -1,14 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "14.0.1-architecture-baseline",
+  "version": "14.0.2-domain-contracts",
   "type": "architecture",
   "visible_changes": false,
   "features": [
-    "Accyourate.Domain project",
-    "Accyourate.Core project",
-    "Accyourate.Infrastructure project",
-    "Accyourate.Shared project",
-    "Initial domain entities",
-    "Initial repository contracts"
+    "Generic repository contracts",
+    "Master Data repository contracts",
+    "Asset repository contracts",
+    "Database initializer contract",
+    "Clock abstraction",
+    "Domain status constants"
   ]
 }

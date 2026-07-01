@@ -2,7 +2,7 @@ using Accyourate.Domain.Assets;
 
 namespace Accyourate.Core.Repositories;
 
-public interface IAssetAssignmentRepository
+public interface IAssetAssignmentRepository : IRepository<AssetAssignment>
 {
     IReadOnlyList<AssetAssignment> GetActiveByEmployeeId(int employeeId);
     AssetAssignment? GetActiveByAssetId(int assetId);
