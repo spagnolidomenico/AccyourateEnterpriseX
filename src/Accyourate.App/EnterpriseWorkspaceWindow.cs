@@ -45,7 +45,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
         RegisterWorkspaceModules();
 
-        Title = "Accyourate Enterprise X 12.0.6 - Master Data Workspace";
+        Title = "Accyourate Enterprise X 13.0.2 - UI Framework Adoption KPI";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -227,7 +227,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 12.0.6"), 2, 0);
+        Add(grid, StatusText("Versione: 13.0.2"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border

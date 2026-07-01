@@ -1,5 +1,11 @@
 # Changelog
 
+## 13.0.2 UI Framework Adoption KPI
+
+- Asset Management ora usa `EnterpriseKpiCard` per le KPI.
+- Rimossa duplicazione locale del metodo `Kpi()` da `AssetManagementView`.
+
+
 ## 13.0.1 RC2 EnterpriseToolbar Build Fix
 
 - Corretto errore CS1503 in `EnterpriseToolbar.cs`.

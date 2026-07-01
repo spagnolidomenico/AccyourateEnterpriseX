@@ -4,6 +4,7 @@ using Avalonia.Media;
 using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
 using Accyourate.App.UIFramework.Tokens;
+using Accyourate.App.UIFramework.Controls;
 
 namespace Accyourate.App.AssetManagement;
 
@@ -172,10 +173,10 @@ public sealed class AssetManagementView : UserControl
         var maintenance = _assets.Count(a => a.Status.Equals("In manutenzione", StringComparison.OrdinalIgnoreCase));
         var expiring = _assets.Count(IsWarrantyExpiring);
 
-        _kpis.Children.Add(Kpi("💻", total.ToString(), "Asset totali"));
-        _kpis.Children.Add(Kpi("👤", assigned.ToString(), "Assegnati"));
-        _kpis.Children.Add(Kpi("🔧", maintenance.ToString(), "In manutenzione"));
-        _kpis.Children.Add(Kpi("⚠", expiring.ToString(), "Garanzie < 90gg"));
+        _kpis.Children.Add(new EnterpriseKpiCard("💻", total.ToString(), "Asset totali"));
+        _kpis.Children.Add(new EnterpriseKpiCard("👤", assigned.ToString(), "Assegnati"));
+        _kpis.Children.Add(new EnterpriseKpiCard("🔧", maintenance.ToString(), "In manutenzione"));
+        _kpis.Children.Add(new EnterpriseKpiCard("⚠", expiring.ToString(), "Garanzie < 90gg"));
     }
 
     private void RefreshRows()

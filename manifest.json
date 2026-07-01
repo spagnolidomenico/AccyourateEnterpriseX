@@ -1,11 +1,9 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "13.0.1-rc2-enterprise-toolbar-build-fix",
-  "type": "hotfix",
-  "fixes": [
-    "EnterpriseToolbar CS1503 string to IBrush"
+  "version": "13.0.2-ui-framework-adoption-kpi",
+  "type": "patch",
+  "features": [
+    "Asset Management KPI migrated to EnterpriseKpiCard"
   ],
-  "files": [
-    "src/Accyourate.App/UIFramework/Controls/EnterpriseToolbar.cs"
-  ]
+  "visible_changes": false
 }

@@ -486,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 12.0.6: Master Data Workspace."
+            Text = "Versione 13.0.2: UI Framework Adoption KPI."
         });
 
         var cards = new Grid

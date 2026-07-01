@@ -1,3 +1,18 @@
+# Accyourate Enterprise X - 13.0.2 UI Framework Adoption KPI
+
+## Novità
+
+- Prima adozione reale dell'Enterprise UI Framework.
+- Asset Management usa `EnterpriseKpiCard`.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
 # Accyourate Enterprise X - 13.0.1 RC2 EnterpriseToolbar Build Fix
 
 ## Correzione
@@ -2211,6 +2226,7 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
 
 
 

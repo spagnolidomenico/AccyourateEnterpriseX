@@ -3,6 +3,31 @@
 ## Sprint attivo
 
 ```text
+13.0.2 - UI Framework Adoption KPI
+```
+
+## Obiettivo
+
+Migrare le KPI di Asset Management al componente condiviso `EnterpriseKpiCard`.
+
+## Versione 13 - Enterprise Platform
+
+| Sprint | Obiettivo | Stato |
+|---|---|---|
+| 13.0.1 RC2 | Enterprise UI Framework Build Fix | ✅ |
+| 13.0.2 | UI Framework Adoption KPI | 🔄 In validazione |
+| 13.0.3 | UI Framework Adoption Toolbar | ⏳ Pianificato |
+| 13.0.4 | UI Framework Adoption Search | ⏳ Pianificato |
+
+---
+
+## Stato precedente
+
+# Accyourate Enterprise X - Project Status
+
+## Sprint attivo
+
+```text
 13.0.1 RC2 - EnterpriseToolbar Build Fix
 ```
 
@@ -287,6 +312,7 @@ v11.1.0-rc3.1 validata e taggata
 ## Regola
 
 Nessun codice Asset Management verrà scritto prima dell'approvazione del dominio.
+
 
 
 
