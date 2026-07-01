@@ -34,7 +34,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _user = user;
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
 
-        Title = "Accyourate Enterprise X 11.0.4 - Workspace Stabilization";
+        Title = "Accyourate Enterprise X 11.0.5 - AI Assistant Tab";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -202,7 +202,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 11.0.4"), 2, 0);
+        Add(grid, StatusText("Versione: 11.0.5"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border
@@ -217,7 +217,13 @@ public sealed class EnterpriseWorkspaceWindow : Window
     {
         if (moduleId == "ai-assistant")
         {
-            new EnterpriseAiAssistantWindow(_database, _user).Show();
+            _content.Content = OpenWorkspaceCustomTab(
+                "ai-assistant",
+                "AI Assistant",
+                "AI",
+                new EnterpriseAiAssistantView(_database, _user),
+                true,
+                false);
             return;
         }
 
@@ -346,6 +352,25 @@ public sealed class EnterpriseWorkspaceWindow : Window
             });
         }
 
+        return _workspaceTabHost;
+    }
+
+    private Control OpenWorkspaceCustomTab(string id, string title, string icon, Control content, bool canClose, bool isPinned)
+    {
+        _workspaceTabHost ??= new WorkspaceHost(_workspaceTabManager);
+
+        _workspaceTabManager.OpenOrActivate(new WorkspaceTab
+        {
+            Id = id,
+            Title = title,
+            Icon = icon,
+            Content = content,
+            CanClose = canClose,
+            IsPinned = isPinned
+        });
+
+        _breadcrumb.Text = $"Workspace > {title}";
+        _status.Text = $"Modulo attivo: {title} | Schede Workspace: {_workspaceTabManager.Tabs.Count}";
         return _workspaceTabHost;
     }
 

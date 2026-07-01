@@ -486,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 11.0.4: Workspace Stabilization."
+            Text = "Versione 11.0.5: AI Assistant Tab."
         });
 
         var cards = new Grid
@@ -526,7 +526,7 @@ public sealed class MainWindow : Window
                     new TextBlock { Text = "• Breadcrumb superiore" },
                     new TextBlock { Text = "• Moduli registrati in ModuleRegistry" },
                     new TextBlock { Text = "• Finestra CRUD standard riutilizzabile" },
-                    new TextBlock { Text = "• Workspace Tab Manager consolidato" }
+                    new TextBlock { Text = "• AI Assistant come scheda Workspace" }
                 }
             }
         });

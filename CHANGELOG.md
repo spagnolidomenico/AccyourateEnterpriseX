@@ -1,5 +1,13 @@
 # Changelog
 
+## 11.0.5 AI Assistant Tab
+
+- Aggiunto EnterpriseAiAssistantView.
+- EnterpriseAiAssistantWindow trasformato in wrapper della view.
+- AI Assistant migrato come scheda interna della Workspace.
+- Nessuna modifica ad Action Engine e Universal Command Bar.
+
+
 ## 11.0.4 Workspace Stabilization
 
 - Consolidato WorkspaceTabManager centrale.

@@ -1,12 +1,11 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "11.0.4-workspace-stabilization",
+  "version": "11.0.5-ai-assistant-tab",
   "features": [
-    "centralized WorkspaceTabManager",
-    "shared WorkspaceHost for Dashboard and Digital Twin",
-    "WorkspaceState foundation",
-    "open tabs snapshot",
-    "module open error tab"
+    "AI Assistant as workspace tab",
+    "EnterpriseAiAssistantView",
+    "AI Assistant reusable view",
+    "AI Assistant window wrapper"
   ],
   "default_login": {
     "username": "admin",

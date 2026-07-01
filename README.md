@@ -1,3 +1,30 @@
+# Accyourate Enterprise X - Sprint 11.0.5 AI Assistant Tab
+
+## Novità
+
+- AI Assistant migrato come scheda interna della Workspace.
+- Aggiunta `EnterpriseAiAssistantView`.
+- `EnterpriseAiAssistantWindow` ora usa la stessa view riutilizzabile.
+- Nessuna modifica funzionale ad Action Engine e Universal Command Bar.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+## Test funzionale
+
+1. Avvia l'app.
+2. Apri Enterprise Workspace.
+3. Clicca `AI Assistant`.
+4. Verifica che AI Assistant sia mostrato dentro una scheda.
+5. Prova quick prompt e domanda manuale.
+6. Clicca nuovamente `AI Assistant` e verifica che non venga duplicato.
+7. Verifica Dashboard, Digital Twin, Universal Command Bar e AX Action Engine.
+
+---
+
 # Accyourate Enterprise X - Sprint 11.0.4 Workspace Stabilization
 
 ## Novità
@@ -1916,6 +1943,7 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
 
 
 
