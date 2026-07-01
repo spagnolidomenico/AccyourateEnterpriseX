@@ -1,9 +1,9 @@
 # Changelog
 
-## 13.0.3 Project Governance
+## 13.0.4 Accyourate Blueprint v1.0
 
-- Aggiunto `CONTRIBUTING.md`.
-- Aggiunto template Pull Request.
-- Aggiunti template Issue.
-- Aggiunto Git Workflow.
-- Aggiunto Quality Gate V13.
+- Aggiunto Blueprint strategico ufficiale.
+- Aggiunta Product Constitution.
+- Aggiunta Roadmap to 2.0.
+- Aggiunto Strategic Backlog.
+- Aggiunta ADR-0022.
