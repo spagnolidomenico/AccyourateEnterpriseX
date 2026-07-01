@@ -1,48 +1,36 @@
 # Accyourate Enterprise X - Project Status
 
-## Baseline
+## Stato corrente
 
-Repository reale analizzato dopo validazione:
+Milestone attiva: **Engineering Excellence**
 
-```text
-11.0.5 - AI Assistant Tab
-```
-
-## Stato attuale
-
-Milestone attiva:
+## Ultimo sprint completato
 
 ```text
-Workspace 2.0
+DOC-003 - Architecture Review Report
 ```
 
-## Ultima attività
+## Sprint attivo
 
 ```text
-Architecture Review + Refactoring Plan
+ENG-001 - GitHub Actions Build Automation
 ```
 
-## Prossimo sprint tecnico
+## Obiettivo ENG-001
 
-```text
-11.1.0 RC1 - Workspace Module Registry
-```
+Introdurre una pipeline automatica su GitHub per compilare il progetto ad ogni push o pull request.
 
-## Priorità immediate
+## Prossimi sprint suggeriti
 
-1. Introdurre Workspace Module Registry.
-2. Introdurre OpenModule API.
-3. Unificare host tab.
-4. Preparare Workspace Explorer.
-5. Preparare Status Bar 2.0.
+| ID | Sprint | Stato |
+|---|---|---|
+| ENG-001 | GitHub Actions | In corso |
+| ENG-002 | Code Quality | Pianificato |
+| ENG-003 | Test Framework | Pianificato |
+| ENG-004 | Logging centralizzato | Pianificato |
+| ENG-005 | Configurazione centralizzata | Pianificato |
+| ENG-006 | Error Handling uniforme | Pianificato |
 
-## Quality Gate
+## Regola
 
-Ogni sprint richiede:
-
-- build;
-- smoke test;
-- test funzionale;
-- documentazione;
-- commit;
-- push.
+Da ENG-001 in poi, uno sprint è validato solo se passa anche GitHub Actions.

@@ -1,21 +1,38 @@
-name: Build
+name: Accyourate Build
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - develop
+      - "feature/**"
   pull_request:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - develop
 
 jobs:
   build:
+    name: Build .NET Solution
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup .NET
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
-      - name: Restore
+          dotnet-version: "8.0.x"
+
+      - name: Display .NET info
+        run: dotnet --info
+
+      - name: Restore NuGet packages
         run: dotnet restore AccyourateEnterpriseX.sln
-      - name: Build
+
+      - name: Build solution
         run: dotnet build AccyourateEnterpriseX.sln --configuration Release --no-restore
+
+      - name: Build completed
+        run: echo "Accyourate Enterprise X build completed successfully."
