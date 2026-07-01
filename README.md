@@ -1,3 +1,30 @@
+# Accyourate Enterprise X - Sprint 11.0.3 Digital Twin Tab
+
+## Novità
+
+- Digital Twin migrato come scheda interna della Workspace.
+- Uso reale di `WorkspaceTabManager` e `WorkspaceHost` anche per Digital Twin.
+- Scheda Digital Twin chiudibile.
+- Nessuna modifica funzionale a AI Assistant, Action Engine e Universal Command Bar.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+## Test funzionale
+
+1. Avvia l'app.
+2. Apri Enterprise Workspace.
+3. Clicca `Digital Twin`.
+4. Verifica che Digital Twin sia mostrato dentro una scheda.
+5. Clicca nuovamente `Digital Twin` e verifica che non venga duplicato.
+6. Chiudi la scheda Digital Twin.
+7. Verifica Dashboard, Universal Command Bar, AX Action Engine e AI Assistant.
+
+---
+
 # Accyourate Enterprise X - Sprint 11.0.2 Dashboard Tab
 
 ## Novità
@@ -1860,6 +1887,7 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
 
 
 

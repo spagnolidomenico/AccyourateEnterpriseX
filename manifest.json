@@ -1,11 +1,11 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "11.0.2-dashboard-tab",
+  "version": "11.0.3-digital-twin-tab",
   "features": [
-    "dashboard as workspace tab",
-    "pinned dashboard tab",
-    "WorkspaceTabManager runtime validation",
-    "WorkspaceHost runtime validation"
+    "digital twin as workspace tab",
+    "closable digital twin tab",
+    "WorkspaceTabManager runtime validation for Digital Twin",
+    "WorkspaceHost runtime validation for Digital Twin"
   ],
   "default_login": {
     "username": "admin",

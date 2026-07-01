@@ -23,6 +23,8 @@ public sealed class EnterpriseWorkspaceWindow : Window
     private UiThemeMode _themeMode = UiThemeMode.Light;
     private readonly WorkspaceTabManager _dashboardTabManager = new();
     private WorkspaceHost? _dashboardTabHost;
+    private readonly WorkspaceTabManager _digitalTwinTabManager = new();
+    private WorkspaceHost? _digitalTwinTabHost;
 
     public EnterpriseWorkspaceWindow(DatabaseService database, CurrentUser user)
     {
@@ -30,7 +32,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _user = user;
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
 
-        Title = "Accyourate Enterprise X 11.0.2 - Dashboard Tab";
+        Title = "Accyourate Enterprise X 11.0.3 - Digital Twin Tab";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -198,7 +200,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 11.0.2"), 2, 0);
+        Add(grid, StatusText("Versione: 11.0.3"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border
@@ -248,6 +250,12 @@ public sealed class EnterpriseWorkspaceWindow : Window
             return;
         }
 
+        if (moduleId == "digital-twin")
+        {
+            _content.Content = BuildDigitalTwinTabHost();
+            return;
+        }
+
         if (moduleId == "control-room")
         {
             var builder = new Accyourate.App.UIFramework.Widgets.WidgetControlRoomBuilder(_database, _user);
@@ -274,6 +282,23 @@ public sealed class EnterpriseWorkspaceWindow : Window
         });
 
         return _dashboardTabHost;
+    }
+
+    private Control BuildDigitalTwinTabHost()
+    {
+        _digitalTwinTabHost ??= new WorkspaceHost(_digitalTwinTabManager);
+
+        _digitalTwinTabManager.OpenOrActivate(new WorkspaceTab
+        {
+            Id = "digital-twin",
+            Title = "Digital Twin",
+            Icon = "DT",
+            Content = _moduleFactory.Create("digital-twin"),
+            CanClose = true,
+            IsPinned = false
+        });
+
+        return _digitalTwinTabHost;
     }
 
     private void AddMenu(StackPanel menu, string icon, string text, string moduleId, string title)

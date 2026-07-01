@@ -486,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 11.0.2: Dashboard Tab."
+            Text = "Versione 11.0.3: Digital Twin Tab."
         });
 
         var cards = new Grid
@@ -526,7 +526,7 @@ public sealed class MainWindow : Window
                     new TextBlock { Text = "• Breadcrumb superiore" },
                     new TextBlock { Text = "• Moduli registrati in ModuleRegistry" },
                     new TextBlock { Text = "• Finestra CRUD standard riutilizzabile" },
-                    new TextBlock { Text = "• Dashboard come prima scheda Workspace" }
+                    new TextBlock { Text = "• Digital Twin come scheda Workspace" }
                 }
             }
         });

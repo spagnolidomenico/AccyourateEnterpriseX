@@ -1,5 +1,13 @@
 # Changelog
 
+## 11.0.3 Digital Twin Tab
+
+- Digital Twin migrato come scheda interna della Workspace.
+- Aggiunto uso reale di WorkspaceHost e WorkspaceTabManager per Digital Twin.
+- Scheda Digital Twin chiudibile.
+- Nessuna modifica agli altri moduli principali.
+
+
 ## 11.0.2 Dashboard Tab
 
 - Dashboard migrata come prima scheda interna della Workspace.
