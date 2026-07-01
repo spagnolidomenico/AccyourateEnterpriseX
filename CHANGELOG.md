@@ -1,5 +1,14 @@
 # Changelog
 
+## 11.1.0 RC1 Workspace Module Registry
+
+- Aggiunto IWorkspaceModule.
+- Aggiunto DelegateWorkspaceModule.
+- Aggiunto WorkspaceModuleRegistry.
+- Dashboard, Digital Twin e AI Assistant registrati nel Module Registry.
+- AI Assistant da top bar/sidebar apre tab interna.
+
+
 ## 11.0.5 AI Assistant Tab
 
 - Aggiunto EnterpriseAiAssistantView.

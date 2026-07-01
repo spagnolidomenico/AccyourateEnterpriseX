@@ -1,11 +1,11 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "11.0.5-ai-assistant-tab",
+  "version": "11.1.0-rc1-workspace-module-registry",
   "features": [
-    "AI Assistant as workspace tab",
-    "EnterpriseAiAssistantView",
-    "AI Assistant reusable view",
-    "AI Assistant window wrapper"
+    "IWorkspaceModule",
+    "DelegateWorkspaceModule",
+    "WorkspaceModuleRegistry",
+    "registered dashboard digital-twin ai-assistant"
   ],
   "default_login": {
     "username": "admin",
