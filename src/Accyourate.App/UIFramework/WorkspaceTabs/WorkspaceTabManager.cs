@@ -8,6 +8,7 @@ public sealed class WorkspaceTabManager
 
     public IReadOnlyList<WorkspaceTab> Tabs => _tabs;
     public WorkspaceTab? ActiveTab { get; private set; }
+    public string ActiveTabId => ActiveTab?.Id ?? string.Empty;
 
     public void OpenOrActivate(WorkspaceTab tab)
     {
@@ -53,6 +54,11 @@ public sealed class WorkspaceTabManager
 
         Changed?.Invoke();
         return true;
+    }
+
+    public IReadOnlyList<string> OpenTabsSnapshot()
+    {
+        return _tabs.Select(t => t.Id).ToList();
     }
 
     public void CloseAllClosable()

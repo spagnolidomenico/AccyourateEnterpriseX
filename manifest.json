@@ -1,11 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "11.0.3-digital-twin-tab",
+  "version": "11.0.4-workspace-stabilization",
   "features": [
-    "digital twin as workspace tab",
-    "closable digital twin tab",
-    "WorkspaceTabManager runtime validation for Digital Twin",
-    "WorkspaceHost runtime validation for Digital Twin"
+    "centralized WorkspaceTabManager",
+    "shared WorkspaceHost for Dashboard and Digital Twin",
+    "WorkspaceState foundation",
+    "open tabs snapshot",
+    "module open error tab"
   ],
   "default_login": {
     "username": "admin",

@@ -1,3 +1,32 @@
+# Accyourate Enterprise X - Sprint 11.0.4 Workspace Stabilization
+
+## Novità
+
+- WorkspaceTabManager centrale per Dashboard e Digital Twin.
+- WorkspaceHost unico per i moduli già migrati.
+- WorkspaceState foundation.
+- Snapshot delle tab aperte.
+- Gestione errori modulo con tab dedicata.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+## Test funzionale
+
+1. Avvia l'app.
+2. Apri Enterprise Workspace.
+3. Clicca `Dashboard`.
+4. Clicca `Digital Twin`.
+5. Verifica che Dashboard e Digital Twin siano tab nello stesso host.
+6. Clicca più volte sui menu e verifica che non vengano duplicate.
+7. Chiudi Digital Twin.
+8. Verifica Universal Command Bar, AX Action Engine, AI Assistant e Control Room.
+
+---
+
 # Accyourate Enterprise X - Sprint 11.0.3 Digital Twin Tab
 
 ## Novità
@@ -1887,6 +1916,7 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
 
 
 

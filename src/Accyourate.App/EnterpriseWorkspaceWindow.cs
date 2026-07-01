@@ -25,6 +25,8 @@ public sealed class EnterpriseWorkspaceWindow : Window
     private WorkspaceHost? _dashboardTabHost;
     private readonly WorkspaceTabManager _digitalTwinTabManager = new();
     private WorkspaceHost? _digitalTwinTabHost;
+    private readonly WorkspaceTabManager _workspaceTabManager = new();
+    private WorkspaceHost? _workspaceTabHost;
 
     public EnterpriseWorkspaceWindow(DatabaseService database, CurrentUser user)
     {
@@ -32,7 +34,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _user = user;
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
 
-        Title = "Accyourate Enterprise X 11.0.3 - Digital Twin Tab";
+        Title = "Accyourate Enterprise X 11.0.4 - Workspace Stabilization";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -200,7 +202,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 11.0.3"), 2, 0);
+        Add(grid, StatusText("Versione: 11.0.4"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border
@@ -246,13 +248,13 @@ public sealed class EnterpriseWorkspaceWindow : Window
 
         if (moduleId == "dashboard")
         {
-            _content.Content = BuildDashboardTabHost();
+            _content.Content = OpenWorkspaceModuleTab("dashboard", "Dashboard", AxIcons.Dashboard, false, true);
             return;
         }
 
         if (moduleId == "digital-twin")
         {
-            _content.Content = BuildDigitalTwinTabHost();
+            _content.Content = OpenWorkspaceModuleTab("digital-twin", "Digital Twin", "DT", true, false);
             return;
         }
 
@@ -299,6 +301,52 @@ public sealed class EnterpriseWorkspaceWindow : Window
         });
 
         return _digitalTwinTabHost;
+    }
+
+    private Control OpenWorkspaceModuleTab(string moduleId, string title, string icon, bool canClose, bool isPinned)
+    {
+        _workspaceTabHost ??= new WorkspaceHost(_workspaceTabManager);
+
+        try
+        {
+            _workspaceTabManager.OpenOrActivate(new WorkspaceTab
+            {
+                Id = moduleId,
+                Title = title,
+                Icon = icon,
+                Content = _moduleFactory.Create(moduleId),
+                CanClose = canClose,
+                IsPinned = isPinned
+            });
+
+            _status.Text = $"Modulo attivo: {title} | Schede Workspace: {_workspaceTabManager.Tabs.Count}";
+        }
+        catch (Exception ex)
+        {
+            _workspaceTabManager.OpenOrActivate(new WorkspaceTab
+            {
+                Id = $"error-{moduleId}",
+                Title = "Errore modulo",
+                Icon = "!",
+                Content = new Border
+                {
+                    Margin = new Avalonia.Thickness(24),
+                    Padding = new Avalonia.Thickness(18),
+                    Background = UiTokens.Brush(UiTokens.Surface),
+                    CornerRadius = new Avalonia.CornerRadius(18),
+                    Child = new TextBlock
+                    {
+                        Text = $"Impossibile aprire il modulo {title}: {ex.Message}",
+                        TextWrapping = TextWrapping.Wrap,
+                        Foreground = UiTokens.Brush(UiTokens.Danger)
+                    }
+                },
+                CanClose = true,
+                IsPinned = false
+            });
+        }
+
+        return _workspaceTabHost;
     }
 
     private void AddMenu(StackPanel menu, string icon, string text, string moduleId, string title)

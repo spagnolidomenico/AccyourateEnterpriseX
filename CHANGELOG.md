@@ -1,5 +1,14 @@
 # Changelog
 
+## 11.0.4 Workspace Stabilization
+
+- Consolidato WorkspaceTabManager centrale.
+- Dashboard e Digital Twin ora condividono lo stesso WorkspaceHost.
+- Aggiunto WorkspaceState foundation.
+- Aggiunto snapshot tab aperte.
+- Aggiunta gestione errore modulo tramite tab dedicata.
+
+
 ## 11.0.3 Digital Twin Tab
 
 - Digital Twin migrato come scheda interna della Workspace.
