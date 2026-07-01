@@ -1,5 +1,21 @@
 # Changelog
 
+## 11.1.0 RC3.1 Internal Workspace Opening
+
+- AI Assistant, Action Engine e Universal Command Bar aperti come tab dai pulsanti principali.
+- Aggiunto UniversalCommandBarView.
+- Aggiunto UniversalCommandBarWorkspaceModule.
+- UniversalCommandBarWindow trasformata in wrapper della view.
+
+
+## 11.1.0 RC3 Workspace Integration
+
+- Aggiunti DigitalTwinWorkspaceModule, AiAssistantWorkspaceModule e ActionEngineWorkspaceModule.
+- Aggiunto ActionEngineView riutilizzabile.
+- ActionEngineWindow trasformato in wrapper della view.
+- Workspace aggiornata per aprire i moduli principali tramite registry.
+
+
 ## 11.1.0 RC2.2.1 Ambiguous References Hotfix
 
 - Risolti riferimenti ambigui per `IWorkspaceModule` e `WorkspaceModuleRegistry`.

@@ -1,3 +1,45 @@
+# Accyourate Enterprise X - 11.1.0 RC3.1 Internal Workspace Opening
+
+## Correzione
+
+AI Assistant, Action Engine e Universal Command Bar ora devono aprirsi come tab interne della Workspace dai pulsanti principali.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
+# Accyourate Enterprise X - 11.1.0 RC3 Workspace Integration
+
+## Novità
+
+- Dashboard, Digital Twin, AI Assistant e Action Engine come moduli registrati.
+- Action Engine ora disponibile come view riutilizzabile.
+- La Workspace usa il registry per aprire i moduli principali.
+- Universal Command Bar resta funzionante e sarà integrata come overlay in una RC successiva.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+## Test funzionale
+
+Verifica:
+
+- Dashboard tab
+- Digital Twin tab
+- AI Assistant tab
+- Action Engine tab
+- Universal Command Bar
+- nessuna duplicazione tab
+
+---
+
 # Accyourate Enterprise X - 11.1.0 RC2.2.1 Ambiguous References Hotfix
 
 ## Correzione
@@ -2015,6 +2057,8 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
+
 
 
 

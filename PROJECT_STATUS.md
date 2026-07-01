@@ -3,6 +3,64 @@
 ## Sprint attivo
 
 ```text
+11.1.0 RC3.1 - Internal Workspace Opening
+```
+
+## Obiettivo
+
+Assicurare che AI Assistant, Action Engine e Universal Command Bar si aprano come tab interne della Workspace.
+
+## Moduli principali
+
+| Modulo | Apertura attesa |
+|---|---|
+| Dashboard | Tab |
+| Digital Twin | Tab |
+| AI Assistant | Tab |
+| Action Engine | Tab |
+| Universal Command Bar | Tab |
+
+---
+
+## Stato precedente
+
+# Accyourate Enterprise X - Project Status
+
+## Sprint attivo
+
+```text
+11.1.0 RC3 - Workspace Integration
+```
+
+## Obiettivo
+
+Integrare Dashboard, Digital Twin, AI Assistant e Action Engine come moduli registrati nel `WorkspaceModuleRegistry`.
+
+## Stato
+
+| Modulo | Stato |
+|---|---|
+| Dashboard | Registry + Tab |
+| Digital Twin | Registry + Tab |
+| AI Assistant | Registry + Tab |
+| Action Engine | Registry + Tab |
+| Universal Command Bar | Funzionante, integrazione overlay pianificata |
+
+## Prossimo sprint
+
+```text
+11.1.0 RC4 - Universal Command Bar Workspace Overlay
+```
+
+---
+
+## Stato precedente
+
+# Accyourate Enterprise X - Project Status
+
+## Sprint attivo
+
+```text
 11.1.0 RC2.2.1 - Ambiguous References Hotfix
 ```
 
@@ -125,6 +183,8 @@ Ogni sprint deve seguire:
 5. Validazione
 6. Commit
 7. Push
+
+
 
 
 

@@ -1,9 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "11.1.0-rc2.2.1-ambiguous-references-hotfix",
+  "version": "11.1.0-rc3.1-internal-workspace-opening",
   "type": "hotfix",
   "fixes": [
-    "Ambiguous IWorkspaceModule reference",
-    "Ambiguous WorkspaceModuleRegistry reference"
+    "AI Assistant opened as external window from buttons",
+    "Action Engine opened as external window from sidebar",
+    "Universal Command Bar opened as external window from buttons"
+  ],
+  "features": [
+    "UniversalCommandBarView",
+    "UniversalCommandBarWorkspaceModule"
   ]
 }

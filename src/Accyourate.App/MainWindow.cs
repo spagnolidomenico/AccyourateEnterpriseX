@@ -486,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 11.1.0 RC2.2: Dashboard Module Registration."
+            Text = "Versione 11.1.0 RC3.1: Internal Workspace Opening."
         });
 
         var cards = new Grid

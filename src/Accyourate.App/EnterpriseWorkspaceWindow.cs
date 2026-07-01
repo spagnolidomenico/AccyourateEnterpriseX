@@ -10,6 +10,10 @@ using Accyourate.App.UIFramework.WorkspaceTabs;
 using WorkspaceModuleRegistryCore = Accyourate.App.UIFramework.WorkspaceModules.WorkspaceModuleRegistry;
 using WorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.IWorkspaceModule;
 using DashboardWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.DashboardWorkspaceModule;
+using DigitalTwinWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.DigitalTwinWorkspaceModule;
+using AiAssistantWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.AiAssistantWorkspaceModule;
+using ActionEngineWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.ActionEngineWorkspaceModule;
+using UniversalCommandBarWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.UniversalCommandBarWorkspaceModule;
 
 namespace Accyourate.App;
 
@@ -39,7 +43,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
         RegisterWorkspaceModules();
 
-        Title = "Accyourate Enterprise X 11.1.0 RC2.2.1 - Ambiguous References Hotfix";
+        Title = "Accyourate Enterprise X 11.1.0 RC3.1 - Internal Workspace Opening";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -55,6 +59,10 @@ public sealed class EnterpriseWorkspaceWindow : Window
     private void RegisterWorkspaceModules()
     {
         _moduleRegistry.Register(new DashboardWorkspaceModuleCore(_moduleFactory));
+        _moduleRegistry.Register(new DigitalTwinWorkspaceModuleCore(_moduleFactory));
+        _moduleRegistry.Register(new AiAssistantWorkspaceModuleCore(_database, _user));
+        _moduleRegistry.Register(new ActionEngineWorkspaceModuleCore(_database, _user));
+        _moduleRegistry.Register(new UniversalCommandBarWorkspaceModuleCore(_database, _user, Navigate));
     }
 
     private Control BuildLayout()
@@ -102,8 +110,8 @@ public sealed class EnterpriseWorkspaceWindow : Window
 
         Add(grid, SearchBox(), 1, 0);
         Add(grid, TopButton(AxIcons.Command + "K Comandi", OpenCommandPalette), 2, 0);
-        Add(grid, TopButton("⌕ Command", () => new UniversalCommandBarWindow(_database, _user, Navigate).Show()), 3, 0);
-        Add(grid, TopButton("AI", () => new EnterpriseAiAssistantWindow(_database, _user).Show()), 4, 0);
+        Add(grid, TopButton("⌕ Command", () => Navigate("universal-command-bar", "Universal Command Bar")), 3, 0);
+        Add(grid, TopButton("AI", () => Navigate("ai-assistant", "AI Assistant")), 4, 0);
         Add(grid, TopButton(AxIcons.Notifications + " Notifiche", () => new NotificationsWindow().Show()), 5, 0);
         Add(grid, TopButton("◐ Tema", ToggleTheme), 6, 0);
         Add(grid, new TextBlock
@@ -141,10 +149,10 @@ public sealed class EnterpriseWorkspaceWindow : Window
 
         AddMenu(menu, AxIcons.Home, "Home", "workspace-home", "Workspace Home");
         AddMenu(menu, AxIcons.ControlRoom, "Control Room", "control-room", "Enterprise Control Room");
-        menu.Children.Add(ExternalButton("AI  Enterprise AI Assistant", () => new EnterpriseAiAssistantWindow(_database, _user).Show()));
+        AddMenu(menu, "AI", "AI Assistant", "ai-assistant", "AI Assistant");
         menu.Children.Add(ExternalButton("AI  AI Intent Catalog", () => new AiIntentCatalogManagerWindow().Show()));
-        menu.Children.Add(ExternalButton("AX  Action Engine", () => new ActionEngineWindow(_database, _user).Show()));
-        menu.Children.Add(ExternalButton("⌕  Universal Command Bar", () => new UniversalCommandBarWindow(_database, _user, Navigate).Show()));
+        AddMenu(menu, "AX", "Action Engine", "action-engine", "Action Engine");
+        AddMenu(menu, "⌕", "Universal Command Bar", "universal-command-bar", "Universal Command Bar");
         AddMenu(menu, AxIcons.Dashboard, "Dashboard", "dashboard", "Dashboard");
         AddMenu(menu, AxIcons.Analytics, "Analytics", "analytics", "Analytics");
         AddMenu(menu, AxIcons.Medical, "Medical", "medical", "Medical Device Suite");
@@ -213,7 +221,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 11.1.0 RC2.2.1"), 2, 0);
+        Add(grid, StatusText("Versione: 11.1.0 RC3.1"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border
@@ -226,58 +234,29 @@ public sealed class EnterpriseWorkspaceWindow : Window
 
     private void Navigate(string moduleId, string title)
     {
-        if (moduleId == "ai-assistant")
-        {
-            _content.Content = OpenWorkspaceCustomTab(
-                "ai-assistant",
-                "AI Assistant",
-                "AI",
-                new EnterpriseAiAssistantView(_database, _user),
-                true,
-                false);
+        if (OpenRegisteredWorkspaceModule(moduleId))
             return;
-        }
 
-        if (moduleId == "ai-catalog")
+if (moduleId == "ai-catalog")
         {
             new AiIntentCatalogManagerWindow().Show();
             return;
         }
 
-        if (moduleId == "action-engine")
-        {
-            new ActionEngineWindow(_database, _user).Show();
+        if (OpenRegisteredWorkspaceModule(moduleId))
             return;
-        }
 
-        if (moduleId == "universal-command-bar")
-        {
-            new UniversalCommandBarWindow(_database, _user, Navigate).Show();
-            return;
-        }
-
-        _navigation.CurrentModuleId = moduleId;
+_navigation.CurrentModuleId = moduleId;
         _navigation.CurrentTitle = title;
         _navigation.History.Add(moduleId);
 
         _breadcrumb.Text = $"Workspace > {title}";
         _status.Text = $"Modulo attivo: {title} | Cronologia: {_navigation.History.Count}";
 
-        if (moduleId == "dashboard")
-        {
-            var dashboardModule = _moduleRegistry.Find("dashboard");
-            if (dashboardModule is not null)
-            {
-                _content.Content = OpenWorkspaceRegisteredModuleTab(dashboardModule);
-            }
-            else
-            {
-                _content.Content = OpenWorkspaceModuleTab("dashboard", "Dashboard", AxIcons.Dashboard, false, true);
-            }
+        if (OpenRegisteredWorkspaceModule(moduleId))
             return;
-        }
 
-        if (moduleId == "digital-twin")
+if (moduleId == "digital-twin")
         {
             _content.Content = OpenWorkspaceModuleTab("digital-twin", "Digital Twin", "DT", true, false);
             return;
@@ -326,6 +305,17 @@ public sealed class EnterpriseWorkspaceWindow : Window
         });
 
         return _digitalTwinTabHost;
+    }
+
+
+    private bool OpenRegisteredWorkspaceModule(string moduleId)
+    {
+        var module = _moduleRegistry.Find(moduleId);
+        if (module is null)
+            return false;
+
+        _content.Content = OpenWorkspaceRegisteredModuleTab(module);
+        return true;
     }
 
     private Control OpenWorkspaceModuleTab(string moduleId, string title, string icon, bool canClose, bool isPinned)
