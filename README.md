@@ -1,3 +1,38 @@
+# Accyourate Enterprise X - 12.0.6 Master Data Workspace
+
+## Novità
+
+- Nuovo modulo Anagrafica Aziendale.
+- Apertura come tab nella Workspace.
+- KPI aziende, sedi, reparti, dipendenti e fornitori.
+- Navigazione sezioni, ricerca e pannello dettagli.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
+# Accyourate Enterprise X - 12.0.5 Master Data Database Foundation
+
+## Novità
+
+- Base dati Anagrafica Aziendale.
+- Modelli Company, Site, Department, Employee e Supplier.
+- `MasterDataService`.
+- Database SQLite locale dedicato.
+- Dati demo iniziali.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
 # Accyourate Enterprise X - 12.0.3.1 Asset Dialog Hotfix
 
 ## Correzione
@@ -2146,6 +2181,8 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
+
 
 
 

@@ -1,5 +1,22 @@
 # Changelog
 
+## 12.0.6 Master Data Workspace
+
+- Aggiunto `MasterDataView`.
+- Aggiunto `MasterDataWorkspaceModule`.
+- Anagrafica Aziendale registrata nella Workspace.
+- Aggiunti KPI, navigazione sezioni, ricerca e pannello dettagli.
+
+
+## 12.0.5 Master Data Database Foundation
+
+- Aggiunti modelli Enterprise Master Data.
+- Aggiunto MasterDataService.
+- Aggiunto database SQLite `accyourate-master-data.db`.
+- Aggiunte tabelle Companies, Sites, Departments, Employees e Suppliers.
+- Aggiunti dati demo iniziali.
+
+
 ## 12.0.3.1 Asset Dialog Hotfix
 
 - Corretto crash all'apertura di `+ Nuovo` Asset.

@@ -486,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 12.0.3.1: Asset Dialog Hotfix."
+            Text = "Versione 12.0.6: Master Data Workspace."
         });
 
         var cards = new Grid
