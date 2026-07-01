@@ -3,23 +3,19 @@
 ## Sprint attivo
 
 ```text
-13.0.4 - Accyourate Blueprint v1.0
+14.0.0 - Core Platform Refactoring Blueprint
 ```
 
 ## Obiettivo
 
-Creare il documento strategico ufficiale del prodotto.
+Definire il piano ufficiale di refactoring della piattaforma core.
 
-## Output
+## Stato
 
-- Blueprint v1.0
-- Product Constitution
-- Roadmap to 2.0
-- Strategic Backlog
-- ADR-0022
+La patch è documentale e non modifica codice applicativo.
 
 ## Prossimo sprint
 
 ```text
-13.0.5 - EnterpriseToolbar adoption
+14.0.1 - Architecture Baseline
 ```

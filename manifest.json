@@ -1,12 +1,11 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "13.1.0a-master-data-employees-crud",
-  "type": "patch",
-  "features": [
-    "Master Data Employees create",
-    "Master Data Employees update",
-    "Master Data Employees delete",
-    "MasterDataService employee CRUD methods"
-  ],
-  "visible_changes": true
+  "version": "14.0.0-core-platform-refactoring-blueprint",
+  "type": "documentation",
+  "visible_changes": false,
+  "files": [
+    "docs/core-platform/V14_0_0_CORE_PLATFORM_REFACTORING_BLUEPRINT.md",
+    "docs/core-platform/V14_REFACTORING_ROADMAP.md",
+    "docs/architecture-decisions/ADR-0023-Core-Platform-Refactoring.md"
+  ]
 }
