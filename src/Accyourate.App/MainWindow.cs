@@ -486,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 13.0.5: EnterpriseToolbar Adoption."
+            Text = "Versione 13.1.0a: Master Data Employees CRUD."
         });
 
         var cards = new Grid

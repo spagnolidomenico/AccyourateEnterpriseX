@@ -1,8 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "13.0.5.1-enterprise-toolbar-click-hotfix",
-  "type": "hotfix",
-  "fixes": [
-    "EnterpriseToolbar button click propagation"
-  ]
+  "version": "13.1.0a-master-data-employees-crud",
+  "type": "patch",
+  "features": [
+    "Master Data Employees create",
+    "Master Data Employees update",
+    "Master Data Employees delete",
+    "MasterDataService employee CRUD methods"
+  ],
+  "visible_changes": true
 }

@@ -18,6 +18,7 @@ public sealed class MasterDataView : UserControl
     private readonly TextBox _search = new();
     private readonly TextBlock _title = new();
     private readonly TextBlock _subtitle = new();
+    private readonly TextBlock _message = new();
 
     private string _section = "companies";
     private object? _selected;
@@ -53,6 +54,10 @@ public sealed class MasterDataView : UserControl
             Foreground = UiTokens.Brush(UiTokens.TextSecondary),
             TextWrapping = TextWrapping.Wrap
         });
+
+        _message.TextWrapping = TextWrapping.Wrap;
+        _message.Foreground = UiTokens.Brush(UiTokens.BrandBlue);
+        header.Children.Add(_message);
 
         _kpis.Orientation = Avalonia.Layout.Orientation.Horizontal;
         _kpis.Spacing = 12;
@@ -130,9 +135,9 @@ public sealed class MasterDataView : UserControl
             Orientation = Avalonia.Layout.Orientation.Horizontal,
             Spacing = 8
         };
-        toolbar.Children.Add(ToolbarButton("+ Nuovo", "Prossimo sprint: creazione record"));
-        toolbar.Children.Add(ToolbarButton("Modifica", "Prossimo sprint: modifica record"));
-        toolbar.Children.Add(ToolbarButton("Elimina", "Prossimo sprint: eliminazione record"));
+        toolbar.Children.Add(ToolbarButton("+ Nuovo", "Crea un nuovo dipendente", OpenNewEmployee));
+        toolbar.Children.Add(ToolbarButton("Modifica", "Modifica il dipendente selezionato", OpenEditSelectedEmployee));
+        toolbar.Children.Add(ToolbarButton("Elimina", "Elimina il dipendente selezionato", DeleteSelectedEmployee));
         header.Children.Add(toolbar);
 
         DockPanel.SetDock(header, Dock.Top);
@@ -417,6 +422,96 @@ public sealed class MasterDataView : UserControl
         return stack;
     }
 
+
+    private async void OpenNewEmployee()
+    {
+        try
+        {
+            var dialog = new MasterDataEmployeeDialog(_service);
+            var result = await ShowEmployeeDialog(dialog);
+            if (result is null)
+                return;
+
+            var id = _service.CreateEmployee(result);
+            _selected = _service.GetEmployeeById(id);
+            ShowMessage($"Dipendente {result.FullName} creato.");
+            RefreshKpis();
+            RefreshRows();
+            RefreshDetails();
+        }
+        catch (Exception ex)
+        {
+            ShowMessage($"Errore creazione dipendente: {ex.Message}", true);
+        }
+    }
+
+    private async void OpenEditSelectedEmployee()
+    {
+        if (_selected is not EmployeeMasterData employee)
+        {
+            ShowMessage("Seleziona un dipendente da modificare.", true);
+            return;
+        }
+
+        try
+        {
+            var dialog = new MasterDataEmployeeDialog(_service, employee);
+            var result = await ShowEmployeeDialog(dialog);
+            if (result is null)
+                return;
+
+            _service.UpdateEmployee(result);
+            _selected = _service.GetEmployeeById(result.Id);
+            ShowMessage($"Dipendente {result.FullName} aggiornato.");
+            RefreshKpis();
+            RefreshRows();
+            RefreshDetails();
+        }
+        catch (Exception ex)
+        {
+            ShowMessage($"Errore modifica dipendente: {ex.Message}", true);
+        }
+    }
+
+    private void DeleteSelectedEmployee()
+    {
+        if (_selected is not EmployeeMasterData employee)
+        {
+            ShowMessage("Seleziona un dipendente da eliminare.", true);
+            return;
+        }
+
+        try
+        {
+            _service.DeleteEmployee(employee.Id);
+            ShowMessage($"Dipendente {employee.FullName} eliminato.");
+            _selected = null;
+            RefreshKpis();
+            RefreshRows();
+            RefreshDetails();
+        }
+        catch (Exception ex)
+        {
+            ShowMessage($"Errore eliminazione dipendente: {ex.Message}", true);
+        }
+    }
+
+    private async Task<EmployeeMasterData?> ShowEmployeeDialog(MasterDataEmployeeDialog dialog)
+    {
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        if (owner is not null)
+            return await dialog.ShowDialog<EmployeeMasterData?>(owner);
+
+        dialog.Show();
+        return null;
+    }
+
+    private void ShowMessage(string text, bool isError = false)
+    {
+        _message.Text = text;
+        _message.Foreground = UiTokens.Brush(isError ? UiTokens.Danger : UiTokens.BrandBlue);
+    }
+
     private Button NavButton(string label, string section)
     {
         var button = new Button
@@ -486,16 +581,25 @@ public sealed class MasterDataView : UserControl
         };
     }
 
-    private static Button ToolbarButton(string text, string tooltip)
+    private Button ToolbarButton(string text, string tooltip, Action action)
     {
         var b = new Button
         {
             Content = text,
-            Background = UiTokens.Brush(UiTokens.Surface),
-            Foreground = UiTokens.Brush(UiTokens.TextPrimary),
+            Background = UiTokens.Brush(_section == "employees" ? UiTokens.Surface : UiTokens.SurfaceAlt),
+            Foreground = UiTokens.Brush(_section == "employees" ? UiTokens.TextPrimary : UiTokens.TextSecondary),
             Padding = new Thickness(10, 8),
             CornerRadius = new CornerRadius(12)
         };
+
+        b.Click += (_, _) =>
+        {
+            if (_section == "employees")
+                action();
+            else
+                ShowMessage("CRUD disponibile in questa fase solo per Dipendenti.");
+        };
+
         ToolTip.SetTip(b, tooltip);
         return b;
     }

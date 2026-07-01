@@ -224,22 +224,82 @@ public sealed class MasterDataService
         var result = new List<EmployeeMasterData>();
 
         while (reader.Read())
-        {
-            result.Add(new EmployeeMasterData
-            {
-                Id = reader.GetInt32(0),
-                FullName = reader.GetString(1),
-                Email = ReadString(reader, 2),
-                Phone = ReadString(reader, 3),
-                Role = ReadString(reader, 4),
-                DepartmentId = reader.GetInt32(5),
-                SiteId = reader.GetInt32(6),
-                IsActive = reader.GetInt32(7) == 1,
-                Notes = ReadString(reader, 8)
-            });
-        }
+            result.Add(ReadEmployee(reader));
 
         return result;
+    }
+
+
+    public EmployeeMasterData? GetEmployeeById(int id)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT Id, FullName, Email, Phone, Role, DepartmentId, SiteId, IsActive, Notes
+            FROM Employees
+            WHERE Id = $id;
+        """;
+        command.Parameters.AddWithValue("$id", id);
+
+        using var reader = command.ExecuteReader();
+
+        if (!reader.Read())
+            return null;
+
+        return ReadEmployee(reader);
+    }
+
+    public int CreateEmployee(EmployeeMasterData employee)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO Employees (FullName, Email, Phone, Role, DepartmentId, SiteId, IsActive, Notes)
+            VALUES ($FullName, $Email, $Phone, $Role, $DepartmentId, $SiteId, $IsActive, $Notes);
+            SELECT last_insert_rowid();
+        """;
+
+        AddEmployeeParameters(command, employee);
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    public void UpdateEmployee(EmployeeMasterData employee)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE Employees
+            SET FullName = $FullName,
+                Email = $Email,
+                Phone = $Phone,
+                Role = $Role,
+                DepartmentId = $DepartmentId,
+                SiteId = $SiteId,
+                IsActive = $IsActive,
+                Notes = $Notes
+            WHERE Id = $Id;
+        """;
+
+        command.Parameters.AddWithValue("$Id", employee.Id);
+        AddEmployeeParameters(command, employee);
+        command.ExecuteNonQuery();
+    }
+
+    public void DeleteEmployee(int id)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM Employees WHERE Id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
     }
 
     public IReadOnlyList<Supplier> GetSuppliers()
@@ -336,6 +396,35 @@ public sealed class MasterDataService
             ('HP Partner', '', '', 'partner@hp.example', '', 'Stampanti', 'Fornitore demo'),
             ('Assistenza IT Esterna', '', '', 'service@example.local', '', 'Servizi IT', 'Fornitore demo');
         """);
+    }
+
+
+    private static EmployeeMasterData ReadEmployee(SqliteDataReader reader)
+    {
+        return new EmployeeMasterData
+        {
+            Id = reader.GetInt32(0),
+            FullName = reader.GetString(1),
+            Email = ReadString(reader, 2),
+            Phone = ReadString(reader, 3),
+            Role = ReadString(reader, 4),
+            DepartmentId = reader.GetInt32(5),
+            SiteId = reader.GetInt32(6),
+            IsActive = reader.GetInt32(7) == 1,
+            Notes = ReadString(reader, 8)
+        };
+    }
+
+    private static void AddEmployeeParameters(SqliteCommand command, EmployeeMasterData employee)
+    {
+        command.Parameters.AddWithValue("$FullName", employee.FullName);
+        command.Parameters.AddWithValue("$Email", employee.Email);
+        command.Parameters.AddWithValue("$Phone", employee.Phone);
+        command.Parameters.AddWithValue("$Role", employee.Role);
+        command.Parameters.AddWithValue("$DepartmentId", employee.DepartmentId);
+        command.Parameters.AddWithValue("$SiteId", employee.SiteId);
+        command.Parameters.AddWithValue("$IsActive", employee.IsActive ? 1 : 0);
+        command.Parameters.AddWithValue("$Notes", employee.Notes);
     }
 
     private static string ReadString(SqliteDataReader reader, int index)
