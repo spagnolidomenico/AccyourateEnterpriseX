@@ -1,5 +1,31 @@
 # Changelog
 
+## 12.0.2.1 Asset UX Polish
+
+- Pannello dettagli Asset Management reso scrollabile.
+- Lista asset e dettagli con scroll indipendente.
+- Aggiunto pulsante Aggiorna nella toolbar.
+- Migliorata adattività del layout.
+
+
+## 12.0.2 Asset Management Workspace Module
+
+- Aggiunto `AssetManagementView`.
+- Aggiunto `AssetManagementWorkspaceModule`.
+- Asset Management registrato nella Workspace.
+- Aggiunti KPI, ricerca, filtri e pannello dettagli.
+- Aggiunti placeholder per Nuovo Asset, Importa Excel, Esporta Excel.
+
+
+## 12.0.1 Asset Database Foundation
+
+- Aggiunti modelli Asset Management.
+- Aggiunto AssetService con database SQLite locale.
+- Aggiunte tabelle Assets, Employees, AssetAssignments, MaintenanceTickets, AssetDocuments e AssetCredentials.
+- Aggiunti dati demo iniziali.
+- Nessuna UI Asset ancora introdotta.
+
+
 ## 11.1.0 RC3.1 Internal Workspace Opening
 
 - AI Assistant, Action Engine e Universal Command Bar aperti come tab dai pulsanti principali.

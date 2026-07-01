@@ -14,6 +14,7 @@ using DigitalTwinWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModul
 using AiAssistantWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.AiAssistantWorkspaceModule;
 using ActionEngineWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.ActionEngineWorkspaceModule;
 using UniversalCommandBarWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.UniversalCommandBarWorkspaceModule;
+using AssetManagementWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.AssetManagementWorkspaceModule;
 
 namespace Accyourate.App;
 
@@ -43,7 +44,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleFactory = new WorkspaceModuleFactory(_database, _user);
         RegisterWorkspaceModules();
 
-        Title = "Accyourate Enterprise X 11.1.0 RC3.1 - Internal Workspace Opening";
+        Title = "Accyourate Enterprise X 12.0.2.1 - Asset UX Polish";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -63,6 +64,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleRegistry.Register(new AiAssistantWorkspaceModuleCore(_database, _user));
         _moduleRegistry.Register(new ActionEngineWorkspaceModuleCore(_database, _user));
         _moduleRegistry.Register(new UniversalCommandBarWorkspaceModuleCore(_database, _user, Navigate));
+        _moduleRegistry.Register(new AssetManagementWorkspaceModuleCore());
     }
 
     private Control BuildLayout()
@@ -154,6 +156,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         AddMenu(menu, "AX", "Action Engine", "action-engine", "Action Engine");
         AddMenu(menu, "⌕", "Universal Command Bar", "universal-command-bar", "Universal Command Bar");
         AddMenu(menu, AxIcons.Dashboard, "Dashboard", "dashboard", "Dashboard");
+        AddMenu(menu, "IT", "Asset Management", "asset-management", "Asset Management");
         AddMenu(menu, AxIcons.Analytics, "Analytics", "analytics", "Analytics");
         AddMenu(menu, AxIcons.Medical, "Medical", "medical", "Medical Device Suite");
         AddMenu(menu, "DT", "Digital Twin", "digital-twin", "Digital Twin Platform");
@@ -221,7 +224,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 11.1.0 RC3.1"), 2, 0);
+        Add(grid, StatusText("Versione: 12.0.2.1"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border

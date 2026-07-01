@@ -1,14 +1,11 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "11.1.0-rc3.1-internal-workspace-opening",
+  "version": "12.0.2.1-asset-ux-polish",
   "type": "hotfix",
-  "fixes": [
-    "AI Assistant opened as external window from buttons",
-    "Action Engine opened as external window from sidebar",
-    "Universal Command Bar opened as external window from buttons"
-  ],
   "features": [
-    "UniversalCommandBarView",
-    "UniversalCommandBarWorkspaceModule"
+    "scrollable asset details panel",
+    "independent asset list scroll",
+    "asset toolbar refresh button",
+    "responsive asset layout"
   ]
 }

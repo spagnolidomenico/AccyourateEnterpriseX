@@ -1,3 +1,59 @@
+# Accyourate Enterprise X - 12.0.2.1 Asset UX Polish
+
+## Novità
+
+- Migliorata la schermata Asset Management.
+- Pannello dettagli scrollabile.
+- Scroll indipendente tra lista e dettagli.
+- Pulsante Aggiorna nella toolbar.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
+# Accyourate Enterprise X - 12.0.2 Asset Management Workspace Module
+
+## Novità
+
+- Primo modulo business: Asset Management.
+- Apertura come tab nella Workspace.
+- KPI, ricerca, filtri e dettagli asset.
+- Dati demo caricati da `AssetService`.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
+# Accyourate Enterprise X - 12.0.1 Asset Database Foundation
+
+## Novità
+
+- Fondazione database Asset Management.
+- Modelli dominio Asset.
+- `AssetService`.
+- Database SQLite locale dedicato agli asset.
+- Dati demo iniziali.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+## Nota
+
+Questo sprint non aggiunge ancora la schermata Asset Management.
+
+---
+
 # Accyourate Enterprise X - 11.1.0 RC3.1 Internal Workspace Opening
 
 ## Correzione
@@ -2057,6 +2113,9 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
+
+
 
 
 

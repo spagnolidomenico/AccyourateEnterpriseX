@@ -486,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 11.1.0 RC3.1: Internal Workspace Opening."
+            Text = "Versione 12.0.2.1: Asset UX Polish."
         });
 
         var cards = new Grid
