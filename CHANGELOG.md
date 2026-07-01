@@ -1,5 +1,18 @@
 # Changelog
 
+## 13.0.1 RC2 EnterpriseToolbar Build Fix
+
+- Corretto errore CS1503 in `EnterpriseToolbar.cs`.
+- Allineata la firma del metodo interno `Button()` alle chiamate dei metodi `AddPrimary`, `AddSecondary`, `AddDanger` e `AddPlaceholder`.
+
+
+## 13.0.1 Enterprise UI Framework
+
+- Aggiunti controlli UI condivisi sotto `UIFramework/Controls`.
+- Aggiunti EnterpriseKpiCard, EnterpriseToolbar, EnterpriseSearchBar, EnterpriseDetailsPanel, EnterpriseStatusBadge, EnterpriseSectionHeader, EnterpriseCard e EnterpriseDialogBase.
+- Nessuna modifica visiva massiva ai moduli esistenti.
+
+
 ## 12.0.6 Master Data Workspace
 
 - Aggiunto `MasterDataView`.

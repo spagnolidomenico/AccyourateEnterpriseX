@@ -1,3 +1,33 @@
+# Accyourate Enterprise X - 13.0.1 RC2 EnterpriseToolbar Build Fix
+
+## Correzione
+
+Risolto errore di compilazione in `EnterpriseToolbar.cs`.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
+# Accyourate Enterprise X - 13.0.1 Enterprise UI Framework
+
+## Novità
+
+- Prima libreria interna di componenti UI enterprise.
+- Componenti riutilizzabili per KPI, toolbar, ricerca, pannelli dettagli, badge e dialog.
+- Base per ridurre duplicazioni tra Asset Management, Master Data e moduli futuri.
+
+## Test rapido
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-smoke.ps1
+```
+
+---
+
 # Accyourate Enterprise X - 12.0.6 Master Data Workspace
 
 ## Novità
@@ -2181,6 +2211,8 @@ dotnet restore AccyourateEnterpriseX.sln
 dotnet build AccyourateEnterpriseX.sln
 dotnet run --project src\Accyourate.App\Accyourate.App.csproj
 ```
+
+
 
 
 

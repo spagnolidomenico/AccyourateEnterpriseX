@@ -1,13 +1,11 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "12.0.6-master-data-workspace",
-  "type": "patch",
-  "features": [
-    "MasterDataView",
-    "MasterDataWorkspaceModule",
-    "Master Data tab",
-    "Master Data KPI",
-    "Master Data sections"
+  "version": "13.0.1-rc2-enterprise-toolbar-build-fix",
+  "type": "hotfix",
+  "fixes": [
+    "EnterpriseToolbar CS1503 string to IBrush"
   ],
-  "visible_changes": true
+  "files": [
+    "src/Accyourate.App/UIFramework/Controls/EnterpriseToolbar.cs"
+  ]
 }

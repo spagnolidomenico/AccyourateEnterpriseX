@@ -3,6 +3,59 @@
 ## Sprint attivo
 
 ```text
+13.0.1 RC2 - EnterpriseToolbar Build Fix
+```
+
+## Obiettivo
+
+Correggere la build del nuovo Enterprise UI Framework.
+
+## Esito atteso
+
+- Build locale verde.
+- GitHub Actions verde.
+
+---
+
+## Stato precedente
+
+# Accyourate Enterprise X - Project Status
+
+## Branch attivo
+
+```text
+feature/13.0.1-enterprise-ui-framework
+```
+
+## Sprint attivo
+
+```text
+13.0.1 - Enterprise UI Framework Foundation
+```
+
+## Obiettivo
+
+Introdurre componenti UI condivisi per i moduli enterprise.
+
+## Versione 13 - Enterprise Platform
+
+| Sprint | Obiettivo | Stato |
+|---|---|---|
+| 13.0.1 | Enterprise UI Framework Foundation | 🔄 In validazione |
+| 13.0.2 | UI Framework Adoption | ⏳ Pianificato |
+| 13.0.3 | Generic CRUD Engine | ⏳ Pianificato |
+| 13.0.4 | Audit & Logging | ⏳ Pianificato |
+| 13.0.5 | Notification Center | ⏳ Pianificato |
+
+---
+
+## Stato precedente
+
+# Accyourate Enterprise X - Project Status
+
+## Sprint attivo
+
+```text
 12.0.6 - Enterprise Master Data Workspace
 ```
 
@@ -234,6 +287,8 @@ v11.1.0-rc3.1 validata e taggata
 ## Regola
 
 Nessun codice Asset Management verrà scritto prima dell'approvazione del dominio.
+
+
 
 
 
