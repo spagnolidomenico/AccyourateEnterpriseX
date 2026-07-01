@@ -55,7 +55,11 @@ public sealed class EnterpriseToolbar : StackPanel
             CornerRadius = new CornerRadius(12)
         };
 
-        b.Click += (_, _) => action();
+        b.Click += (_, e) =>
+        {
+            e.Handled = true;
+            action();
+        };
 
         if (!string.IsNullOrWhiteSpace(tooltip))
             ToolTip.SetTip(b, tooltip);

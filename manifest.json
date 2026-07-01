@@ -1,9 +1,8 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "13.0.2-ui-framework-adoption-kpi",
-  "type": "patch",
-  "features": [
-    "Asset Management KPI migrated to EnterpriseKpiCard"
-  ],
-  "visible_changes": false
+  "version": "13.0.5.1-enterprise-toolbar-click-hotfix",
+  "type": "hotfix",
+  "fixes": [
+    "EnterpriseToolbar button click propagation"
+  ]
 }

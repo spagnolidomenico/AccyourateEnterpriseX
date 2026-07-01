@@ -486,7 +486,7 @@ public sealed class MainWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Versione 13.0.2: UI Framework Adoption KPI."
+            Text = "Versione 13.0.5: EnterpriseToolbar Adoption."
         });
 
         var cards = new Grid

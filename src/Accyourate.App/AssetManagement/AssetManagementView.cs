@@ -69,7 +69,7 @@ public sealed class AssetManagementView : UserControl
         var toolbar = new Grid
         {
             Margin = new Thickness(24, 0, 24, 16),
-            ColumnDefinitions = new ColumnDefinitions("*,170,170,120,120,130,130")
+            ColumnDefinitions = new ColumnDefinitions("*,170,170,Auto,Auto,Auto,Auto")
         };
 
         _search.Watermark = "Cerca per codice, categoria, modello, seriale, stato...";
@@ -86,10 +86,17 @@ public sealed class AssetManagementView : UserControl
         Add(toolbar, _search, 0, 0);
         Add(toolbar, _category, 1, 0);
         Add(toolbar, _status, 2, 0);
-        Add(toolbar, ToolbarButton("↻ Aggiorna", "Ricarica asset", Load), 3, 0);
-        Add(toolbar, ToolbarButton("+ Nuovo", "Crea un nuovo asset", OpenNewAsset), 4, 0);
-        Add(toolbar, ToolbarButton("Importa Excel", "Prossimo sprint: importazione Excel"), 5, 0);
-        Add(toolbar, ToolbarButton("Esporta Excel", "Prossimo sprint: esportazione Excel"), 6, 0);
+
+        var actions = new EnterpriseToolbar()
+            .AddSecondary("↻ Aggiorna", Load, "Ricarica asset")
+            .AddPrimary("+ Nuovo", OpenNewAsset, "Crea un nuovo asset")
+            .AddPlaceholder("Importa Excel", "Prossimo sprint: importazione Excel")
+            .AddPlaceholder("Esporta Excel", "Prossimo sprint: esportazione Excel");
+
+        Grid.SetColumn(actions, 3);
+        Grid.SetColumnSpan(actions, 4);
+        Grid.SetRow(actions, 0);
+        toolbar.Children.Add(actions);
 
         DockPanel.SetDock(toolbar, Dock.Top);
         root.Children.Add(toolbar);
