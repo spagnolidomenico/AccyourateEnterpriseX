@@ -1,11 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "14.0.0-core-platform-refactoring-blueprint",
-  "type": "documentation",
+  "version": "14.0.1-architecture-baseline",
+  "type": "architecture",
   "visible_changes": false,
-  "files": [
-    "docs/core-platform/V14_0_0_CORE_PLATFORM_REFACTORING_BLUEPRINT.md",
-    "docs/core-platform/V14_REFACTORING_ROADMAP.md",
-    "docs/architecture-decisions/ADR-0023-Core-Platform-Refactoring.md"
+  "features": [
+    "Accyourate.Domain project",
+    "Accyourate.Core project",
+    "Accyourate.Infrastructure project",
+    "Accyourate.Shared project",
+    "Initial domain entities",
+    "Initial repository contracts"
   ]
 }
