@@ -27,6 +27,7 @@ public sealed class WorkspaceModuleFactory
         {
             "workspace-home" => WorkspaceHome(),
             "control-room" => new WidgetControlRoomBuilder(_database, _user).Build(() => { }),
+            "ai-catalog" => IntentCatalogSummary(),
             "dashboard" => DashboardWorkspace(),
             "analytics" => AnalyticsWorkspace(),
             "medical" => MedicalWorkspace(),
@@ -36,6 +37,17 @@ public sealed class WorkspaceModuleFactory
             "architecture" => ArchitectureSummary(),
             _ => Placeholder(moduleId)
         };
+    }
+
+    private Control IntentCatalogSummary()
+    {
+        return SummaryPage("AI Intent Catalog", "Catalogo intenti AI integrato nella Workspace.", new[]
+        {
+            "Intenti disponibili",
+            "Azioni collegate",
+            "Routing verso Action Engine",
+            "Base futura per comandi AI contestuali"
+        });
     }
 
     private Control WorkspaceHome()

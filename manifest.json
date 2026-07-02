@@ -1,12 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "14.1.0A-asset-assignment-engine-foundation",
-  "type": "feature-foundation",
-  "visible_changes": false,
-  "features": [
-    "AssetAssignmentEngine",
-    "Master Data to Asset employee bridge",
-    "Safe asset assignment backend",
-    "Asset return backend"
+  "version": "14.1.0B-workspace-tab-routing-fix",
+  "type": "fix",
+  "visible_changes": true,
+  "fixes": [
+    "AI Intent Catalog external window",
+    "Analytics external/non-tab route",
+    "Medical Device Suite external/non-tab route",
+    "Branding Center external/non-tab route",
+    "Design System external/non-tab route",
+    "Enterprise Architecture external/non-tab route"
   ]
 }

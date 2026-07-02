@@ -154,7 +154,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         AddMenu(menu, AxIcons.Home, "Home", "workspace-home", "Workspace Home");
         AddMenu(menu, AxIcons.ControlRoom, "Control Room", "control-room", "Enterprise Control Room");
         AddMenu(menu, "AI", "AI Assistant", "ai-assistant", "AI Assistant");
-        menu.Children.Add(ExternalButton("AI  AI Intent Catalog", () => new AiIntentCatalogManagerWindow().Show()));
+        AddMenu(menu, "AI", "AI Intent Catalog", "ai-catalog", "AI Intent Catalog");
         AddMenu(menu, "AX", "Action Engine", "action-engine", "Action Engine");
         AddMenu(menu, "⌕", "Universal Command Bar", "universal-command-bar", "Universal Command Bar");
         AddMenu(menu, AxIcons.Dashboard, "Dashboard", "dashboard", "Dashboard");
@@ -243,13 +243,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         if (OpenRegisteredWorkspaceModule(moduleId))
             return;
 
-if (moduleId == "ai-catalog")
-        {
-            new AiIntentCatalogManagerWindow().Show();
-            return;
-        }
-
-        if (OpenRegisteredWorkspaceModule(moduleId))
+if (OpenRegisteredWorkspaceModule(moduleId))
             return;
 
 _navigation.CurrentModuleId = moduleId;
@@ -265,6 +259,13 @@ _navigation.CurrentModuleId = moduleId;
 if (moduleId == "digital-twin")
         {
             _content.Content = OpenWorkspaceModuleTab("digital-twin", "Digital Twin", "DT", true, false);
+            return;
+        }
+
+
+        if (IsWorkspaceTabModule(moduleId))
+        {
+            _content.Content = OpenWorkspaceModuleTab(moduleId, title, WorkspaceTabIcon(moduleId), true, false);
             return;
         }
 
@@ -313,6 +314,32 @@ if (moduleId == "digital-twin")
         return _digitalTwinTabHost;
     }
 
+
+
+    private static bool IsWorkspaceTabModule(string moduleId)
+    {
+        return moduleId is
+            "ai-catalog" or
+            "analytics" or
+            "medical" or
+            "branding" or
+            "design-system" or
+            "architecture";
+    }
+
+    private static string WorkspaceTabIcon(string moduleId)
+    {
+        return moduleId switch
+        {
+            "ai-catalog" => "AI",
+            "analytics" => AxIcons.Analytics,
+            "medical" => AxIcons.Medical,
+            "branding" => AxIcons.Branding,
+            "design-system" => AxIcons.Design,
+            "architecture" => AxIcons.Architecture,
+            _ => "•"
+        };
+    }
 
     private bool OpenRegisteredWorkspaceModule(string moduleId)
     {
