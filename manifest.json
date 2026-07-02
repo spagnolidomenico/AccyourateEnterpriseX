@@ -1,11 +1,9 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "BRAND-004-adaptive-login-logo",
-  "type": "ui-tweak",
-  "visible_changes": true,
-  "features": [
-    "Wider adaptive company logo area",
-    "Supports square and rectangular logos",
-    "Removed Microsoft and Azure login buttons"
+  "version": "14.1.0D1-fix-assign-asset-duplicate",
+  "type": "fix",
+  "visible_changes": false,
+  "fixes": [
+    "CS0111 duplicate OpenAssignAsset method in AssetManagementView"
   ]
 }

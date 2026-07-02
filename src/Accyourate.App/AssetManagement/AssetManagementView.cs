@@ -11,6 +11,7 @@ namespace Accyourate.App.AssetManagement;
 public sealed class AssetManagementView : UserControl
 {
     private readonly AssetService _service = new();
+    private readonly AssetAssignmentEngine _assignmentEngine = new();
 
     private readonly TextBox _search = new();
     private readonly ComboBox _category = new();
@@ -90,6 +91,7 @@ public sealed class AssetManagementView : UserControl
         var actions = new EnterpriseToolbar()
             .AddSecondary("↻ Aggiorna", Load, "Ricarica asset")
             .AddPrimary("+ Nuovo", OpenNewAsset, "Crea un nuovo asset")
+            .AddSecondary("Assegna", OpenAssignAsset, "Assegna un asset a un dipendente")
             .AddPlaceholder("Importa Excel", "Prossimo sprint: importazione Excel")
             .AddPlaceholder("Esporta Excel", "Prossimo sprint: esportazione Excel");
 
@@ -254,6 +256,7 @@ public sealed class AssetManagementView : UserControl
     private Control DetailsCard(Asset asset)
     {
         var stack = new StackPanel { Spacing = 12 };
+        var assignment = _assignmentEngine.GetActiveAssignmentForAsset(asset.Id);
 
         stack.Children.Add(new TextBlock
         {
@@ -273,15 +276,18 @@ public sealed class AssetManagementView : UserControl
 
         var actions = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            ColumnDefinitions = new ColumnDefinitions("*,*,*,*"),
             Margin = new Thickness(0, 4, 0, 8)
         };
         Add(actions, SmallButton("Modifica", () => OpenEditAsset(asset)), 0, 0);
         Add(actions, SmallButton("Elimina", () => DeleteAsset(asset), true), 1, 0);
+        Add(actions, SmallButton("Assegna", () => OpenAssignAsset(asset)), 2, 0);
+        Add(actions, SmallButton("Restituisci", () => ReturnAsset(asset), true), 3, 0);
         stack.Children.Add(actions);
 
         stack.Children.Add(Info("Categoria", asset.Category));
         stack.Children.Add(Info("Stato", asset.Status));
+        stack.Children.Add(Info("Assegnato a", assignment?.EmployeeName ?? "—"));
         stack.Children.Add(Info("Seriale", asset.SerialNumber));
         stack.Children.Add(Info("Asset Tag", asset.AssetTag));
         stack.Children.Add(Info("Sistema operativo", asset.OperatingSystem));
@@ -295,14 +301,16 @@ public sealed class AssetManagementView : UserControl
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Prossimi step",
+            Text = "Assegnazione",
             FontWeight = FontWeight.Bold,
             Foreground = UiTokens.Brush(UiTokens.TextPrimary)
         });
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Assegnazioni, manutenzioni, documenti, QR Code e import/export Excel.",
+            Text = assignment is null
+                ? "Asset attualmente non assegnato."
+                : $"Assegnato a {assignment.EmployeeName} il {FormatDate(assignment.AssignedAt)}.",
             TextWrapping = TextWrapping.Wrap,
             Foreground = UiTokens.Brush(UiTokens.TextSecondary)
         });
@@ -318,6 +326,64 @@ public sealed class AssetManagementView : UserControl
             TextWrapping = TextWrapping.Wrap,
             Foreground = UiTokens.Brush(UiTokens.TextSecondary)
         });
+    }
+
+
+    private async void OpenAssignAsset()
+    {
+        await OpenAssignAsset(null);
+    }
+
+    private async Task OpenAssignAsset(Asset? asset)
+    {
+        try
+        {
+            _assignmentEngine.SyncEmployeesFromMasterData();
+
+            var dialog = new AssetAssignmentDialog(_assignmentEngine, asset?.Id);
+            var result = await ShowAssignmentDialog(dialog);
+            if (result is null)
+                return;
+
+            _assignmentEngine.AssignAsset(result.AssetId, result.MasterEmployeeId, "Asset Management", result.Notes);
+            ShowMessage("Asset assegnato correttamente.");
+            Load();
+        }
+        catch (Exception ex)
+        {
+            ShowMessage($"Errore assegnazione asset: {ex.Message}", true);
+        }
+    }
+
+    private void ReturnAsset(Asset asset)
+    {
+        try
+        {
+            var assignment = _assignmentEngine.GetActiveAssignmentForAsset(asset.Id);
+            if (assignment is null)
+            {
+                ShowMessage("Questo asset non ha assegnazioni attive.", true);
+                return;
+            }
+
+            _assignmentEngine.ReturnAssignment(assignment.AssignmentId, "Restituito da Asset Management.");
+            ShowMessage("Asset restituito correttamente.");
+            Load();
+        }
+        catch (Exception ex)
+        {
+            ShowMessage($"Errore restituzione asset: {ex.Message}", true);
+        }
+    }
+
+    private async Task<AssetAssignmentDialogResult?> ShowAssignmentDialog(AssetAssignmentDialog dialog)
+    {
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        if (owner is not null)
+            return await dialog.ShowDialog<AssetAssignmentDialogResult?>(owner);
+
+        dialog.Show();
+        return null;
     }
 
     private async void OpenNewAsset()
