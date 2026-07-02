@@ -1,11 +1,11 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "14.1.0C-branded-login-startup",
-  "type": "fix",
+  "version": "BRAND-004-adaptive-login-logo",
+  "type": "ui-tweak",
   "visible_changes": true,
   "features": [
-    "Branded login startup integration",
-    "Functional BrandedSplashLoginWindow login",
-    "Branding Center preview compatibility"
+    "Wider adaptive company logo area",
+    "Supports square and rectangular logos",
+    "Removed Microsoft and Azure login buttons"
   ]
 }

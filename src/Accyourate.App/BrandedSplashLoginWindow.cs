@@ -46,10 +46,10 @@ public sealed class BrandedSplashLoginWindow : Window
     private void BuildWindow(string title)
     {
         Title = title;
-        Width = 1420;
-        Height = 900;
-        MinWidth = 1180;
-        MinHeight = 760;
+        Width = 1180;
+        Height = 760;
+        MinWidth = 980;
+        MinHeight = 680;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Background = Brush.Parse(Navy);
         Content = BuildLayout();
@@ -59,7 +59,7 @@ public sealed class BrandedSplashLoginWindow : Window
     {
         var root = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("*,420")
+            ColumnDefinitions = new ColumnDefinitions("*,380")
         };
 
         Add(root, BuildHero(), 0, 0);
@@ -101,7 +101,7 @@ public sealed class BrandedSplashLoginWindow : Window
 
         var content = new StackPanel
         {
-            Margin = new Thickness(64, 58, 48, 42),
+            Margin = new Thickness(44, 38, 34, 30),
             Spacing = 24
         };
 
@@ -117,14 +117,14 @@ public sealed class BrandedSplashLoginWindow : Window
         {
             Text = Safe(_branding.HeroTitle, "Accyourate Enterprise X"),
             Foreground = Brushes.White,
-            FontSize = 58,
+            FontSize = 44,
             FontWeight = FontWeight.Bold,
             TextWrapping = TextWrapping.Wrap
         });
 
         content.Children.Add(new Border
         {
-            Width = 58,
+            Width = 48,
             Height = 3,
             Background = Brush.Parse(Blue),
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left,
@@ -135,7 +135,7 @@ public sealed class BrandedSplashLoginWindow : Window
         {
             Text = Safe(_branding.HeroSubtitle, "La piattaforma integrata per aziende che guardano avanti."),
             Foreground = Brush.Parse("#F3F4F6"),
-            FontSize = 24,
+            FontSize = 20,
             FontWeight = FontWeight.SemiBold,
             TextWrapping = TextWrapping.Wrap,
             MaxWidth = 620
@@ -170,7 +170,7 @@ public sealed class BrandedSplashLoginWindow : Window
         var outer = new Border
         {
             Background = Brush.Parse("#F8FAFC"),
-            Padding = new Thickness(32)
+            Padding = new Thickness(24)
         };
 
         var stack = new StackPanel
@@ -179,21 +179,24 @@ public sealed class BrandedSplashLoginWindow : Window
             Spacing = 18
         };
 
+        stack.Children.Add(BuildCompanyLogo());
+
         stack.Children.Add(new TextBlock
         {
-            Text = "X",
-            FontSize = 84,
+            Text = Safe(_branding.CompanyName, "Accyourate Group"),
+            FontSize = 22,
             FontWeight = FontWeight.Bold,
-            Foreground = Brush.Parse(Blue),
+            Foreground = Brush.Parse("#111827"),
+            TextAlignment = TextAlignment.Center,
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
         });
 
         stack.Children.Add(new TextBlock
         {
             Text = Safe(_branding.ProductTitle, "Accyourate Enterprise X"),
-            FontSize = 30,
-            FontWeight = FontWeight.Bold,
-            Foreground = Brush.Parse("#111827"),
+            FontSize = 15,
+            FontWeight = FontWeight.SemiBold,
+            Foreground = Brush.Parse("#64748B"),
             TextAlignment = TextAlignment.Center,
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
         });
@@ -204,7 +207,7 @@ public sealed class BrandedSplashLoginWindow : Window
             FontSize = 20,
             FontWeight = FontWeight.Bold,
             Foreground = Brush.Parse("#111827"),
-            Margin = new Thickness(0, 22, 0, 0)
+            Margin = new Thickness(0, 14, 0, 0)
         });
 
         _usernameBox.Text = "admin";
@@ -228,7 +231,7 @@ public sealed class BrandedSplashLoginWindow : Window
             Foreground = Brushes.White,
             FontSize = 17,
             FontWeight = FontWeight.Bold,
-            Padding = new Thickness(16, 12),
+            Padding = new Thickness(14, 10),
             CornerRadius = new CornerRadius(12)
         };
         login.Click += (_, _) => Login();
@@ -243,10 +246,6 @@ public sealed class BrandedSplashLoginWindow : Window
             TextAlignment = TextAlignment.Center,
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
         });
-
-        stack.Children.Add(new Separator { Margin = new Thickness(0, 12) });
-        stack.Children.Add(AltButton("Microsoft Account"));
-        stack.Children.Add(AltButton("Azure Active Directory"));
 
         stack.Children.Add(new TextBlock
         {
@@ -281,6 +280,75 @@ public sealed class BrandedSplashLoginWindow : Window
         }
 
         _errorText.Text = "Username o password non validi.";
+    }
+
+
+    private Control BuildCompanyLogo()
+    {
+        var logo = TryLoadCompanyLogo();
+
+        if (logo is not null)
+        {
+            return new Border
+            {
+                Width = 260,
+                Height = 118,
+                Background = Brushes.White,
+                BorderBrush = Brush.Parse("#E2E8F0"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(22),
+                Padding = new Thickness(16),
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                Child = new Image
+                {
+                    Source = logo,
+                    Stretch = Avalonia.Media.Stretch.Uniform,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+                }
+            };
+        }
+
+        var initials = Safe(_branding.CompanyName, "Accyourate Group")
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(x => x[0].ToString().ToUpperInvariant());
+
+        return new Border
+        {
+            Width = 260,
+            Height = 118,
+            Background = Brush.Parse(Blue),
+            CornerRadius = new CornerRadius(22),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            Child = new TextBlock
+            {
+                Text = string.Join("", initials),
+                Foreground = Brushes.White,
+                FontSize = 38,
+                FontWeight = FontWeight.Bold,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            }
+        };
+    }
+
+    private Bitmap? TryLoadCompanyLogo()
+    {
+        var possiblePaths = new[]
+        {
+            _branding.LogoPath,
+            Path.Combine(AppContext.BaseDirectory, "Assets", "Branding", "company_logo.png"),
+            Path.Combine(AppContext.BaseDirectory, "Assets", "Branding", "logo.png")
+        };
+
+        foreach (var path in possiblePaths)
+        {
+            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                return new Bitmap(path);
+        }
+
+        return null;
     }
 
     private Bitmap? TryLoadHeroImage()
@@ -332,9 +400,9 @@ public sealed class BrandedSplashLoginWindow : Window
     {
         var strip = new WrapPanel
         {
-            Margin = new Thickness(0, 26, 0, 0),
-            ItemWidth = 128,
-            ItemHeight = 64
+            Margin = new Thickness(0, 18, 0, 0),
+            ItemWidth = 112,
+            ItemHeight = 54
         };
 
         strip.Children.Add(Module("ERP", "Gestione risorse"));
@@ -380,20 +448,6 @@ public sealed class BrandedSplashLoginWindow : Window
             Padding = new Thickness(12),
             Background = Brushes.White,
             Child = stack
-        };
-    }
-
-    private static Button AltButton(string text)
-    {
-        return new Button
-        {
-            Content = text,
-            Background = Brushes.White,
-            Foreground = Brush.Parse("#1F2937"),
-            BorderBrush = Brush.Parse("#CBD5E1"),
-            BorderThickness = new Thickness(1),
-            Padding = new Thickness(14, 10),
-            CornerRadius = new CornerRadius(10)
         };
     }
 
