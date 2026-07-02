@@ -1,13 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "14.0.4-repository-adoption-foundation",
-  "type": "architecture",
+  "version": "14.1.0A-asset-assignment-engine-foundation",
+  "type": "feature-foundation",
   "visible_changes": false,
   "features": [
-    "Database context factory",
-    "Named database constants",
-    "MasterDataEmployeeRepository",
-    "AssetDatabaseAssetRepository",
-    "EmployeeMapper"
+    "AssetAssignmentEngine",
+    "Master Data to Asset employee bridge",
+    "Safe asset assignment backend",
+    "Asset return backend"
   ]
 }
