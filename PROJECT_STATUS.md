@@ -3,19 +3,19 @@
 ## Sprint attivo
 
 ```text
-14.0.0 - Core Platform Refactoring Blueprint
+14.0.4A - Employee Unification Preflight
 ```
 
 ## Obiettivo
 
-Definire il piano ufficiale di refactoring della piattaforma core.
+Preparare l'unificazione dipendenti tramite ispezione non invasiva dei database reali.
 
 ## Stato
 
-La patch è documentale e non modifica codice applicativo.
+Patch documentale + script diagnostici.
 
 ## Prossimo sprint
 
 ```text
-14.0.1 - Architecture Baseline
+14.0.4B - Employee Sync Bridge
 ```
