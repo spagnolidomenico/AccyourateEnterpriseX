@@ -1,14 +1,11 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "14.1.0B-workspace-tab-routing-fix",
+  "version": "14.1.0C-branded-login-startup",
   "type": "fix",
   "visible_changes": true,
-  "fixes": [
-    "AI Intent Catalog external window",
-    "Analytics external/non-tab route",
-    "Medical Device Suite external/non-tab route",
-    "Branding Center external/non-tab route",
-    "Design System external/non-tab route",
-    "Enterprise Architecture external/non-tab route"
+  "features": [
+    "Branded login startup integration",
+    "Functional BrandedSplashLoginWindow login",
+    "Branding Center preview compatibility"
   ]
 }

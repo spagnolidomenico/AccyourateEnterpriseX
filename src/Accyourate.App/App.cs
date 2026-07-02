@@ -22,7 +22,7 @@ public sealed class App : Avalonia.Application
             database.Initialize();
 
             var auth = new AuthenticationService(database);
-            var loginWindow = new LoginWindow(auth);
+            var loginWindow = new BrandedSplashLoginWindow(database, auth);
 
             loginWindow.LoginSucceeded += user =>
             {

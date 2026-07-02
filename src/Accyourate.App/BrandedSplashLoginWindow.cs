@@ -4,32 +4,53 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Accyourate.App.Data;
 using Accyourate.App.Models;
+using Accyourate.App.Security;
 
 namespace Accyourate.App;
 
 public sealed class BrandedSplashLoginWindow : Window
 {
     private readonly DatabaseService _database;
-    private readonly CurrentUser _user;
-    private BrandingPreferenceRecord _branding;
+    private readonly AuthenticationService? _auth;
+    private readonly CurrentUser? _previewUser;
+    private readonly BrandingPreferenceRecord _branding;
+
+    private readonly TextBox _usernameBox = new();
+    private readonly TextBox _passwordBox = new();
+    private readonly TextBlock _errorText = new();
 
     private const string Navy = "#061426";
     private const string Blue = "#2F80FF";
     private const string Cyan = "#38BDF8";
-    private const string Panel = "#0B1728";
+
+    public event Action<CurrentUser>? LoginSucceeded;
+
+    public BrandedSplashLoginWindow(DatabaseService database, AuthenticationService auth)
+    {
+        _database = database;
+        _auth = auth;
+        _branding = _database.GetBrandingPreferences();
+
+        BuildWindow("Accyourate Enterprise X - Login");
+    }
 
     public BrandedSplashLoginWindow(DatabaseService database, CurrentUser user)
     {
         _database = database;
-        _user = user;
+        _previewUser = user;
         _branding = _database.GetBrandingPreferences();
 
-        Title = "Accyourate Enterprise X - Branded Splash & Login";
+        BuildWindow("Accyourate Enterprise X - Anteprima Splash/Login");
+    }
+
+    private void BuildWindow(string title)
+    {
+        Title = title;
         Width = 1420;
         Height = 900;
         MinWidth = 1180;
         MinHeight = 760;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Background = Brush.Parse(Navy);
         Content = BuildLayout();
     }
@@ -86,7 +107,7 @@ public sealed class BrandedSplashLoginWindow : Window
 
         content.Children.Add(new TextBlock
         {
-            Text = _branding.ProductTitle,
+            Text = Safe(_branding.ProductTitle, "Accyourate Enterprise X"),
             Foreground = Brushes.White,
             FontSize = 18,
             FontWeight = FontWeight.Bold
@@ -94,7 +115,7 @@ public sealed class BrandedSplashLoginWindow : Window
 
         content.Children.Add(new TextBlock
         {
-            Text = _branding.HeroTitle,
+            Text = Safe(_branding.HeroTitle, "Accyourate Enterprise X"),
             Foreground = Brushes.White,
             FontSize = 58,
             FontWeight = FontWeight.Bold,
@@ -112,7 +133,7 @@ public sealed class BrandedSplashLoginWindow : Window
 
         content.Children.Add(new TextBlock
         {
-            Text = _branding.HeroSubtitle,
+            Text = Safe(_branding.HeroSubtitle, "La piattaforma integrata per aziende che guardano avanti."),
             Foreground = Brush.Parse("#F3F4F6"),
             FontSize = 24,
             FontWeight = FontWeight.SemiBold,
@@ -121,10 +142,10 @@ public sealed class BrandedSplashLoginWindow : Window
         });
 
         var features = new StackPanel { Spacing = 18, Margin = new Thickness(0, 18, 0, 0) };
-        features.Children.Add(Feature("▧", _branding.Feature1Title, _branding.Feature1Text));
-        features.Children.Add(Feature("◇", _branding.Feature2Title, _branding.Feature2Text));
-        features.Children.Add(Feature("▥", _branding.Feature3Title, _branding.Feature3Text));
-        features.Children.Add(Feature("⌘", _branding.Feature4Title, _branding.Feature4Text));
+        features.Children.Add(Feature("▧", Safe(_branding.Feature1Title, "Gestione completa"), Safe(_branding.Feature1Text, "Moduli integrati per ogni area aziendale")));
+        features.Children.Add(Feature("◇", Safe(_branding.Feature2Title, "Sicurezza e conformità"), Safe(_branding.Feature2Text, "Protezione dei dati e conformità normativa")));
+        features.Children.Add(Feature("▥", Safe(_branding.Feature3Title, "Analytics avanzata"), Safe(_branding.Feature3Text, "Dati, KPI e report per decisioni migliori")));
+        features.Children.Add(Feature("⌘", Safe(_branding.Feature4Title, "Innovazione continua"), Safe(_branding.Feature4Text, "Tecnologia all'avanguardia per il tuo business")));
         content.Children.Add(features);
 
         content.Children.Add(new TextBlock
@@ -155,7 +176,7 @@ public sealed class BrandedSplashLoginWindow : Window
         var stack = new StackPanel
         {
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-            Spacing = 22
+            Spacing = 18
         };
 
         stack.Children.Add(new TextBlock
@@ -169,7 +190,7 @@ public sealed class BrandedSplashLoginWindow : Window
 
         stack.Children.Add(new TextBlock
         {
-            Text = _branding.ProductTitle,
+            Text = Safe(_branding.ProductTitle, "Accyourate Enterprise X"),
             FontSize = 30,
             FontWeight = FontWeight.Bold,
             Foreground = Brush.Parse("#111827"),
@@ -186,12 +207,23 @@ public sealed class BrandedSplashLoginWindow : Window
             Margin = new Thickness(0, 22, 0, 0)
         });
 
-        stack.Children.Add(InputBox("👤   Nome utente"));
-        stack.Children.Add(InputBox("🔒   Password"));
+        _usernameBox.Text = "admin";
+        _usernameBox.Watermark = "Nome utente";
+        stack.Children.Add(InputBox("👤 Nome utente", _usernameBox));
+
+        _passwordBox.Text = "admin123";
+        _passwordBox.PasswordChar = '●';
+        _passwordBox.Watermark = "Password";
+        stack.Children.Add(InputBox("🔒 Password", _passwordBox));
+
+        _errorText.Foreground = Brush.Parse("#DC2626");
+        _errorText.MinHeight = 24;
+        _errorText.TextWrapping = TextWrapping.Wrap;
+        stack.Children.Add(_errorText);
 
         var login = new Button
         {
-            Content = "→  Accedi",
+            Content = _auth is null ? "Anteprima login" : "→  Accedi",
             Background = Brush.Parse(Blue),
             Foreground = Brushes.White,
             FontSize = 17,
@@ -199,24 +231,56 @@ public sealed class BrandedSplashLoginWindow : Window
             Padding = new Thickness(16, 12),
             CornerRadius = new CornerRadius(12)
         };
+        login.Click += (_, _) => Login();
         stack.Children.Add(login);
 
-        stack.Children.Add(new Separator { Margin = new Thickness(0, 12) });
+        stack.Children.Add(new TextBlock
+        {
+            Text = _auth is null
+                ? $"Anteprima branding per {_previewUser?.Username ?? "utente"}"
+                : "Credenziali iniziali: admin / admin123",
+            Foreground = Brush.Parse("#64748B"),
+            TextAlignment = TextAlignment.Center,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+        });
 
+        stack.Children.Add(new Separator { Margin = new Thickness(0, 12) });
         stack.Children.Add(AltButton("Microsoft Account"));
         stack.Children.Add(AltButton("Azure Active Directory"));
 
         stack.Children.Add(new TextBlock
         {
-            Text = $"© 2026 {_branding.CompanyName}\n{_branding.IndustryLabel}",
+            Text = $"© 2026 {Safe(_branding.CompanyName, "Accyourate Group")}\n{Safe(_branding.IndustryLabel, "Enterprise Suite")}",
             Foreground = Brush.Parse("#6B7280"),
             TextAlignment = TextAlignment.Center,
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-            Margin = new Thickness(0, 28, 0, 0)
+            Margin = new Thickness(0, 24, 0, 0)
         });
 
         outer.Child = stack;
         return outer;
+    }
+
+    private void Login()
+    {
+        if (_auth is null)
+        {
+            _errorText.Text = "Anteprima branding: il login reale è attivo solo all'avvio dell'app.";
+            return;
+        }
+
+        var username = _usernameBox.Text?.Trim() ?? string.Empty;
+        var password = _passwordBox.Text ?? string.Empty;
+
+        var user = _auth.Login(username, password);
+
+        if (user is not null)
+        {
+            LoginSucceeded?.Invoke(user);
+            return;
+        }
+
+        _errorText.Text = "Username o password non validi.";
     }
 
     private Bitmap? TryLoadHeroImage()
@@ -297,20 +361,25 @@ public sealed class BrandedSplashLoginWindow : Window
         return stack;
     }
 
-    private static Border InputBox(string watermark)
+    private static Border InputBox(string label, TextBox textBox)
     {
+        var stack = new StackPanel { Spacing = 6 };
+        stack.Children.Add(new TextBlock
+        {
+            Text = label,
+            Foreground = Brush.Parse("#334155"),
+            FontWeight = FontWeight.SemiBold
+        });
+        stack.Children.Add(textBox);
+
         return new Border
         {
             BorderBrush = Brush.Parse("#CBD5E1"),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(10),
-            Padding = new Thickness(14, 13),
-            Child = new TextBlock
-            {
-                Text = watermark,
-                Foreground = Brush.Parse("#64748B"),
-                FontSize = 16
-            }
+            CornerRadius = new CornerRadius(12),
+            Padding = new Thickness(12),
+            Background = Brushes.White,
+            Child = stack
         };
     }
 
@@ -326,6 +395,11 @@ public sealed class BrandedSplashLoginWindow : Window
             Padding = new Thickness(14, 10),
             CornerRadius = new CornerRadius(10)
         };
+    }
+
+    private static string Safe(string value, string fallback)
+    {
+        return string.IsNullOrWhiteSpace(value) ? fallback : value;
     }
 
     private static void Add(Grid grid, Control control, int column, int row)
