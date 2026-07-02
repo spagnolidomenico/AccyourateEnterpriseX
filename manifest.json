@@ -1,9 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "14.1.0D1-fix-assign-asset-duplicate",
-  "type": "fix",
+  "version": "15.0.0-enterprise-foundation-blueprint",
+  "type": "documentation",
   "visible_changes": false,
-  "fixes": [
-    "CS0111 duplicate OpenAssignAsset method in AssetManagementView"
+  "features": [
+    "V15 Enterprise Foundation roadmap",
+    "Enterprise UX consolidation plan",
+    "ADR-0029",
+    "Release quality criteria"
   ]
 }

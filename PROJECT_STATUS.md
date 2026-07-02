@@ -1,21 +1,23 @@
 # Accyourate Enterprise X - Project Status
 
+## Release attiva
+
+```text
+15.0 - Enterprise Foundation
+```
+
 ## Sprint attivo
 
 ```text
-14.0.4A - Employee Unification Preflight
+15.0.0 - Enterprise Foundation Blueprint
 ```
 
 ## Obiettivo
 
-Preparare l'unificazione dipendenti tramite ispezione non invasiva dei database reali.
-
-## Stato
-
-Patch documentale + script diagnostici.
+Consolidare Accyourate Enterprise X come piattaforma enterprise stabile, coerente e professionale.
 
 ## Prossimo sprint
 
 ```text
-14.0.4B - Employee Sync Bridge
+15.0.1 - Enterprise Home
 ```
