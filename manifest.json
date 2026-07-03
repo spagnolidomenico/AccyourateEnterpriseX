@@ -1,13 +1,15 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "HR-002B-database-repository",
-  "type": "data",
+  "version": "HR-002C1-validation-framework",
+  "type": "business-rules",
   "visible_changes": false,
   "features": [
-    "HR SQLite database",
-    "HR repositories",
-    "EmployeeService",
-    "Audit and notification integration",
-    "HR seed data"
+    "ValidationResult",
+    "ValidationMessage",
+    "ValidationException",
+    "EmployeeValidator",
+    "DepartmentValidator",
+    "EmploymentContractValidator",
+    "EmployeeService validation"
   ]
 }

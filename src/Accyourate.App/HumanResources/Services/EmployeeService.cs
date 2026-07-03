@@ -1,5 +1,7 @@
 using Accyourate.App.HumanResources.Models;
 using Accyourate.App.HumanResources.Repositories;
+using Accyourate.App.HumanResources.Validators;
+using Accyourate.App.Platform.Validation;
 using Accyourate.App.Platform.Audit;
 using Accyourate.App.Platform.Notifications;
 
@@ -10,12 +12,14 @@ public sealed class EmployeeService
     private readonly EmployeeRepository _employees;
     private readonly AuditService _audit;
     private readonly NotificationService _notifications;
+    private readonly EmployeeValidator _validator;
 
-    public EmployeeService(EmployeeRepository? employees = null, AuditService? audit = null, NotificationService? notifications = null)
+    public EmployeeService(EmployeeRepository? employees = null, AuditService? audit = null, NotificationService? notifications = null, EmployeeValidator? validator = null)
     {
         _employees = employees ?? new EmployeeRepository();
         _audit = audit ?? new AuditService();
         _notifications = notifications ?? new NotificationService();
+        _validator = validator ?? new EmployeeValidator();
     }
 
     public IReadOnlyList<Employee> GetAll() => _employees.GetAll();
@@ -26,6 +30,10 @@ public sealed class EmployeeService
 
     public int Create(Employee employee, string userName = "System")
     {
+        var validation = _validator.Validate(employee);
+        if (!validation.IsValid)
+            throw new ValidationException(validation);
+
         var id = _employees.Create(employee);
 
         _audit.Track(
@@ -52,6 +60,10 @@ public sealed class EmployeeService
 
     public void Update(Employee employee, string userName = "System")
     {
+        var validation = _validator.Validate(employee);
+        if (!validation.IsValid)
+            throw new ValidationException(validation);
+
         _employees.Update(employee);
 
         _audit.Track(

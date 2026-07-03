@@ -1,0 +1,9 @@
+namespace Accyourate.App.Platform.Validation;
+
+public sealed class ValidationMessage
+{
+    public string Field { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public string Severity { get; set; } = ValidationSeverity.Error;
+}
