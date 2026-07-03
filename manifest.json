@@ -1,12 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "HR-002F-employee-asset-integration",
-  "type": "integration",
-  "visible_changes": true,
+  "version": "ASSET-004A-delivery-report-foundation",
+  "type": "feature-foundation",
+  "visible_changes": false,
   "features": [
-    "EmployeeAssetService",
-    "HR to Master Data employee mapping",
-    "Assigned assets in employee profile",
-    "Asset Assignment Engine integration"
+    "DeliveryReport model",
+    "DeliveryReportItem model",
+    "DeliveryReportRepository",
+    "DeliveryReportService",
+    "Audit and notification integration"
   ]
 }
