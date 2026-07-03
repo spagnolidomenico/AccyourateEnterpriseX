@@ -1,14 +1,21 @@
 # Changelog
 
-## 15.0.0 - Enterprise Foundation Blueprint
+## 15.0.2A - Developer Handbook & Architecture Standards
 
 ### Added
 
-- Roadmap ufficiale V15.
-- Blueprint Enterprise Foundation.
-- ADR-0029.
-- Checklist di validazione release.
+- Developer Handbook.
+- Architecture Overview.
+- Module Standard.
+- Platform Services Guide.
+- UI Guidelines.
+- Git & Release Flow.
+- Release Checklist.
+- Coding Standards.
+- Technical Backlog.
+- Platform Standard.
+- Platform Stabilization Plan.
 
 ### Notes
 
-Patch documentale. Nessuna modifica codice applicativo.
+Patch documentale. Nessuna modifica al codice applicativo.

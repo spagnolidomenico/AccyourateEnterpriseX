@@ -1,12 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "15.0.1D-audit-engine",
-  "type": "platform-service",
+  "version": "15.0.2A-developer-handbook",
+  "type": "documentation",
   "visible_changes": false,
   "features": [
-    "AuditService",
-    "AuditRecord",
-    "Audit actions",
-    "Audit severity"
+    "Developer Handbook",
+    "Architecture standards",
+    "Module standard",
+    "Release checklist",
+    "Technical backlog",
+    "Platform stabilization plan"
   ]
 }
