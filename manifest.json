@@ -1,13 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "MVP-001-HR-001-blueprint",
-  "type": "documentation",
+  "version": "HR-002A-domain-models",
+  "type": "domain",
   "visible_changes": false,
   "features": [
-    "MVP v1.0 roadmap",
-    "Human Resources blueprint",
-    "HR data model",
-    "HR release plan",
-    "ADR-0032"
+    "Employee model",
+    "Department model",
+    "Site model",
+    "HR Role model",
+    "Employment Contract model",
+    "Employee Document model"
   ]
 }
