@@ -17,6 +17,7 @@ using ActionEngineWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModu
 using UniversalCommandBarWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.UniversalCommandBarWorkspaceModule;
 using AssetManagementWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.AssetManagementWorkspaceModule;
 using MasterDataWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.MasterDataWorkspaceModule;
+using HumanResourcesWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.HumanResourcesWorkspaceModule;
 
 namespace Accyourate.App;
 
@@ -69,6 +70,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleRegistry.Register(new UniversalCommandBarWorkspaceModuleCore(_database, _user, Navigate));
         _moduleRegistry.Register(new AssetManagementWorkspaceModuleCore());
         _moduleRegistry.Register(new MasterDataWorkspaceModuleCore());
+        _moduleRegistry.Register(new HumanResourcesWorkspaceModuleCore());
     }
 
     private Control BuildLayout()
@@ -172,6 +174,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         AddMenu(menu, AxIcons.Dashboard, "Dashboard", "dashboard", "Dashboard");
         AddMenu(menu, "IT", "Asset Management", "asset-management", "Asset Management");
         AddMenu(menu, "🏢", "Anagrafica Aziendale", "master-data", "Anagrafica Aziendale");
+        AddMenu(menu, "👥", "Human Resources", "human-resources", "Human Resources");
         AddMenu(menu, AxIcons.Analytics, "Analytics", "analytics", "Analytics");
         AddMenu(menu, AxIcons.Medical, "Medical", "medical", "Medical Device Suite");
         AddMenu(menu, "DT", "Digital Twin", "digital-twin", "Digital Twin Platform");

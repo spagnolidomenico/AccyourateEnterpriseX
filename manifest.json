@@ -1,15 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "HR-002C1-validation-framework",
-  "type": "business-rules",
-  "visible_changes": false,
+  "version": "HR-002D-human-resources-workspace",
+  "type": "feature",
+  "visible_changes": true,
   "features": [
-    "ValidationResult",
-    "ValidationMessage",
-    "ValidationException",
-    "EmployeeValidator",
-    "DepartmentValidator",
-    "EmploymentContractValidator",
-    "EmployeeService validation"
+    "Human Resources workspace module",
+    "Employee list",
+    "Employee search and status filter",
+    "Employee create/edit dialog",
+    "Employee detail card",
+    "Workspace menu integration"
   ]
 }

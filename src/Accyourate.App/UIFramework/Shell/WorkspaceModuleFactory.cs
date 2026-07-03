@@ -8,6 +8,7 @@ using Accyourate.App.UIFramework.Components;
 using Accyourate.App.UIFramework.Tokens;
 using Accyourate.App.UIFramework.Widgets;
 using Accyourate.App.Platform.Notifications;
+using Accyourate.App.HumanResources;
 
 namespace Accyourate.App.UIFramework.Shell;
 
@@ -37,6 +38,7 @@ public sealed class WorkspaceModuleFactory
             "control-room" => new WidgetControlRoomBuilder(_database, _user).Build(() => { }),
             "ai-catalog" => IntentCatalogSummary(),
             "notifications" => new NotificationCenterView(),
+            "human-resources" => new HumanResourcesView(),
             "dashboard" => DashboardWorkspace(),
             "analytics" => AnalyticsWorkspace(),
             "medical" => MedicalWorkspace(),
