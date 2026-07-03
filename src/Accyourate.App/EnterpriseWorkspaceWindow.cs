@@ -7,6 +7,7 @@ using Accyourate.App.UIFramework.Shell;
 using Accyourate.App.UIFramework.Tokens;
 using Accyourate.App.UIFramework.Icons;
 using Accyourate.App.UIFramework.WorkspaceTabs;
+using Accyourate.App.Platform.Notifications;
 using WorkspaceModuleRegistryCore = Accyourate.App.UIFramework.WorkspaceModules.WorkspaceModuleRegistry;
 using WorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.IWorkspaceModule;
 using DashboardWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.DashboardWorkspaceModule;
@@ -26,6 +27,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
     private readonly WorkspaceModuleFactory _moduleFactory;
     private readonly WorkspaceModuleRegistryCore _moduleRegistry = new();
     private readonly NavigationState _navigation = new();
+    private readonly NotificationService _notificationService = new();
 
     private readonly ContentControl _content = new();
     private readonly TextBlock _breadcrumb = new();
@@ -45,7 +47,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleFactory = new WorkspaceModuleFactory(_database, _user, Navigate);
         RegisterWorkspaceModules();
 
-        Title = "Accyourate Enterprise X 15.0.1B - Enterprise Home Widgets";
+        Title = "Accyourate Enterprise X 15.0.1C2 - Notification Center";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -93,6 +95,15 @@ public sealed class EnterpriseWorkspaceWindow : Window
         return root;
     }
 
+
+    private string NotificationButtonText()
+    {
+        var unread = _notificationService.CountUnread();
+        return unread > 0
+            ? $"{AxIcons.Notifications} Notifiche ({unread})"
+            : $"{AxIcons.Notifications} Notifiche";
+    }
+
     private Control BuildTopBar()
     {
         var grid = new Grid
@@ -116,7 +127,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, TopButton(AxIcons.Command + "K Comandi", OpenCommandPalette), 2, 0);
         Add(grid, TopButton("⌕ Command", () => Navigate("universal-command-bar", "Universal Command Bar")), 3, 0);
         Add(grid, TopButton("AI", () => Navigate("ai-assistant", "AI Assistant")), 4, 0);
-        Add(grid, TopButton(AxIcons.Notifications + " Notifiche", () => new NotificationsWindow().Show()), 5, 0);
+        Add(grid, TopButton(NotificationButtonText(), () => Navigate("notifications", "Notification Center")), 5, 0);
         Add(grid, TopButton("◐ Tema", ToggleTheme), 6, 0);
         Add(grid, new TextBlock
         {
@@ -152,6 +163,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         var menu = new StackPanel { Margin = new Avalonia.Thickness(14), Spacing = 5 };
 
         AddMenu(menu, AxIcons.Home, "Home", "workspace-home", "Workspace Home");
+        AddMenu(menu, AxIcons.Notifications, "Notifiche", "notifications", "Notification Center");
         AddMenu(menu, AxIcons.ControlRoom, "Control Room", "control-room", "Enterprise Control Room");
         AddMenu(menu, "AI", "AI Assistant", "ai-assistant", "AI Assistant");
         AddMenu(menu, "AI", "AI Intent Catalog", "ai-catalog", "AI Intent Catalog");
@@ -227,7 +239,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 15.0.1B"), 2, 0);
+        Add(grid, StatusText("Versione: 15.0.1C2"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border

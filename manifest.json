@@ -1,13 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "15.0.1C1-notification-engine",
-  "type": "platform-service",
-  "visible_changes": false,
+  "version": "15.0.1C2-notification-center-ui",
+  "type": "feature",
+  "visible_changes": true,
   "features": [
-    "NotificationService",
-    "NotificationRecord",
-    "Notification categories",
-    "Notification priorities",
-    "PlatformEventBus"
+    "Notification Center tab",
+    "Notifications sidebar item",
+    "Top bar unread counter",
+    "Notification filters",
+    "Mark as read actions"
   ]
 }
