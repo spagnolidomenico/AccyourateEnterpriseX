@@ -10,6 +10,7 @@ using Accyourate.App.UIFramework.Widgets;
 using Accyourate.App.Platform.Notifications;
 using Accyourate.App.HumanResources;
 using Accyourate.App.AssetManagement.DeliveryReports;
+using Accyourate.App.Platform.Settings;
 
 namespace Accyourate.App.UIFramework.Shell;
 
@@ -41,6 +42,7 @@ public sealed class WorkspaceModuleFactory
             "notifications" => new NotificationCenterView(),
             "human-resources" => new HumanResourcesView(),
             "delivery-reports" => new DeliveryReportView(),
+            "settings-center" => new SettingsCenterView(),
             "dashboard" => DashboardWorkspace(),
             "analytics" => AnalyticsWorkspace(),
             "medical" => MedicalWorkspace(),

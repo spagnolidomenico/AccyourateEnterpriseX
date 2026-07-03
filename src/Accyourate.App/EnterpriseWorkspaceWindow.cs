@@ -19,6 +19,7 @@ using AssetManagementWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceM
 using MasterDataWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.MasterDataWorkspaceModule;
 using HumanResourcesWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.HumanResourcesWorkspaceModule;
 using DeliveryReportWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.DeliveryReportWorkspaceModule;
+using SettingsWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.SettingsWorkspaceModule;
 
 namespace Accyourate.App;
 
@@ -73,6 +74,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleRegistry.Register(new MasterDataWorkspaceModuleCore());
         _moduleRegistry.Register(new HumanResourcesWorkspaceModuleCore());
         _moduleRegistry.Register(new DeliveryReportWorkspaceModuleCore());
+        _moduleRegistry.Register(new SettingsWorkspaceModuleCore());
     }
 
     private Control BuildLayout()
@@ -182,6 +184,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         AddMenu(menu, AxIcons.Medical, "Medical", "medical", "Medical Device Suite");
         AddMenu(menu, "DT", "Digital Twin", "digital-twin", "Digital Twin Platform");
         AddMenu(menu, AxIcons.Branding, "Branding", "branding", "Branding Center");
+        AddMenu(menu, "⚙️", "Impostazioni", "settings-center", "Impostazioni");
         AddMenu(menu, AxIcons.Design, "Design System", "design-system", "Design System");
         AddMenu(menu, AxIcons.Architecture, "Architecture", "architecture", "Enterprise Architecture");
 

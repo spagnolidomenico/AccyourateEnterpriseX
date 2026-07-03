@@ -1,13 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "ASSET-004C-delivery-report-ui",
+  "version": "SETTINGS-001A-settings-center-foundation",
   "type": "feature",
   "visible_changes": true,
   "features": [
-    "Delivery Report Workspace",
-    "Delivery report list",
-    "Search and status filter",
-    "PDF generation from UI",
-    "Open PDF and PDF folder actions"
+    "SettingsService",
+    "ApplicationSettings",
+    "Company settings",
+    "Numbering settings",
+    "Document settings",
+    "Settings Center Workspace UI"
   ]
 }
