@@ -1,12 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "15.0.1B-enterprise-home-widgets",
-  "type": "feature",
-  "visible_changes": true,
+  "version": "15.0.1C1-notification-engine",
+  "type": "platform-service",
+  "visible_changes": false,
   "features": [
-    "Clickable quick actions",
-    "Favorite modules widget",
-    "Today activity widget",
-    "Home-to-module navigation"
+    "NotificationService",
+    "NotificationRecord",
+    "Notification categories",
+    "Notification priorities",
+    "PlatformEventBus"
   ]
 }
