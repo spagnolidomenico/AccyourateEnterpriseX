@@ -1,13 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "15.0.1C2-notification-center-ui",
-  "type": "feature",
-  "visible_changes": true,
+  "version": "15.0.1D-audit-engine",
+  "type": "platform-service",
+  "visible_changes": false,
   "features": [
-    "Notification Center tab",
-    "Notifications sidebar item",
-    "Top bar unread counter",
-    "Notification filters",
-    "Mark as read actions"
+    "AuditService",
+    "AuditRecord",
+    "Audit actions",
+    "Audit severity"
   ]
 }
