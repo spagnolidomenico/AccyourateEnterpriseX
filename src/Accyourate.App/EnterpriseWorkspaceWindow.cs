@@ -42,10 +42,10 @@ public sealed class EnterpriseWorkspaceWindow : Window
     {
         _database = database;
         _user = user;
-        _moduleFactory = new WorkspaceModuleFactory(_database, _user);
+        _moduleFactory = new WorkspaceModuleFactory(_database, _user, Navigate);
         RegisterWorkspaceModules();
 
-        Title = "Accyourate Enterprise X 15.0.1A - Enterprise Home";
+        Title = "Accyourate Enterprise X 15.0.1B - Enterprise Home Widgets";
         Width = 1480;
         Height = 920;
         MinWidth = 1180;
@@ -227,7 +227,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         Add(grid, _status, 0, 0);
 
         Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 15.0.1A"), 2, 0);
+        Add(grid, StatusText("Versione: 15.0.1B"), 2, 0);
         Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
 
         return new Border

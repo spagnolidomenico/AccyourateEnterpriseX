@@ -1,14 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "15.0.1A-enterprise-home-framework",
+  "version": "15.0.1B-enterprise-home-widgets",
   "type": "feature",
   "visible_changes": true,
   "features": [
-    "Enterprise Home framework",
-    "Welcome panel",
-    "KPI widgets",
-    "Quick actions area",
-    "System status widget",
-    "AI Welcome widget"
+    "Clickable quick actions",
+    "Favorite modules widget",
+    "Today activity widget",
+    "Home-to-module navigation"
   ]
 }

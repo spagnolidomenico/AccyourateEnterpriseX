@@ -14,11 +14,18 @@ public sealed class WorkspaceModuleFactory
 {
     private readonly DatabaseService _database;
     private readonly CurrentUser _user;
+    private readonly Action<string, string>? _navigate;
 
     public WorkspaceModuleFactory(DatabaseService database, CurrentUser user)
+        : this(database, user, null)
+    {
+    }
+
+    public WorkspaceModuleFactory(DatabaseService database, CurrentUser user, Action<string, string>? navigate)
     {
         _database = database;
         _user = user;
+        _navigate = navigate;
     }
 
     public Control Create(string moduleId)
@@ -79,9 +86,14 @@ public sealed class WorkspaceModuleFactory
         page.Children.Add(grid);
 
         var lower = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*") };
-        Add(lower, UiComponentFactory.Card(RecentEvents()), 0, 0);
-        Add(lower, UiComponentFactory.Card(AiWelcomeHome()), 1, 0);
+        Add(lower, UiComponentFactory.Card(FavoriteModulesHome()), 0, 0);
+        Add(lower, UiComponentFactory.Card(TodayActivityHome()), 1, 0);
         page.Children.Add(lower);
+
+        var final = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*") };
+        Add(final, UiComponentFactory.Card(RecentEvents()), 0, 0);
+        Add(final, UiComponentFactory.Card(AiWelcomeHome()), 1, 0);
+        page.Children.Add(final);
 
         return Scroll(page);
     }
@@ -125,10 +137,32 @@ public sealed class WorkspaceModuleFactory
     {
         var stack = new StackPanel { Spacing = 10 };
         stack.Children.Add(SectionTitle("Accessi rapidi"));
-        stack.Children.Add(QuickCard("Asset Management", "Inventario, assegnazioni e garanzie"));
-        stack.Children.Add(QuickCard("Anagrafica Aziendale", "Dipendenti, sedi, reparti e fornitori"));
-        stack.Children.Add(QuickCard("AI Assistant", "Supporto operativo e comandi intelligenti"));
-        stack.Children.Add(QuickCard("Branding Center", "Logo, login e identità aziendale"));
+        stack.Children.Add(QuickAction("▣", "Asset Management", "Inventario, assegnazioni e garanzie", "asset-management", "Asset Management"));
+        stack.Children.Add(QuickAction("🏢", "Anagrafica Aziendale", "Dipendenti, sedi, reparti e fornitori", "master-data", "Anagrafica Aziendale"));
+        stack.Children.Add(QuickAction("AI", "AI Assistant", "Supporto operativo e comandi intelligenti", "ai-assistant", "AI Assistant"));
+        stack.Children.Add(QuickAction("◈", "Branding Center", "Logo, login e identità aziendale", "branding", "Branding Center"));
+        return stack;
+    }
+
+
+    private Control FavoriteModulesHome()
+    {
+        var stack = new StackPanel { Spacing = 10 };
+        stack.Children.Add(SectionTitle("I miei preferiti"));
+        stack.Children.Add(QuickAction("★", "Asset Management", "Modulo operativo principale", "asset-management", "Asset Management"));
+        stack.Children.Add(QuickAction("★", "Anagrafica Aziendale", "Master Data aziendale", "master-data", "Anagrafica Aziendale"));
+        stack.Children.Add(QuickAction("★", "Dashboard", "KPI e sintesi operative", "dashboard", "Dashboard"));
+        return stack;
+    }
+
+    private Control TodayActivityHome()
+    {
+        var stack = new StackPanel { Spacing = 10 };
+        stack.Children.Add(SectionTitle("Attività di oggi"));
+        stack.Children.Add(StatusLine("Asset censiti", Count("assets"), UiTokens.BrandBlue));
+        stack.Children.Add(StatusLine("Dipendenti", Count("employees"), UiTokens.Success));
+        stack.Children.Add(StatusLine("Eventi workflow", Count("workflow_events"), UiTokens.Info));
+        stack.Children.Add(StatusLine("Documenti", Count("documents"), UiTokens.Warning));
         return stack;
     }
 
@@ -523,6 +557,45 @@ public sealed class WorkspaceModuleFactory
         row.Children.Add(col);
 
         return UiComponentFactory.Card(row);
+    }
+
+
+    private Control QuickAction(string icon, string title, string subtitle, string moduleId, string moduleTitle)
+    {
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("42,*") };
+
+        Add(grid, new Border
+        {
+            Width = 34,
+            Height = 34,
+            Background = UiTokens.Brush(UiTokens.SurfaceAlt),
+            CornerRadius = new CornerRadius(10),
+            Child = new TextBlock
+            {
+                Text = icon,
+                FontWeight = FontWeight.Bold,
+                Foreground = UiTokens.Brush(UiTokens.BrandBlue),
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            }
+        }, 0, 0);
+
+        var text = new StackPanel { Spacing = 2 };
+        text.Children.Add(new TextBlock { Text = title, FontWeight = FontWeight.Bold, Foreground = UiTokens.Brush(UiTokens.TextPrimary) });
+        text.Children.Add(new TextBlock { Text = subtitle, Foreground = UiTokens.Brush(UiTokens.TextSecondary), FontSize = 12, TextWrapping = TextWrapping.Wrap });
+        Add(grid, text, 1, 0);
+
+        var button = new Button
+        {
+            Content = grid,
+            Background = Brushes.Transparent,
+            Padding = new Thickness(8),
+            CornerRadius = new CornerRadius(12),
+            HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
+        };
+
+        button.Click += (_, _) => _navigate?.Invoke(moduleId, moduleTitle);
+        return button;
     }
 
     private Control QuickCard(string title, string subtitle)
