@@ -254,54 +254,128 @@ public sealed class HumanResourcesView : UserControl
 
     private Control DetailsCard(Employee employee)
     {
-        var stack = new StackPanel { Spacing = 12 };
+        var stack = new StackPanel { Spacing = 14 };
 
-        stack.Children.Add(new TextBlock
-        {
-            Text = employee.FullName,
-            FontSize = 26,
-            FontWeight = FontWeight.Bold,
-            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
-        });
-
-        stack.Children.Add(new TextBlock
-        {
-            Text = $"{employee.EmployeeCode} · {employee.Email}",
-            FontSize = 15,
-            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
-            TextWrapping = TextWrapping.Wrap
-        });
+        stack.Children.Add(ProfileHeader(employee));
 
         var actions = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("*,*"),
-            Margin = new Thickness(0, 4, 0, 8)
+            Margin = new Thickness(0, 0, 0, 4)
         };
         Add(actions, SmallButton("Modifica", () => OpenEditEmployee(employee)), 0, 0);
         Add(actions, SmallButton("Elimina", () => DeleteEmployee(employee), true), 1, 0);
         stack.Children.Add(actions);
 
-        stack.Children.Add(Section("Anagrafica"));
-        stack.Children.Add(Info("Email", employee.Email));
-        stack.Children.Add(Info("Telefono", employee.Phone));
-        stack.Children.Add(Info("Stato", employee.EmploymentStatus));
-        stack.Children.Add(Info("Assunzione", FormatDate(employee.HireDate)));
+        stack.Children.Add(ProfileSection("👤 Anagrafica", new[]
+        {
+            ("Email", employee.Email),
+            ("Telefono", employee.Phone),
+            ("Stato", employee.EmploymentStatus),
+            ("Data assunzione", FormatDate(employee.HireDate)),
+            ("Data cessazione", FormatDate(employee.TerminationDate))
+        }));
 
-        stack.Children.Add(Section("Organizzazione"));
-        stack.Children.Add(Info("Reparto", DepartmentName(employee.DepartmentId)));
-        stack.Children.Add(Info("Ruolo", RoleName(employee.RoleId)));
-        stack.Children.Add(Info("Sede", SiteName(employee.SiteId)));
-        stack.Children.Add(Info("Manager", employee.ManagerId?.ToString() ?? "—"));
+        stack.Children.Add(ProfileSection("🏢 Organizzazione", new[]
+        {
+            ("Reparto", DepartmentName(employee.DepartmentId)),
+            ("Ruolo", RoleName(employee.RoleId)),
+            ("Sede", SiteName(employee.SiteId)),
+            ("Manager", employee.ManagerId?.ToString() ?? "—")
+        }));
 
-        stack.Children.Add(Section("Moduli collegati"));
-        stack.Children.Add(Info("Asset assegnati", "Disponibile nel prossimo sprint HR-Asset."));
-        stack.Children.Add(Info("Documenti", "Predisposizione Employee Documents."));
-        stack.Children.Add(Info("Timeline", "Predisposizione Audit Timeline."));
+        stack.Children.Add(ProfileSection("💼 Contratto", new[]
+        {
+            ("Contratto attivo", "Disponibile nel prossimo sprint HR Contracts."),
+            ("Livello/Mansione", "Predisposizione EmploymentContract."),
+            ("Scadenza", "Da collegare alle notifiche HR.")
+        }));
 
-        stack.Children.Add(Section("Note"));
-        stack.Children.Add(Info("Note", employee.Notes));
+        stack.Children.Add(ProfileSection("💻 Asset assegnati", new[]
+        {
+            ("Notebook / PC", "Da collegare ad Asset Assignment Engine."),
+            ("Smartphone / Badge", "Predisposizione dotazione aziendale."),
+            ("Licenze software", "Predisposizione modulo licenze.")
+        }));
+
+        stack.Children.Add(ProfileSection("📎 Documenti", new[]
+        {
+            ("Documenti dipendente", "Predisposizione EmployeeDocument."),
+            ("Verbali consegna", "Da generare con integrazione Asset."),
+            ("Scadenze documento", "Da collegare al Notification Center.")
+        }));
+
+        stack.Children.Add(ProfileSection("📜 Timeline", new[]
+        {
+            ("Audit", "Gli eventi saranno letti da AuditService."),
+            ("Notifiche", "Le attività HR generano già notifiche."),
+            ("Workflow", "Predisposizione workflow dipendente.")
+        }));
+
+        stack.Children.Add(ProfileSection("📝 Note", new[]
+        {
+            ("Note", employee.Notes)
+        }));
 
         return Card(stack);
+    }
+
+    private Control ProfileHeader(Employee employee)
+    {
+        var stack = new StackPanel { Spacing = 6 };
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = employee.FullName,
+            FontSize = 28,
+            FontWeight = FontWeight.Bold,
+            Foreground = UiTokens.Brush(UiTokens.TextPrimary),
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = $"{employee.EmployeeCode} · {DepartmentName(employee.DepartmentId)} · {RoleName(employee.RoleId)}",
+            FontSize = 14,
+            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        stack.Children.Add(StatusBadge(employee.EmploymentStatus));
+
+        return new Border
+        {
+            Background = UiTokens.Brush(UiTokens.SurfaceAlt),
+            CornerRadius = new CornerRadius(18),
+            Padding = new Thickness(16),
+            Child = stack
+        };
+    }
+
+    private Control ProfileSection(string title, IEnumerable<(string Label, string Value)> rows)
+    {
+        var stack = new StackPanel { Spacing = 8 };
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontWeight = FontWeight.Bold,
+            FontSize = 17,
+            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
+        });
+
+        foreach (var row in rows)
+            stack.Children.Add(Info(row.Label, row.Value));
+
+        return new Border
+        {
+            Background = UiTokens.Brush(UiTokens.Surface),
+            BorderBrush = UiTokens.Brush(UiTokens.Border),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(16),
+            Padding = new Thickness(12),
+            Child = stack
+        };
     }
 
     private Control EmptyDetails()

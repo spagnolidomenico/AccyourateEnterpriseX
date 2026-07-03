@@ -1,14 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "HR-002D-human-resources-workspace",
+  "version": "HR-002E-employee-profile-foundation",
   "type": "feature",
   "visible_changes": true,
   "features": [
-    "Human Resources workspace module",
-    "Employee list",
-    "Employee search and status filter",
-    "Employee create/edit dialog",
-    "Employee detail card",
-    "Workspace menu integration"
+    "Employee profile foundation",
+    "Structured HR profile sections",
+    "Asset/Documents/Timeline placeholders",
+    "Improved employee details UX"
   ]
 }
