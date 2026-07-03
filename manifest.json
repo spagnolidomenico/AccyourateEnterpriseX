@@ -1,14 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "15.0.2A-developer-handbook",
+  "version": "MVP-001-HR-001-blueprint",
   "type": "documentation",
   "visible_changes": false,
   "features": [
-    "Developer Handbook",
-    "Architecture standards",
-    "Module standard",
-    "Release checklist",
-    "Technical backlog",
-    "Platform stabilization plan"
+    "MVP v1.0 roadmap",
+    "Human Resources blueprint",
+    "HR data model",
+    "HR release plan",
+    "ADR-0032"
   ]
 }

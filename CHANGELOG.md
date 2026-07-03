@@ -1,20 +1,15 @@
 # Changelog
 
-## 15.0.2A - Developer Handbook & Architecture Standards
+## MVP-001 / HR-001 - v1.0 Roadmap & Human Resources Blueprint
 
 ### Added
 
-- Developer Handbook.
-- Architecture Overview.
-- Module Standard.
-- Platform Services Guide.
-- UI Guidelines.
-- Git & Release Flow.
-- Release Checklist.
-- Coding Standards.
-- Technical Backlog.
-- Platform Standard.
-- Platform Stabilization Plan.
+- Roadmap v1.0 MVP Enterprise.
+- HR Blueprint.
+- HR Data Model v1.
+- HR Release Plan.
+- ADR-0032 MVP v1.0 HR First.
+- HR checklist.
 
 ### Notes
 
