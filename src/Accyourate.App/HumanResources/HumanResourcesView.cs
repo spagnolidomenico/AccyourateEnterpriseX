@@ -13,6 +13,7 @@ public sealed class HumanResourcesView : UserControl
 {
     private readonly EmployeeService _employeeService = new();
     private readonly HrLookupService _lookupService = new();
+    private readonly EmployeeAssetService _employeeAssetService = new();
 
     private readonly TextBox _search = new();
     private readonly ComboBox _status = new();
@@ -291,12 +292,7 @@ public sealed class HumanResourcesView : UserControl
             ("Scadenza", "Da collegare alle notifiche HR.")
         }));
 
-        stack.Children.Add(ProfileSection("💻 Asset assegnati", new[]
-        {
-            ("Notebook / PC", "Da collegare ad Asset Assignment Engine."),
-            ("Smartphone / Badge", "Predisposizione dotazione aziendale."),
-            ("Licenze software", "Predisposizione modulo licenze.")
-        }));
+        stack.Children.Add(EmployeeAssetsSection(employee));
 
         stack.Children.Add(ProfileSection("📎 Documenti", new[]
         {
@@ -350,6 +346,71 @@ public sealed class HumanResourcesView : UserControl
             Padding = new Thickness(16),
             Child = stack
         };
+    }
+
+
+    private Control EmployeeAssetsSection(Employee employee)
+    {
+        try
+        {
+            var profile = _employeeAssetService.GetProfile(employee);
+            var stack = new StackPanel { Spacing = 8 };
+
+            stack.Children.Add(new TextBlock
+            {
+                Text = "💻 Asset assegnati",
+                FontWeight = FontWeight.Bold,
+                FontSize = 17,
+                Foreground = UiTokens.Brush(UiTokens.TextPrimary)
+            });
+
+            stack.Children.Add(new TextBlock
+            {
+                Text = profile.Message,
+                Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+                TextWrapping = TextWrapping.Wrap
+            });
+
+            if (profile.IsLinkedToMasterData)
+            {
+                stack.Children.Add(Info("Collegamento Anagrafica", $"{profile.MasterEmployeeName} · ID {profile.MasterEmployeeId}"));
+            }
+
+            if (profile.Assignments.Count == 0)
+            {
+                stack.Children.Add(Info("Dotazione", "Nessun bene assegnato o collegamento non disponibile."));
+            }
+            else
+            {
+                foreach (var assignment in profile.Assignments)
+                {
+                    var label = assignment.AssetCode;
+                    var value = $"{assignment.Manufacturer} {assignment.Model}".Trim();
+
+                    if (!string.IsNullOrWhiteSpace(assignment.AssignedAt))
+                        value = $"{value} · assegnato il {FormatDate(assignment.AssignedAt)}";
+
+                    stack.Children.Add(Info(label, value));
+                }
+            }
+
+            return new Border
+            {
+                Background = UiTokens.Brush(UiTokens.Surface),
+                BorderBrush = UiTokens.Brush(UiTokens.Border),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(16),
+                Padding = new Thickness(12),
+                Child = stack
+            };
+        }
+        catch (Exception ex)
+        {
+            return ProfileSection("💻 Asset assegnati", new[]
+            {
+                ("Errore", $"Impossibile leggere gli asset assegnati: {ex.Message}")
+            });
+        }
     }
 
     private Control ProfileSection(string title, IEnumerable<(string Label, string Value)> rows)

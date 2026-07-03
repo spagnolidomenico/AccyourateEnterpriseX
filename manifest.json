@@ -1,12 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "HR-002E-employee-profile-foundation",
-  "type": "feature",
+  "version": "HR-002F-employee-asset-integration",
+  "type": "integration",
   "visible_changes": true,
   "features": [
-    "Employee profile foundation",
-    "Structured HR profile sections",
-    "Asset/Documents/Timeline placeholders",
-    "Improved employee details UX"
+    "EmployeeAssetService",
+    "HR to Master Data employee mapping",
+    "Assigned assets in employee profile",
+    "Asset Assignment Engine integration"
   ]
 }
