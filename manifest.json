@@ -1,12 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "15.0.0-enterprise-foundation-blueprint",
-  "type": "documentation",
-  "visible_changes": false,
+  "version": "15.0.1A-enterprise-home-framework",
+  "type": "feature",
+  "visible_changes": true,
   "features": [
-    "V15 Enterprise Foundation roadmap",
-    "Enterprise UX consolidation plan",
-    "ADR-0029",
-    "Release quality criteria"
+    "Enterprise Home framework",
+    "Welcome panel",
+    "KPI widgets",
+    "Quick actions area",
+    "System status widget",
+    "AI Welcome widget"
   ]
 }

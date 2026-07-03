@@ -50,24 +50,117 @@ public sealed class WorkspaceModuleFactory
         });
     }
 
+
     private Control WorkspaceHome()
     {
-        var page = Page("Enterprise Workspace", "Versione 8.2: Dashboard e Analytics iniziano a vivere dentro la Workspace.");
+        var page = Page($"Benvenuto, {_user.Username}", "Enterprise Home · la tua centrale operativa quotidiana.");
 
-        var kpis = new WrapPanel { ItemWidth = 260, ItemHeight = 135 };
-        kpis.Children.Add(Kpi("⌁", "Dispositivi", Count("medical_devices"), "Medical Suite", UiTokens.BrandBlue));
+        var welcome = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,320"),
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+
+        Add(welcome, WelcomePanel(), 0, 0);
+        Add(welcome, UiComponentFactory.Card(SystemStatusHome()), 1, 0);
+        page.Children.Add(welcome);
+
+        var kpis = new WrapPanel { ItemWidth = 230, ItemHeight = 132 };
+        kpis.Children.Add(Kpi("👥", "Dipendenti", Count("employees"), "Anagrafica", UiTokens.BrandBlue));
         kpis.Children.Add(Kpi("▣", "Asset IT", Count("assets"), "Inventario", UiTokens.Success));
+        kpis.Children.Add(Kpi("🏢", "Aziende", Count("companies"), "Master Data", UiTokens.BrandAccent));
         kpis.Children.Add(Kpi("▧", "Documenti", Count("documents"), "Archivio", UiTokens.Warning));
-        kpis.Children.Add(Kpi("👥", "Persone", Count("employees"), "HR", UiTokens.BrandAccent));
+        kpis.Children.Add(Kpi("✓", "Attività", Count("workflow_events"), "Timeline", UiTokens.Info));
         page.Children.Add(kpis);
 
-        var info = new StackPanel { Spacing = 8 };
-        info.Children.Add(SectionTitle("Migrazione moduli"));
-        info.Children.Add(UiComponentFactory.Body("Dashboard e Analytics non sono più solo finestre esterne: ora hanno una prima versione interna alla Workspace."));
-        info.Children.Add(UiComponentFactory.Body("I vecchi moduli restano disponibili come fallback finché la migrazione non sarà completa."));
-        page.Children.Add(UiComponentFactory.Card(info));
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*") };
+        Add(grid, UiComponentFactory.Card(QuickActionsHome()), 0, 0);
+        Add(grid, UiComponentFactory.Card(HomeNotifications()), 1, 0);
+        page.Children.Add(grid);
+
+        var lower = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*") };
+        Add(lower, UiComponentFactory.Card(RecentEvents()), 0, 0);
+        Add(lower, UiComponentFactory.Card(AiWelcomeHome()), 1, 0);
+        page.Children.Add(lower);
 
         return Scroll(page);
+    }
+
+    private Control WelcomePanel()
+    {
+        var stack = new StackPanel { Spacing = 10 };
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = $"Buongiorno {_user.Username}",
+            FontSize = 30,
+            FontWeight = FontWeight.Bold,
+            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
+        });
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = $"{DateTime.Now:dddd dd MMMM yyyy} · {DateTime.Now:HH:mm}",
+            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = $"Hai {SafeCount("assets")} asset censiti, {SafeCount("employees")} dipendenti e {SafeCount("workflow_events")} eventi registrati. Usa gli accessi rapidi per continuare il lavoro.",
+            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        return new Border
+        {
+            Background = UiTokens.Brush(UiTokens.Surface),
+            CornerRadius = new CornerRadius(18),
+            Padding = new Thickness(18),
+            Child = stack
+        };
+    }
+
+    private Control QuickActionsHome()
+    {
+        var stack = new StackPanel { Spacing = 10 };
+        stack.Children.Add(SectionTitle("Accessi rapidi"));
+        stack.Children.Add(QuickCard("Asset Management", "Inventario, assegnazioni e garanzie"));
+        stack.Children.Add(QuickCard("Anagrafica Aziendale", "Dipendenti, sedi, reparti e fornitori"));
+        stack.Children.Add(QuickCard("AI Assistant", "Supporto operativo e comandi intelligenti"));
+        stack.Children.Add(QuickCard("Branding Center", "Logo, login e identità aziendale"));
+        return stack;
+    }
+
+    private Control HomeNotifications()
+    {
+        var stack = new StackPanel { Spacing = 10 };
+        stack.Children.Add(SectionTitle("Notifiche"));
+        stack.Children.Add(StatusLine("Garanzie", "Da verificare", UiTokens.Warning));
+        stack.Children.Add(StatusLine("Asset assegnati", Count("AssetAssignments"), UiTokens.BrandBlue));
+        stack.Children.Add(StatusLine("Database", "Operativo", UiTokens.Success));
+        stack.Children.Add(StatusLine("Backup", "Pianificare", UiTokens.Warning));
+        return stack;
+    }
+
+    private Control SystemStatusHome()
+    {
+        var stack = new StackPanel { Spacing = 10 };
+        stack.Children.Add(SectionTitle("Stato sistema"));
+        stack.Children.Add(StatusLine("Versione", "15.0.1A", UiTokens.BrandBlue));
+        stack.Children.Add(StatusLine("Database", "Connesso", UiTokens.Success));
+        stack.Children.Add(StatusLine("Workspace", "Tab attive", UiTokens.Success));
+        stack.Children.Add(StatusLine("Login", "Brandizzato", UiTokens.BrandAccent));
+        return stack;
+    }
+
+    private Control AiWelcomeHome()
+    {
+        var stack = new StackPanel { Spacing = 10 };
+        stack.Children.Add(SectionTitle("AI Welcome"));
+        stack.Children.Add(UiComponentFactory.Body("L'assistente AI diventerà il punto unico per cercare dati, aprire moduli e avviare azioni operative."));
+        stack.Children.Add(UiComponentFactory.Body("Prossimo step: suggerimenti intelligenti su asset, dipendenti, scadenze e notifiche."));
+        return stack;
     }
 
     private Control DashboardWorkspace()
