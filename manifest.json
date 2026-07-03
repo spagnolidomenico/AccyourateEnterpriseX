@@ -1,12 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "ASSET-004B-pdf-engine",
-  "type": "pdf-engine",
-  "visible_changes": false,
+  "version": "ASSET-004C-delivery-report-ui",
+  "type": "feature",
+  "visible_changes": true,
   "features": [
-    "Reusable PDF engine",
-    "Delivery report PDF generator",
-    "PDF path persistence",
-    "Audit and notification on PDF generation"
+    "Delivery Report Workspace",
+    "Delivery report list",
+    "Search and status filter",
+    "PDF generation from UI",
+    "Open PDF and PDF folder actions"
   ]
 }

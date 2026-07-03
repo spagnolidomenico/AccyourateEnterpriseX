@@ -18,6 +18,7 @@ using UniversalCommandBarWorkspaceModuleCore = Accyourate.App.UIFramework.Worksp
 using AssetManagementWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.AssetManagementWorkspaceModule;
 using MasterDataWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.MasterDataWorkspaceModule;
 using HumanResourcesWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.HumanResourcesWorkspaceModule;
+using DeliveryReportWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.DeliveryReportWorkspaceModule;
 
 namespace Accyourate.App;
 
@@ -71,6 +72,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleRegistry.Register(new AssetManagementWorkspaceModuleCore());
         _moduleRegistry.Register(new MasterDataWorkspaceModuleCore());
         _moduleRegistry.Register(new HumanResourcesWorkspaceModuleCore());
+        _moduleRegistry.Register(new DeliveryReportWorkspaceModuleCore());
     }
 
     private Control BuildLayout()
@@ -173,6 +175,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         AddMenu(menu, "⌕", "Universal Command Bar", "universal-command-bar", "Universal Command Bar");
         AddMenu(menu, AxIcons.Dashboard, "Dashboard", "dashboard", "Dashboard");
         AddMenu(menu, "IT", "Asset Management", "asset-management", "Asset Management");
+        AddMenu(menu, "📄", "Verbali consegna", "delivery-reports", "Verbali di consegna");
         AddMenu(menu, "🏢", "Anagrafica Aziendale", "master-data", "Anagrafica Aziendale");
         AddMenu(menu, "👥", "Human Resources", "human-resources", "Human Resources");
         AddMenu(menu, AxIcons.Analytics, "Analytics", "analytics", "Analytics");

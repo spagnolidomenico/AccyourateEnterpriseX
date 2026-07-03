@@ -9,6 +9,7 @@ using Accyourate.App.UIFramework.Tokens;
 using Accyourate.App.UIFramework.Widgets;
 using Accyourate.App.Platform.Notifications;
 using Accyourate.App.HumanResources;
+using Accyourate.App.AssetManagement.DeliveryReports;
 
 namespace Accyourate.App.UIFramework.Shell;
 
@@ -39,6 +40,7 @@ public sealed class WorkspaceModuleFactory
             "ai-catalog" => IntentCatalogSummary(),
             "notifications" => new NotificationCenterView(),
             "human-resources" => new HumanResourcesView(),
+            "delivery-reports" => new DeliveryReportView(),
             "dashboard" => DashboardWorkspace(),
             "analytics" => AnalyticsWorkspace(),
             "medical" => MedicalWorkspace(),
