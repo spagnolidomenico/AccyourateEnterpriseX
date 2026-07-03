@@ -1,0 +1,70 @@
+using Accyourate.App.Platform.Audit;
+using Accyourate.App.Platform.Notifications;
+using Accyourate.App.Platform.Pdf;
+
+namespace Accyourate.App.AssetManagement.DeliveryReports;
+
+public sealed class DeliveryReportPdfService
+{
+    private readonly DeliveryReportRepository _repository;
+    private readonly PdfExportService _pdf;
+    private readonly AuditService _audit;
+    private readonly NotificationService _notifications;
+
+    public DeliveryReportPdfService(DeliveryReportRepository? repository = null, PdfExportService? pdf = null, AuditService? audit = null, NotificationService? notifications = null)
+    {
+        _repository = repository ?? new DeliveryReportRepository();
+        _pdf = pdf ?? new PdfExportService();
+        _audit = audit ?? new AuditService();
+        _notifications = notifications ?? new NotificationService();
+    }
+
+    public string GeneratePdf(int deliveryReportId, string generatedBy = "System")
+    {
+        var report = _repository.GetById(deliveryReportId) ?? throw new InvalidOperationException("Verbale di consegna non trovato.");
+        var items = _repository.GetItems(deliveryReportId);
+        var document = BuildDocument(report, items);
+        var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Accyourate Enterprise X", "Verbali Consegna");
+        var path = _pdf.Export(document, folder, $"{report.ReportNumber}_{report.EmployeeName}");
+        _repository.UpdatePdfPath(deliveryReportId, path, DeliveryReportStatus.Generated);
+
+        _audit.Track(AuditAction.Exported, $"Generato PDF verbale {report.ReportNumber}", "DeliveryReport", deliveryReportId.ToString(), report.ReportNumber, generatedBy, AuditSeverity.Info, "AssetManagement");
+        _notifications.Publish("PDF verbale generato", $"Generato PDF per il verbale {report.ReportNumber}.", NotificationCategory.Documents, NotificationPriority.Info, generatedBy, "open-delivery-report-pdf", path);
+        return path;
+    }
+
+    private static SimplePdfDocument BuildDocument(DeliveryReport report, IReadOnlyList<DeliveryReportItem> items)
+    {
+        var d = new SimplePdfDocument { Title = $"Verbale di consegna {report.ReportNumber}" };
+        d.AddTitle("ACCURATE GROUP");
+        d.AddHeading("Verbale di consegna beni aziendali");
+        d.AddText($"Numero verbale: {report.ReportNumber}");
+        d.AddText($"Data emissione: {Fmt(report.ReportDate)}");
+        d.AddText($"Stato: {report.Status}");
+        d.AddBlank();
+        d.AddHeading("Dipendente");
+        d.AddText($"Nominativo: {report.EmployeeName}");
+        d.AddText($"Asset principale: {report.AssetCode}");
+        d.AddBlank();
+        d.AddHeading("Beni consegnati");
+        if (items.Count == 0) d.AddText("Nessun bene associato al verbale.");
+        var i = 1;
+        foreach (var item in items)
+        {
+            d.AddText($"{i}. {item.AssetCode} - {item.Description}");
+            if (!string.IsNullOrWhiteSpace(item.SerialNumber)) d.AddText($"   S/N: {item.SerialNumber}");
+            d.AddText($"   Stato bene: {item.Condition}");
+            if (!string.IsNullOrWhiteSpace(item.Notes)) d.AddText($"   Note: {item.Notes}");
+            i++;
+        }
+        d.AddBlank();
+        d.AddHeading("Dichiarazione");
+        d.AddText("Il dipendente dichiara di ricevere i beni sopra elencati in buono stato e si impegna a custodirli con diligenza, restituendoli su richiesta dell'azienda o al termine del rapporto/assegnazione.");
+        if (!string.IsNullOrWhiteSpace(report.Notes)) { d.AddBlank(); d.AddHeading("Note"); d.AddText(report.Notes); }
+        d.AddSignature("Firma dipendente");
+        d.AddSignature("Firma azienda");
+        return d;
+    }
+
+    private static string Fmt(string value) => DateTime.TryParse(value, out var date) ? date.ToString("dd/MM/yyyy HH:mm") : value;
+}

@@ -1,13 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "ASSET-004A-delivery-report-foundation",
-  "type": "feature-foundation",
+  "version": "ASSET-004B-pdf-engine",
+  "type": "pdf-engine",
   "visible_changes": false,
   "features": [
-    "DeliveryReport model",
-    "DeliveryReportItem model",
-    "DeliveryReportRepository",
-    "DeliveryReportService",
-    "Audit and notification integration"
+    "Reusable PDF engine",
+    "Delivery report PDF generator",
+    "PDF path persistence",
+    "Audit and notification on PDF generation"
   ]
 }

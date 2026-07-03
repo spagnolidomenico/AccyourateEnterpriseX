@@ -83,6 +83,8 @@ public sealed class DeliveryReportService
         return id;
     }
 
+    public string GeneratePdf(int deliveryReportId, string generatedBy = "System") => new DeliveryReportPdfService(_repository).GeneratePdf(deliveryReportId, generatedBy);
+
     public IReadOnlyList<DeliveryReport> GetLatest(int limit = 50) => _repository.GetLatest(limit);
     public IReadOnlyList<DeliveryReport> GetByAssetId(int assetId) => _repository.GetByAssetId(assetId);
     public IReadOnlyList<DeliveryReport> GetByEmployeeName(string employeeName) => _repository.GetByEmployeeName(employeeName);

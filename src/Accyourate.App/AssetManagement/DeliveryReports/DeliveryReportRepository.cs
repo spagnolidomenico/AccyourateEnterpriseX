@@ -103,6 +103,40 @@ public sealed class DeliveryReportRepository
         return id;
     }
 
+
+    public DeliveryReport? GetById(int id)
+    {
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT Id, ReportNumber, AssignmentId, AssetId, AssetEmployeeId, EmployeeName, AssetCode,
+                   ReportDate, Status, PdfPath, Notes, CreatedBy, CreatedAt, UpdatedAt
+            FROM DeliveryReports
+            WHERE Id = $Id;
+        """;
+        command.Parameters.AddWithValue("$Id", id);
+        using var reader = command.ExecuteReader();
+        return reader.Read() ? ReadReport(reader) : null;
+    }
+
+    public void UpdatePdfPath(int id, string pdfPath, string status)
+    {
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE DeliveryReports
+            SET PdfPath = $PdfPath,
+                Status = $Status,
+                UpdatedAt = $UpdatedAt
+            WHERE Id = $Id;
+        """;
+        command.Parameters.AddWithValue("$Id", id);
+        command.Parameters.AddWithValue("$PdfPath", pdfPath);
+        command.Parameters.AddWithValue("$Status", status);
+        command.Parameters.AddWithValue("$UpdatedAt", DateTime.Now.ToString("s"));
+        command.ExecuteNonQuery();
+    }
+
     public IReadOnlyList<DeliveryReport> GetLatest(int limit = 50)
     {
         using var connection = OpenConnection();
