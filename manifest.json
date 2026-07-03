@@ -1,14 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "HR-002A-domain-models",
-  "type": "domain",
+  "version": "HR-002B-database-repository",
+  "type": "data",
   "visible_changes": false,
   "features": [
-    "Employee model",
-    "Department model",
-    "Site model",
-    "HR Role model",
-    "Employment Contract model",
-    "Employee Document model"
+    "HR SQLite database",
+    "HR repositories",
+    "EmployeeService",
+    "Audit and notification integration",
+    "HR seed data"
   ]
 }
