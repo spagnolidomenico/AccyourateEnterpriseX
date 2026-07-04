@@ -1,6 +1,7 @@
 using Accyourate.App.Platform.Audit;
 using Accyourate.App.Platform.Notifications;
 using Accyourate.App.Platform.Pdf;
+using Accyourate.App.Platform.Settings;
 
 namespace Accyourate.App.AssetManagement.DeliveryReports;
 
@@ -10,6 +11,7 @@ public sealed class DeliveryReportPdfService
     private readonly PdfExportService _pdf;
     private readonly AuditService _audit;
     private readonly NotificationService _notifications;
+    private readonly SettingsService _settings;
 
     public DeliveryReportPdfService(DeliveryReportRepository? repository = null, PdfExportService? pdf = null, AuditService? audit = null, NotificationService? notifications = null)
     {
@@ -23,8 +25,9 @@ public sealed class DeliveryReportPdfService
     {
         var report = _repository.GetById(deliveryReportId) ?? throw new InvalidOperationException("Verbale di consegna non trovato.");
         var items = _repository.GetItems(deliveryReportId);
-        var document = BuildDocument(report, items);
-        var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Accyourate Enterprise X", "Verbali Consegna");
+        var settings = _settings.Load();
+        var document = BuildDocument(report, items, settings);
+        var folder = _settings.GetDeliveryReportsFolder();
         var path = _pdf.Export(document, folder, $"{report.ReportNumber}_{report.EmployeeName}");
         _repository.UpdatePdfPath(deliveryReportId, path, DeliveryReportStatus.Generated);
 
@@ -33,11 +36,20 @@ public sealed class DeliveryReportPdfService
         return path;
     }
 
-    private static SimplePdfDocument BuildDocument(DeliveryReport report, IReadOnlyList<DeliveryReportItem> items)
+    private static SimplePdfDocument BuildDocument(DeliveryReport report, IReadOnlyList<DeliveryReportItem> items, ApplicationSettings settings)
     {
         var d = new SimplePdfDocument { Title = $"Verbale di consegna {report.ReportNumber}" };
-        d.AddTitle("ACCURATE GROUP");
+        d.AddTitle(string.IsNullOrWhiteSpace(settings.Company.LegalName) ? settings.Company.CompanyName : settings.Company.LegalName);
         d.AddHeading("Verbale di consegna beni aziendali");
+        if (!string.IsNullOrWhiteSpace(settings.Company.Address))
+            d.AddText(settings.Company.Address);
+        if (!string.IsNullOrWhiteSpace(settings.Company.VatNumber))
+            d.AddText($"P.IVA: {settings.Company.VatNumber}");
+        if (!string.IsNullOrWhiteSpace(settings.Company.Email) || !string.IsNullOrWhiteSpace(settings.Company.Phone))
+            d.AddText($"Email: {settings.Company.Email}  Tel: {settings.Company.Phone}");
+        if (!string.IsNullOrWhiteSpace(settings.Company.Website))
+            d.AddText(settings.Company.Website);
+        d.AddBlank();
         d.AddText($"Numero verbale: {report.ReportNumber}");
         d.AddText($"Data emissione: {Fmt(report.ReportDate)}");
         d.AddText($"Stato: {report.Status}");

@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Accyourate.App.Platform.Settings;
 
 namespace Accyourate.App.AssetManagement.DeliveryReports;
 
@@ -270,7 +271,7 @@ public sealed class DeliveryReportRepository
         command.Transaction = transaction;
         command.CommandText = "SELECT IFNULL(MAX(Id), 0) + 1 FROM DeliveryReports;";
         var next = Convert.ToInt32(command.ExecuteScalar());
-        return $"VRB-{DateTime.Now:yyyy}-{next:0000}";
+        return new NumberGeneratorService().DeliveryReportNumber(next);
     }
 
     private static void AddReportParameters(SqliteCommand command, DeliveryReport report)
