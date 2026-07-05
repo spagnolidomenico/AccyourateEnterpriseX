@@ -2,6 +2,7 @@ using Accyourate.App.Platform.Audit;
 using Accyourate.App.Platform.Notifications;
 using Accyourate.App.Platform.Pdf;
 using Accyourate.App.Platform.Settings;
+using Accyourate.App.Platform.Documents;
 
 namespace Accyourate.App.AssetManagement.DeliveryReports;
 
@@ -12,6 +13,7 @@ public sealed class DeliveryReportPdfService
     private readonly AuditService _audit;
     private readonly NotificationService _notifications;
     private readonly SettingsService _settings;
+    private readonly DocumentService _documents;
 
     public DeliveryReportPdfService(DeliveryReportRepository? repository = null, PdfExportService? pdf = null, AuditService? audit = null, NotificationService? notifications = null)
     {
@@ -30,6 +32,16 @@ public sealed class DeliveryReportPdfService
         var folder = _settings.GetDeliveryReportsFolder();
         var path = _pdf.Export(document, folder, $"{report.ReportNumber}_{report.EmployeeName}");
         _repository.UpdatePdfPath(deliveryReportId, path, DeliveryReportStatus.Generated);
+
+        _documents.RegisterFile(
+            path,
+            $"Verbale di consegna {report.ReportNumber}",
+            DocumentCategory.DeliveryReport,
+            "DeliveryReport",
+            deliveryReportId.ToString(),
+            report.EmployeeName,
+            generatedBy,
+            $"Asset: {report.AssetCode}");
 
         _audit.Track(AuditAction.Exported, $"Generato PDF verbale {report.ReportNumber}", "DeliveryReport", deliveryReportId.ToString(), report.ReportNumber, generatedBy, AuditSeverity.Info, "AssetManagement");
         _notifications.Publish("PDF verbale generato", $"Generato PDF per il verbale {report.ReportNumber}.", NotificationCategory.Documents, NotificationPriority.Info, generatedBy, "open-delivery-report-pdf", path);

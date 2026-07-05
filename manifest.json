@@ -1,12 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "SETTINGS-001B-platform-integration",
-  "type": "integration",
+  "version": "DOCUMENTS-001-document-center-foundation",
+  "type": "feature",
   "visible_changes": true,
   "features": [
-    "NumberGeneratorService",
-    "Delivery report numbering from settings",
-    "PDF company profile from settings",
-    "PDF output folder from settings"
+    "Document Center",
+    "Document repository",
+    "Document service",
+    "Delivery report PDF registration",
+    "Document workspace UI"
   ]
 }
