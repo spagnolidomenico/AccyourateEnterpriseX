@@ -1,13 +1,15 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "DOCUMENTS-001-document-center-foundation",
+  "version": "DASHBOARD-001-enterprise-dashboard",
   "type": "feature",
   "visible_changes": true,
   "features": [
-    "Document Center",
-    "Document repository",
-    "Document service",
-    "Delivery report PDF registration",
-    "Document workspace UI"
+    "Enterprise Dashboard",
+    "Dashboard KPI service",
+    "HR KPI",
+    "Asset KPI",
+    "Delivery report KPI",
+    "Document KPI",
+    "Notification and audit KPI"
   ]
 }

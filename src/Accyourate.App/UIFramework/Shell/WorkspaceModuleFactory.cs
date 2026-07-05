@@ -12,6 +12,7 @@ using Accyourate.App.HumanResources;
 using Accyourate.App.AssetManagement.DeliveryReports;
 using Accyourate.App.Platform.Settings;
 using Accyourate.App.Platform.Documents;
+using Accyourate.App.Platform.Dashboard;
 
 namespace Accyourate.App.UIFramework.Shell;
 
@@ -45,7 +46,7 @@ public sealed class WorkspaceModuleFactory
             "delivery-reports" => new DeliveryReportView(),
             "settings-center" => new SettingsCenterView(),
             "document-center" => new DocumentCenterView(),
-            "dashboard" => DashboardWorkspace(),
+            "dashboard" => new EnterpriseDashboardView(),
             "analytics" => AnalyticsWorkspace(),
             "medical" => MedicalWorkspace(),
             "digital-twin" => new DigitalTwinWorkspaceModule(_database).Build(),
