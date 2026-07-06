@@ -1,13 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "UPDATE-001-update-center-foundation",
-  "type": "feature",
-  "visible_changes": true,
+  "version": "RC1-001-quality-foundation",
+  "type": "quality",
+  "visible_changes": false,
   "features": [
-    "Update Center",
-    "Version manifest",
-    "Release notes",
-    "Simulated update check",
-    "Manifest export"
+    "VERSION file",
+    "CHANGELOG",
+    "RELEASE_NOTES",
+    "Quality check script",
+    "Regression checklist",
+    "Test foundation documentation"
   ]
 }

@@ -1,16 +1,16 @@
 # Changelog
 
-## MVP-001 / HR-001 - v1.0 Roadmap & Human Resources Blueprint
+## 0.9.0-rc1.001
 
 ### Added
 
-- Roadmap v1.0 MVP Enterprise.
-- HR Blueprint.
-- HR Data Model v1.
-- HR Release Plan.
-- ADR-0032 MVP v1.0 HR First.
-- HR checklist.
+- Release Candidate quality foundation.
+- Version file.
+- Release notes.
+- Regression checklist.
+- Quality check script.
+- Test foundation documentation.
 
 ### Notes
 
-Patch documentale. Nessuna modifica al codice applicativo.
+This release candidate phase focuses on stabilization, repeatable checks, and preparation for installer/distribution.
