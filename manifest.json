@@ -1,17 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "RC1-002A-design-system",
-  "type": "ui-foundation",
+  "version": "RC1-002B-ux-components",
+  "type": "ux-foundation",
   "visible_changes": false,
   "features": [
-    "AxSpacing",
-    "AxTypography",
-    "AxButton",
-    "AxCard",
-    "AxSection",
-    "AxEmptyState",
-    "AxStatusMessage",
-    "AxPageHeader",
-    "AxStatusBar"
+    "AxDialogService",
+    "AxStatusBanner",
+    "AxLoadingOverlay",
+    "AxSnackbar",
+    "UX guidelines"
   ]
 }
