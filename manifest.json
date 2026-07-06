@@ -1,13 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "BACKUP-001-backup-restore-center",
+  "version": "UPDATE-001-update-center-foundation",
   "type": "feature",
   "visible_changes": true,
   "features": [
-    "Backup Center",
-    "Full backup ZIP",
-    "SHA256 verification",
-    "Restore service",
-    "Backup history"
+    "Update Center",
+    "Version manifest",
+    "Release notes",
+    "Simulated update check",
+    "Manifest export"
   ]
 }
