@@ -1,15 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "DASHBOARD-001-enterprise-dashboard",
+  "version": "SEARCH-001-enterprise-search-foundation",
   "type": "feature",
   "visible_changes": true,
   "features": [
-    "Enterprise Dashboard",
-    "Dashboard KPI service",
-    "HR KPI",
-    "Asset KPI",
-    "Delivery report KPI",
-    "Document KPI",
-    "Notification and audit KPI"
+    "Enterprise Search",
+    "Search HR",
+    "Search Assets",
+    "Search Delivery Reports",
+    "Search Documents",
+    "Search Notifications and Audit"
   ]
 }

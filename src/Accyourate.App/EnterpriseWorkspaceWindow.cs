@@ -21,6 +21,7 @@ using HumanResourcesWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceMo
 using DeliveryReportWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.DeliveryReportWorkspaceModule;
 using SettingsWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.SettingsWorkspaceModule;
 using DocumentCenterWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.DocumentCenterWorkspaceModule;
+using EnterpriseSearchWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.EnterpriseSearchWorkspaceModule;
 
 namespace Accyourate.App;
 
@@ -77,6 +78,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleRegistry.Register(new DeliveryReportWorkspaceModuleCore());
         _moduleRegistry.Register(new SettingsWorkspaceModuleCore());
         _moduleRegistry.Register(new DocumentCenterWorkspaceModuleCore());
+        _moduleRegistry.Register(new EnterpriseSearchWorkspaceModuleCore(Navigate));
     }
 
     private Control BuildLayout()
@@ -177,6 +179,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         AddMenu(menu, "AI", "AI Intent Catalog", "ai-catalog", "AI Intent Catalog");
         AddMenu(menu, "AX", "Action Engine", "action-engine", "Action Engine");
         AddMenu(menu, "⌕", "Universal Command Bar", "universal-command-bar", "Universal Command Bar");
+        AddMenu(menu, "🔎", "Ricerca Enterprise", "enterprise-search", "Ricerca Enterprise");
         AddMenu(menu, AxIcons.Dashboard, "Dashboard", "dashboard", "Dashboard");
         AddMenu(menu, "IT", "Asset Management", "asset-management", "Asset Management");
         AddMenu(menu, "📄", "Verbali consegna", "delivery-reports", "Verbali di consegna");
