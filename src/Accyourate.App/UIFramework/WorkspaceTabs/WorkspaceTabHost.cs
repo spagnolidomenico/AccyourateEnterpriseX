@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Accyourate.App.UIFramework.Tokens;
 
@@ -23,22 +24,27 @@ public sealed class WorkspaceTabHost : DockPanel
 
     private void Build()
     {
+        var scroll = new ScrollViewer
+        {
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Padding = new Thickness(0, 0, 0, 10),
+            MinHeight = 50,
+            Content = _tabStrip
+        };
+
         var header = new Border
         {
             Background = UiTokens.Brush(UiTokens.Surface),
             BorderBrush = UiTokens.Brush(UiTokens.Border),
             BorderThickness = new Thickness(0, 0, 0, 1),
-            Padding = new Thickness(10, 8),
-            Child = new ScrollViewer
-            {
-                HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
-                Content = _tabStrip
-            }
+            Padding = new Thickness(10, 8, 10, 4),
+            Child = scroll
         };
 
         _tabStrip.Orientation = Avalonia.Layout.Orientation.Horizontal;
         _tabStrip.Spacing = 6;
+        _tabStrip.Margin = new Thickness(0, 0, 0, 4);
 
         DockPanel.SetDock(header, Dock.Top);
         Children.Add(header);
@@ -62,15 +68,23 @@ public sealed class WorkspaceTabHost : DockPanel
         var row = new StackPanel
         {
             Orientation = Avalonia.Layout.Orientation.Horizontal,
-            Spacing = 8
+            Spacing = 8,
+            MinWidth = 150,
+            MaxWidth = 230
         };
 
-        row.Children.Add(new TextBlock
+        var title = new TextBlock
         {
             Text = $"{tab.Icon} {tab.Title}",
             Foreground = UiTokens.Brush(isActive ? UiTokens.BrandBlue : UiTokens.TextPrimary),
-            FontWeight = isActive ? FontWeight.Bold : FontWeight.Normal
-        });
+            FontWeight = isActive ? FontWeight.Bold : FontWeight.Normal,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextWrapping = TextWrapping.NoWrap,
+            MaxWidth = tab.CanClose ? 165 : 190
+        };
+        ToolTip.SetTip(title, tab.Title);
+
+        row.Children.Add(title);
 
         if (tab.CanClose)
         {
@@ -96,8 +110,11 @@ public sealed class WorkspaceTabHost : DockPanel
             Background = UiTokens.Brush(isActive ? UiTokens.PremiumSelected : UiTokens.SurfaceAlt),
             Foreground = UiTokens.Brush(UiTokens.TextPrimary),
             Padding = new Thickness(12, 8),
-            CornerRadius = new CornerRadius(12)
+            CornerRadius = new CornerRadius(12),
+            MinWidth = 160,
+            MaxWidth = 250
         };
+        ToolTip.SetTip(button, tab.Title);
 
         button.Click += (_, _) => _manager.Activate(tab.Id);
         return button;

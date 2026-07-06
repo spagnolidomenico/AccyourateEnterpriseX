@@ -1,13 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "RC1-002C-workspace-enhancements",
-  "type": "workspace-refinement",
+  "version": "RC1-002C-R1-enterprise-tab-bar",
+  "type": "ux-fix",
   "visible_changes": true,
   "features": [
-    "Workspace tab close all",
-    "Workspace tab close others",
-    "Workspace actions menu",
-    "Enterprise status bar",
-    "Workspace empty state"
+    "Dedicated scrollbar spacing for workspace tabs",
+    "Minimum tab width",
+    "Ellipsis for long tab names",
+    "Tooltip with full tab title",
+    "Left/right tab scrolling buttons"
   ]
 }
