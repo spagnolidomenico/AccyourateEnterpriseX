@@ -15,12 +15,20 @@ public sealed class DeliveryReportPdfService
     private readonly SettingsService _settings;
     private readonly DocumentService _documents;
 
-    public DeliveryReportPdfService(DeliveryReportRepository? repository = null, PdfExportService? pdf = null, AuditService? audit = null, NotificationService? notifications = null)
+    public DeliveryReportPdfService(
+        DeliveryReportRepository? repository = null,
+        PdfExportService? pdf = null,
+        AuditService? audit = null,
+        NotificationService? notifications = null,
+        SettingsService? settings = null,
+        DocumentService? documents = null)
     {
         _repository = repository ?? new DeliveryReportRepository();
         _pdf = pdf ?? new PdfExportService();
         _audit = audit ?? new AuditService();
         _notifications = notifications ?? new NotificationService();
+        _settings = settings ?? new SettingsService();
+        _documents = documents ?? new DocumentService();
     }
 
     public string GeneratePdf(int deliveryReportId, string generatedBy = "System")

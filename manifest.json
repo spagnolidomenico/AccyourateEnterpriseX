@@ -1,14 +1,10 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "SEARCH-001-enterprise-search-foundation",
-  "type": "feature",
-  "visible_changes": true,
+  "version": "CORE-001-warning-cleanup",
+  "type": "maintenance",
+  "visible_changes": false,
   "features": [
-    "Enterprise Search",
-    "Search HR",
-    "Search Assets",
-    "Search Delivery Reports",
-    "Search Documents",
-    "Search Notifications and Audit"
+    "DeliveryReportPdfService warning cleanup",
+    "AssetManagementView async warning cleanup"
   ]
 }
