@@ -64,7 +64,14 @@ public sealed class WorkspaceTabManager
     public void CloseAllClosable()
     {
         _tabs.RemoveAll(t => t.CanClose && !t.IsPinned);
-        ActiveTab = _tabs.FirstOrDefault();
+        ActiveTab = _tabs.FirstOrDefault(t => t.IsPinned) ?? _tabs.FirstOrDefault();
+        Changed?.Invoke();
+    }
+
+    public void CloseOthers(string id)
+    {
+        _tabs.RemoveAll(t => t.Id != id && t.CanClose && !t.IsPinned);
+        Activate(id);
         Changed?.Invoke();
     }
 }

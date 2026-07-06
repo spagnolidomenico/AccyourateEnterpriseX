@@ -1,13 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "RC1-002B-ux-components",
-  "type": "ux-foundation",
-  "visible_changes": false,
+  "version": "RC1-002C-workspace-enhancements",
+  "type": "workspace-refinement",
+  "visible_changes": true,
   "features": [
-    "AxDialogService",
-    "AxStatusBanner",
-    "AxLoadingOverlay",
-    "AxSnackbar",
-    "UX guidelines"
+    "Workspace tab close all",
+    "Workspace tab close others",
+    "Workspace actions menu",
+    "Enterprise status bar",
+    "Workspace empty state"
   ]
 }

@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Accyourate.App.UIFramework.DesignSystem;
 using Accyourate.App.UIFramework.Tokens;
 
 namespace Accyourate.App.UIFramework.WorkspaceTabs;
@@ -10,6 +11,7 @@ public sealed class WorkspaceHost : DockPanel
     private readonly WorkspaceTabManager _manager;
     private readonly StackPanel _tabStrip = new();
     private readonly ContentControl _content = new();
+    private readonly TextBlock _tabInfo = new();
 
     public WorkspaceHost(WorkspaceTabManager manager)
     {
@@ -23,22 +25,55 @@ public sealed class WorkspaceHost : DockPanel
 
     private void Build()
     {
+        var headerGrid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto")
+        };
+
+        var scroll = new ScrollViewer
+        {
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+            Content = _tabStrip
+        };
+
+        _tabStrip.Orientation = Avalonia.Layout.Orientation.Horizontal;
+        _tabStrip.Spacing = 6;
+
+        Grid.SetColumn(scroll, 0);
+        headerGrid.Children.Add(scroll);
+
+        _tabInfo.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
+        _tabInfo.Margin = new Thickness(10, 0);
+        _tabInfo.Foreground = UiTokens.Brush(UiTokens.TextSecondary);
+        Grid.SetColumn(_tabInfo, 1);
+        headerGrid.Children.Add(_tabInfo);
+
+        var actions = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            Spacing = 6
+        };
+
+        actions.Children.Add(AxButton.Create("Chiudi altre", () =>
+        {
+            if (!string.IsNullOrWhiteSpace(_manager.ActiveTabId))
+                _manager.CloseOthers(_manager.ActiveTabId);
+        }));
+
+        actions.Children.Add(AxButton.Create("Chiudi tutte", _manager.CloseAllClosable));
+
+        Grid.SetColumn(actions, 2);
+        headerGrid.Children.Add(actions);
+
         var header = new Border
         {
             Background = UiTokens.Brush(UiTokens.Surface),
             BorderBrush = UiTokens.Brush(UiTokens.Border),
             BorderThickness = new Thickness(0, 0, 0, 1),
             Padding = new Thickness(10, 8),
-            Child = new ScrollViewer
-            {
-                HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
-                Content = _tabStrip
-            }
+            Child = headerGrid
         };
-
-        _tabStrip.Orientation = Avalonia.Layout.Orientation.Horizontal;
-        _tabStrip.Spacing = 6;
 
         DockPanel.SetDock(header, Dock.Top);
         Children.Add(header);
@@ -52,6 +87,7 @@ public sealed class WorkspaceHost : DockPanel
         foreach (var tab in _manager.Tabs)
             _tabStrip.Children.Add(TabButton(tab));
 
+        _tabInfo.Text = $"Schede: {_manager.Tabs.Count}";
         _content.Content = _manager.ActiveTab?.Content ?? EmptyState();
     }
 
@@ -71,6 +107,15 @@ public sealed class WorkspaceHost : DockPanel
             Foreground = UiTokens.Brush(isActive ? UiTokens.BrandBlue : UiTokens.TextPrimary),
             FontWeight = isActive ? FontWeight.Bold : FontWeight.Normal
         });
+
+        if (tab.IsPinned)
+        {
+            row.Children.Add(new TextBlock
+            {
+                Text = "📌",
+                Foreground = UiTokens.Brush(UiTokens.TextSecondary)
+            });
+        }
 
         if (tab.CanClose && !tab.IsPinned)
         {
@@ -107,17 +152,6 @@ public sealed class WorkspaceHost : DockPanel
 
     private static Control EmptyState()
     {
-        return new Border
-        {
-            Background = UiTokens.Brush(UiTokens.Background),
-            Child = new TextBlock
-            {
-                Text = "Workspace Host pronto",
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-                Foreground = UiTokens.Brush(UiTokens.TextSecondary),
-                FontSize = 20
-            }
-        };
+        return AxEmptyState.Create("📑", "Nessuna scheda aperta", "Apri un modulo dal menu laterale per iniziare.");
     }
 }

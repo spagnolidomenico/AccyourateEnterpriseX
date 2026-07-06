@@ -6,6 +6,7 @@ using Accyourate.App.Models;
 using Accyourate.App.UIFramework.Shell;
 using Accyourate.App.UIFramework.Tokens;
 using Accyourate.App.UIFramework.Icons;
+using Accyourate.App.UIFramework.DesignSystem;
 using Accyourate.App.UIFramework.WorkspaceTabs;
 using Accyourate.App.Platform.Notifications;
 using WorkspaceModuleRegistryCore = Accyourate.App.UIFramework.WorkspaceModules.WorkspaceModuleRegistry;
@@ -204,6 +205,18 @@ public sealed class EnterpriseWorkspaceWindow : Window
         AddMenu(menu, AxIcons.Architecture, "Architecture", "architecture", "Enterprise Architecture");
 
         menu.Children.Add(new Separator { Margin = new Avalonia.Thickness(8, 14) });
+        menu.Children.Add(new TextBlock
+        {
+            Text = "Azioni Workspace",
+            FontWeight = FontWeight.Bold,
+            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+            Margin = new Avalonia.Thickness(12, 6, 0, 4)
+        });
+        menu.Children.Add(ExternalButton("🧹 Chiudi tutte le schede", CloseAllWorkspaceTabs));
+        menu.Children.Add(ExternalButton("📌 Dashboard", () => Navigate("dashboard", "Dashboard")));
+        menu.Children.Add(ExternalButton("🔎 Ricerca Enterprise", () => Navigate("enterprise-search", "Ricerca Enterprise")));
+
+        menu.Children.Add(new Separator { Margin = new Avalonia.Thickness(8, 14) });
         menu.Children.Add(ExternalButton("🍎 Apple Style Dashboard", () => new AppleStyleDashboardWindow(_database, _user).Show()));
         menu.Children.Add(ExternalButton("🖼 Branded Home", () => new BrandedHomeWindow(_database, _user).Show()));
         menu.Children.Add(ExternalButton("📁 Document Management", () => new DocumentManagementWindow(_database, _user).Show()));
@@ -252,9 +265,9 @@ public sealed class EnterpriseWorkspaceWindow : Window
     {
         var grid = new Grid
         {
-            Height = 34,
+            Height = 38,
             Background = UiTokens.Brush(UiTokens.Surface),
-            ColumnDefinitions = new ColumnDefinitions("*,180,180,180")
+            ColumnDefinitions = new ColumnDefinitions("*,150,170,170,170,170")
         };
 
         _status.Margin = new Avalonia.Thickness(14, 0);
@@ -262,9 +275,11 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _status.Foreground = UiTokens.Brush(UiTokens.TextSecondary);
         Add(grid, _status, 0, 0);
 
-        Add(grid, StatusText("DB: SQLite"), 1, 0);
-        Add(grid, StatusText("Versione: 15.0.1C2"), 2, 0);
-        Add(grid, StatusText($"Utente: {_user.Username}"), 3, 0);
+        Add(grid, StatusText("v0.9 RC1"), 1, 0);
+        Add(grid, StatusText("DB: SQLite ✓"), 2, 0);
+        Add(grid, StatusText("Backup: disponibile"), 3, 0);
+        Add(grid, StatusText("Update: pronto"), 4, 0);
+        Add(grid, StatusText($"Utente: {_user.Username}"), 5, 0);
 
         return new Border
         {
@@ -274,15 +289,15 @@ public sealed class EnterpriseWorkspaceWindow : Window
         };
     }
 
+    private void CloseAllWorkspaceTabs()
+    {
+        _workspaceTabManager.CloseAllClosable();
+        _status.Text = $"Schede chiuse | Modulo attivo: {_workspaceTabManager.ActiveTab?.Title ?? _navigation.CurrentTitle}";
+    }
+
     private void Navigate(string moduleId, string title)
     {
-        if (OpenRegisteredWorkspaceModule(moduleId))
-            return;
-
-if (OpenRegisteredWorkspaceModule(moduleId))
-            return;
-
-_navigation.CurrentModuleId = moduleId;
+        _navigation.CurrentModuleId = moduleId;
         _navigation.CurrentTitle = title;
         _navigation.History.Add(moduleId);
 
@@ -292,7 +307,7 @@ _navigation.CurrentModuleId = moduleId;
         if (OpenRegisteredWorkspaceModule(moduleId))
             return;
 
-if (moduleId == "digital-twin")
+        if (moduleId == "digital-twin")
         {
             _content.Content = OpenWorkspaceModuleTab("digital-twin", "Digital Twin", "DT", true, false);
             return;
