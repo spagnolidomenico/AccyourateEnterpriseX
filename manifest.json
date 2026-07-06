@@ -1,13 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "ABOUT-001-system-information-center",
+  "version": "BACKUP-001-backup-restore-center",
   "type": "feature",
   "visible_changes": true,
   "features": [
-    "About Center",
-    "System information",
-    "Company information from settings",
-    "Module status",
-    "License placeholder"
+    "Backup Center",
+    "Full backup ZIP",
+    "SHA256 verification",
+    "Restore service",
+    "Backup history"
   ]
 }

@@ -23,6 +23,7 @@ using SettingsWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.
 using DocumentCenterWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.DocumentCenterWorkspaceModule;
 using EnterpriseSearchWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.EnterpriseSearchWorkspaceModule;
 using AboutWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.AboutWorkspaceModule;
+using BackupWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.BackupWorkspaceModule;
 
 namespace Accyourate.App;
 
@@ -81,6 +82,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleRegistry.Register(new DocumentCenterWorkspaceModuleCore());
         _moduleRegistry.Register(new EnterpriseSearchWorkspaceModuleCore(Navigate));
         _moduleRegistry.Register(new AboutWorkspaceModuleCore());
+        _moduleRegistry.Register(new BackupWorkspaceModuleCore());
     }
 
     private Control BuildLayout()
@@ -194,6 +196,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         AddMenu(menu, AxIcons.Branding, "Branding", "branding", "Branding Center");
         AddMenu(menu, "⚙️", "Impostazioni", "settings-center", "Impostazioni");
         AddMenu(menu, "ℹ️", "Informazioni", "about-center", "Informazioni");
+        AddMenu(menu, "💾", "Backup Center", "backup-center", "Backup Center");
         AddMenu(menu, AxIcons.Design, "Design System", "design-system", "Design System");
         AddMenu(menu, AxIcons.Architecture, "Architecture", "architecture", "Enterprise Architecture");
 
