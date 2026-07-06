@@ -1,14 +1,17 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "RC1-001-quality-foundation",
-  "type": "quality",
+  "version": "RC1-002A-design-system",
+  "type": "ui-foundation",
   "visible_changes": false,
   "features": [
-    "VERSION file",
-    "CHANGELOG",
-    "RELEASE_NOTES",
-    "Quality check script",
-    "Regression checklist",
-    "Test foundation documentation"
+    "AxSpacing",
+    "AxTypography",
+    "AxButton",
+    "AxCard",
+    "AxSection",
+    "AxEmptyState",
+    "AxStatusMessage",
+    "AxPageHeader",
+    "AxStatusBar"
   ]
 }
