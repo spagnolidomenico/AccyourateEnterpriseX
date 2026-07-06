@@ -1,10 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "CORE-001-warning-cleanup",
-  "type": "maintenance",
-  "visible_changes": false,
+  "version": "ABOUT-001-system-information-center",
+  "type": "feature",
+  "visible_changes": true,
   "features": [
-    "DeliveryReportPdfService warning cleanup",
-    "AssetManagementView async warning cleanup"
+    "About Center",
+    "System information",
+    "Company information from settings",
+    "Module status",
+    "License placeholder"
   ]
 }

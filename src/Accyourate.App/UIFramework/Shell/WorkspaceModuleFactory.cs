@@ -14,6 +14,7 @@ using Accyourate.App.Platform.Settings;
 using Accyourate.App.Platform.Documents;
 using Accyourate.App.Platform.Dashboard;
 using Accyourate.App.Platform.Search;
+using Accyourate.App.Platform.About;
 
 namespace Accyourate.App.UIFramework.Shell;
 
@@ -48,6 +49,7 @@ public sealed class WorkspaceModuleFactory
             "settings-center" => new SettingsCenterView(),
             "document-center" => new DocumentCenterView(),
             "enterprise-search" => new EnterpriseSearchView(_navigate),
+            "about-center" => new AboutCenterView(),
             "dashboard" => new EnterpriseDashboardView(),
             "analytics" => AnalyticsWorkspace(),
             "medical" => MedicalWorkspace(),

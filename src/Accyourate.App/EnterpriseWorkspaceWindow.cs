@@ -22,6 +22,7 @@ using DeliveryReportWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceMo
 using SettingsWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.SettingsWorkspaceModule;
 using DocumentCenterWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.DocumentCenterWorkspaceModule;
 using EnterpriseSearchWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.EnterpriseSearchWorkspaceModule;
+using AboutWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.AboutWorkspaceModule;
 
 namespace Accyourate.App;
 
@@ -79,6 +80,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         _moduleRegistry.Register(new SettingsWorkspaceModuleCore());
         _moduleRegistry.Register(new DocumentCenterWorkspaceModuleCore());
         _moduleRegistry.Register(new EnterpriseSearchWorkspaceModuleCore(Navigate));
+        _moduleRegistry.Register(new AboutWorkspaceModuleCore());
     }
 
     private Control BuildLayout()
@@ -191,6 +193,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
         AddMenu(menu, "DT", "Digital Twin", "digital-twin", "Digital Twin Platform");
         AddMenu(menu, AxIcons.Branding, "Branding", "branding", "Branding Center");
         AddMenu(menu, "⚙️", "Impostazioni", "settings-center", "Impostazioni");
+        AddMenu(menu, "ℹ️", "Informazioni", "about-center", "Informazioni");
         AddMenu(menu, AxIcons.Design, "Design System", "design-system", "Design System");
         AddMenu(menu, AxIcons.Architecture, "Architecture", "architecture", "Enterprise Architecture");
 
