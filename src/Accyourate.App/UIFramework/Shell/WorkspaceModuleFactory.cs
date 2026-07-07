@@ -17,6 +17,7 @@ using Accyourate.App.Platform.Search;
 using Accyourate.App.Platform.About;
 using Accyourate.App.Platform.Backup;
 using Accyourate.App.Platform.Update;
+using Accyourate.App.Platform.Home;
 
 namespace Accyourate.App.UIFramework.Shell;
 
@@ -42,7 +43,7 @@ public sealed class WorkspaceModuleFactory
     {
         return moduleId switch
         {
-            "workspace-home" => WorkspaceHome(),
+            "workspace-home" => new EnterpriseHomeView(_user, _navigate),
             "control-room" => new WidgetControlRoomBuilder(_database, _user).Build(() => { }),
             "ai-catalog" => IntentCatalogSummary(),
             "notifications" => new NotificationCenterView(),
