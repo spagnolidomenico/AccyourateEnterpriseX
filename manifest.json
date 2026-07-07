@@ -1,14 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "EP-001A-enterprise-home-2",
-  "type": "enterprise-experience",
-  "visible_changes": true,
+  "version": "EP-002-design-mockups",
+  "type": "product-design",
+  "visible_changes": false,
   "features": [
-    "Enterprise Home 2.0",
-    "KPI cards",
-    "Quick actions",
-    "Recent activity",
-    "System status",
-    "AI panel placeholder"
+    "Product Vision",
+    "Enterprise Home mockup",
+    "Asset Management mockup",
+    "Human Resources mockup",
+    "Document Center mockup",
+    "UI Review Checklist"
   ]
 }
