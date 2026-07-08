@@ -14,19 +14,38 @@ public sealed class EnterpriseKpiCard : Border
     public EnterpriseKpiCard()
     {
         Background = UiTokens.Brush(UiTokens.Surface);
-        CornerRadius = new CornerRadius(18);
-        Padding = new Thickness(16, 12);
-        MinWidth = 150;
+        BorderBrush = UiTokens.Brush(UiTokens.Border);
+        BorderThickness = new Thickness(1);
+        CornerRadius = new CornerRadius(20);
+        Padding = new Thickness(16, 14);
+        Width = 168;
+        MinHeight = 126;
 
-        var stack = new StackPanel { Spacing = 2 };
+        var stack = new StackPanel
+        {
+            Spacing = 6,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+        };
 
-        _valueText.FontSize = 22;
+        _iconText.FontSize = 24;
+        _iconText.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
+
+        _valueText.FontSize = 28;
         _valueText.FontWeight = FontWeight.Bold;
         _valueText.Foreground = UiTokens.Brush(UiTokens.TextPrimary);
+        _valueText.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
+        _valueText.TextAlignment = TextAlignment.Center;
 
         _labelText.FontSize = 12;
+        _labelText.FontWeight = FontWeight.SemiBold;
         _labelText.Foreground = UiTokens.Brush(UiTokens.TextSecondary);
+        _labelText.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
+        _labelText.TextAlignment = TextAlignment.Center;
+        _labelText.TextWrapping = TextWrapping.Wrap;
+        _labelText.MaxWidth = 136;
 
+        stack.Children.Add(_iconText);
         stack.Children.Add(_valueText);
         stack.Children.Add(_labelText);
 
@@ -42,7 +61,7 @@ public sealed class EnterpriseKpiCard : Border
     public void Set(string icon, string value, string label)
     {
         _iconText.Text = icon;
-        _valueText.Text = $"{icon} {value}";
+        _valueText.Text = value;
         _labelText.Text = label;
     }
 }

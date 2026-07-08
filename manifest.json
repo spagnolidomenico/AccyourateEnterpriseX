@@ -1,14 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "EP-002-design-mockups",
-  "type": "product-design",
-  "visible_changes": false,
+  "version": "EP-002A-asset-management-polish",
+  "type": "enterprise-polish",
+  "visible_changes": true,
   "features": [
-    "Product Vision",
-    "Enterprise Home mockup",
-    "Asset Management mockup",
-    "Human Resources mockup",
-    "Document Center mockup",
-    "UI Review Checklist"
+    "Aligned Asset KPI cards",
+    "Disponibili KPI",
+    "Improved Asset toolbar layout",
+    "Asset details technical sheet",
+    "Reusable EnterpriseKpiCard refinement"
   ]
 }

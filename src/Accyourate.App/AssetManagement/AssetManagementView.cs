@@ -43,7 +43,7 @@ public sealed class AssetManagementView : UserControl
 
         header.Children.Add(new TextBlock
         {
-            Text = "Asset Management",
+            Text = "IT Asset Management",
             FontSize = 32,
             FontWeight = FontWeight.Bold,
             Foreground = UiTokens.Brush(UiTokens.TextPrimary)
@@ -51,13 +51,14 @@ public sealed class AssetManagementView : UserControl
 
         header.Children.Add(new TextBlock
         {
-            Text = "Inventario dispositivi, assegnazioni, stato operativo e garanzie.",
+            Text = "Gestione del patrimonio informatico aziendale, disponibilità, assegnazioni e garanzie.",
             Foreground = UiTokens.Brush(UiTokens.TextSecondary),
             TextWrapping = TextWrapping.Wrap
         });
 
         _kpis.Orientation = Avalonia.Layout.Orientation.Horizontal;
         _kpis.Spacing = 12;
+        _kpis.Margin = new Thickness(0, 8, 0, 4);
         header.Children.Add(_kpis);
 
         _message.TextWrapping = TextWrapping.Wrap;
@@ -70,7 +71,7 @@ public sealed class AssetManagementView : UserControl
         var toolbar = new Grid
         {
             Margin = new Thickness(24, 0, 24, 16),
-            ColumnDefinitions = new ColumnDefinitions("*,170,170,Auto,Auto,Auto,Auto")
+            ColumnDefinitions = new ColumnDefinitions("*,170,170,18,Auto")
         };
 
         _search.Watermark = "Cerca per codice, categoria, modello, seriale, stato...";
@@ -95,8 +96,8 @@ public sealed class AssetManagementView : UserControl
             .AddPlaceholder("Importa Excel", "Prossimo sprint: importazione Excel")
             .AddPlaceholder("Esporta Excel", "Prossimo sprint: esportazione Excel");
 
-        Grid.SetColumn(actions, 3);
-        Grid.SetColumnSpan(actions, 4);
+        Grid.SetColumn(actions, 4);
+        Grid.SetColumnSpan(actions, 1);
         Grid.SetRow(actions, 0);
         toolbar.Children.Add(actions);
 
@@ -178,14 +179,16 @@ public sealed class AssetManagementView : UserControl
         _kpis.Children.Clear();
 
         var total = _assets.Count;
+        var available = _assets.Count(a =>
+            a.Status.Equals("Disponibile", StringComparison.OrdinalIgnoreCase) ||
+            a.Status.Equals("Attivo", StringComparison.OrdinalIgnoreCase));
         var assigned = _assets.Count(a => a.Status.Equals("Assegnato", StringComparison.OrdinalIgnoreCase));
         var maintenance = _assets.Count(a => a.Status.Equals("In manutenzione", StringComparison.OrdinalIgnoreCase));
-        var expiring = _assets.Count(IsWarrantyExpiring);
 
         _kpis.Children.Add(new EnterpriseKpiCard("💻", total.ToString(), "Asset totali"));
+        _kpis.Children.Add(new EnterpriseKpiCard("🟢", available.ToString(), "Disponibili"));
         _kpis.Children.Add(new EnterpriseKpiCard("👤", assigned.ToString(), "Assegnati"));
-        _kpis.Children.Add(new EnterpriseKpiCard("🔧", maintenance.ToString(), "In manutenzione"));
-        _kpis.Children.Add(new EnterpriseKpiCard("⚠", expiring.ToString(), "Garanzie < 90gg"));
+        _kpis.Children.Add(new EnterpriseKpiCard("🔧", maintenance.ToString(), "Manutenzione"));
     }
 
     private void RefreshRows()
@@ -285,35 +288,28 @@ public sealed class AssetManagementView : UserControl
         Add(actions, SmallButton("Restituisci", () => ReturnAsset(asset), true), 3, 0);
         stack.Children.Add(actions);
 
+        stack.Children.Add(SectionLabel("Informazioni principali"));
         stack.Children.Add(Info("Categoria", asset.Category));
-        stack.Children.Add(Info("Stato", asset.Status));
-        stack.Children.Add(Info("Assegnato a", assignment?.EmployeeName ?? "—"));
+        stack.Children.Add(Info("Produttore", asset.Manufacturer));
+        stack.Children.Add(Info("Modello", asset.Model));
         stack.Children.Add(Info("Seriale", asset.SerialNumber));
         stack.Children.Add(Info("Asset Tag", asset.AssetTag));
+
+        stack.Children.Add(SectionLabel("Stato e assegnazione"));
+        stack.Children.Add(Info("Stato", asset.Status));
+        stack.Children.Add(Info("Assegnato a", assignment?.EmployeeName ?? "—"));
+        stack.Children.Add(Info("Assegnazione", assignment is null
+            ? "Asset attualmente non assegnato."
+            : $"Assegnato il {FormatDate(assignment.AssignedAt)}."));
+
+        stack.Children.Add(SectionLabel("Sicurezza e garanzia"));
         stack.Children.Add(Info("Sistema operativo", asset.OperatingSystem));
         stack.Children.Add(Info("BitLocker", asset.BitLockerEnabled ? "Abilitato" : "Non abilitato"));
         stack.Children.Add(Info("Garanzia", FormatDate(asset.WarrantyEndDate)));
-        stack.Children.Add(Info("Note", asset.Notes));
 
-        stack.Children.Add(new Separator { Margin = new Thickness(0, 8) });
-
+        stack.Children.Add(SectionLabel("Storico e note"));
         stack.Children.Add(Info("Ultimo aggiornamento", FormatDate(asset.UpdatedAt)));
-
-        stack.Children.Add(new TextBlock
-        {
-            Text = "Assegnazione",
-            FontWeight = FontWeight.Bold,
-            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
-        });
-
-        stack.Children.Add(new TextBlock
-        {
-            Text = assignment is null
-                ? "Asset attualmente non assegnato."
-                : $"Assegnato a {assignment.EmployeeName} il {FormatDate(assignment.AssignedAt)}.",
-            TextWrapping = TextWrapping.Wrap,
-            Foreground = UiTokens.Brush(UiTokens.TextSecondary)
-        });
+        stack.Children.Add(Info("Note", asset.Notes));
 
         return Card(stack);
     }
@@ -548,6 +544,19 @@ public sealed class AssetManagementView : UserControl
                 Foreground = UiTokens.Brush(UiTokens.BrandBlue),
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
             }
+        };
+    }
+
+
+    private static TextBlock SectionLabel(string text)
+    {
+        return new TextBlock
+        {
+            Text = text,
+            FontSize = 15,
+            FontWeight = FontWeight.Bold,
+            Foreground = UiTokens.Brush(UiTokens.TextPrimary),
+            Margin = new Thickness(0, 10, 0, 0)
         };
     }
 
