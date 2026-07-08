@@ -1,13 +1,15 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "EP-002A-asset-management-polish",
-  "type": "enterprise-polish",
-  "visible_changes": true,
+  "version": "EP-003A-design-system-v2-foundation",
+  "type": "design-system",
+  "visible_changes": false,
   "features": [
-    "Aligned Asset KPI cards",
-    "Disponibili KPI",
-    "Improved Asset toolbar layout",
-    "Asset details technical sheet",
-    "Reusable EnterpriseKpiCard refinement"
+    "AxKpiCard",
+    "AxToolbar",
+    "AxSearchBox",
+    "AxStatusBadge",
+    "AxInfoPanel",
+    "AxTimeline",
+    "AxDashboardWidget"
   ]
 }

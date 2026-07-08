@@ -1,3 +1,17 @@
+## EP-003A - Design System v2 Foundation
+
+### Added
+- AxKpiCard
+- AxToolbar
+- AxSearchBox
+- AxStatusBadge
+- AxInfoPanel
+- AxTimeline
+- AxDashboardWidget
+
+### Notes
+- Base per uniformare Home, Asset, HR, Document Center e futuri moduli.
+
 # Changelog
 
 ## 0.9.0-rc1.001
