@@ -1,14 +1,15 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "EP-004A-human-resources-enterprise",
-  "type": "enterprise-experience",
+  "version": "EP-004B-hr-real-data-integration",
+  "type": "enterprise-integration",
   "visible_changes": true,
   "features": [
-    "Human Resources Enterprise View",
-    "HR KPI cards",
-    "HR toolbar",
-    "Employee Entity Page foundation",
-    "Asset and Document relation placeholders",
-    "HR timeline foundation"
+    "Real employee list",
+    "Employee search",
+    "Employee Entity Page real data",
+    "Status badges",
+    "Employee asset count",
+    "Employee document count",
+    "Employee timeline foundation"
   ]
 }

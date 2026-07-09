@@ -10,12 +10,18 @@ public sealed class HumanResourcesEnterpriseView : UserControl
 {
     private readonly HumanResourcesEnterpriseService _service = new();
     private readonly Action<string, string>? _navigate;
+    private readonly StackPanel _employees = new();
+    private readonly ContentControl _entityPage = new();
+    private TextBox? _search;
+    private IReadOnlyList<HumanResourcesEmployeeRow> _rows = Array.Empty<HumanResourcesEmployeeRow>();
+    private HumanResourcesEmployeeRow? _selected;
 
     public HumanResourcesEnterpriseView(Action<string, string>? navigate = null)
     {
         _navigate = navigate;
         Background = UiTokens.Brush(UiTokens.Background);
         Content = BuildLayout();
+        LoadEmployees();
     }
 
     private Control BuildLayout()
@@ -39,12 +45,14 @@ public sealed class HumanResourcesEnterpriseView : UserControl
 
         var main = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("*,18,420")
+            ColumnDefinitions = new ColumnDefinitions("*,18,430")
         };
 
         Add(main, EmployeesPanel(), 0, 0);
-        Add(main, EmployeeEntityPage(snapshot), 2, 0);
+        Add(main, _entityPage, 2, 0);
         page.Children.Add(main);
+
+        _entityPage.Content = EmployeeEntityPage(null);
 
         return new ScrollViewer
         {
@@ -71,12 +79,14 @@ public sealed class HumanResourcesEnterpriseView : UserControl
 
     private Control Toolbar()
     {
+        _search = AxSearchBox.Create("Cerca dipendente, matricola, reparto...", _ => LoadEmployees());
+
         var toolbar = new AxToolbar()
-            .AddLeft(AxSearchBox.Create("Cerca dipendente, matricola, reparto..."))
+            .AddLeft(_search)
             .AddLeft(Filter("Reparto"))
             .AddLeft(Filter("Ruolo"))
             .AddLeft(Filter("Stato"))
-            .AddRight(AxButton.Create("Aggiorna", () => { }, AxButtonKind.Secondary))
+            .AddRight(AxButton.Create("Aggiorna", LoadEmployees, AxButtonKind.Secondary))
             .AddRight(AxButton.Create("Esporta", () => { }, AxButtonKind.Success));
 
         return toolbar;
@@ -104,51 +114,174 @@ public sealed class HumanResourcesEnterpriseView : UserControl
             Foreground = UiTokens.Brush(UiTokens.TextPrimary)
         });
 
-        stack.Children.Add(AxEmptyState.Create(
-            "👥",
-            "Fascicolo HR pronto",
-            "Questa vista Enterprise prepara elenco dipendenti, profilo, asset e documenti collegati. Usa 'Apri HR classico' per la gestione dati attuale."));
+        stack.Children.Add(new Border
+        {
+            Background = UiTokens.Brush(UiTokens.SurfaceAlt),
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(12),
+            Child = new Grid
+            {
+                ColumnDefinitions = new ColumnDefinitions("*,130,130,110"),
+                Children =
+                {
+                    Header("Dipendente", 0),
+                    Header("Reparto", 1),
+                    Header("Ruolo", 2),
+                    Header("Stato", 3)
+                }
+            }
+        });
+
+        stack.Children.Add(new ScrollViewer
+        {
+            Content = _employees,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            MaxHeight = 520
+        });
 
         return AxCard.Create(stack);
     }
 
-    private Control EmployeeEntityPage(HumanResourcesEnterpriseSnapshot snapshot)
+    private void LoadEmployees()
+    {
+        _rows = _service.LoadEmployees(_search?.Text ?? string.Empty);
+        _employees.Children.Clear();
+        _employees.Spacing = 6;
+
+        if (_rows.Count == 0)
+        {
+            _employees.Children.Add(AxEmptyState.Create(
+                "👥",
+                "Nessun dipendente trovato",
+                "Crea un dipendente oppure modifica i filtri di ricerca."));
+            _selected = null;
+            _entityPage.Content = EmployeeEntityPage(null);
+            return;
+        }
+
+        foreach (var row in _rows)
+            _employees.Children.Add(EmployeeRow(row));
+
+        _selected ??= _rows.FirstOrDefault();
+        _entityPage.Content = EmployeeEntityPage(_selected);
+    }
+
+    private Button EmployeeRow(HumanResourcesEmployeeRow employee)
+    {
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,130,130,110")
+        };
+
+        var name = new StackPanel { Spacing = 2 };
+        name.Children.Add(new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(employee.FullName) ? "Dipendente senza nome" : employee.FullName,
+            FontWeight = FontWeight.Bold,
+            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
+        });
+        name.Children.Add(new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(employee.EmployeeCode) ? employee.Email : $"{employee.EmployeeCode} · {employee.Email}",
+            FontSize = 12,
+            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        Add(grid, name, 0, 0);
+        Add(grid, Cell(employee.Department), 1, 0);
+        Add(grid, Cell(employee.Role), 2, 0);
+        Add(grid, AxStatusBadge.FromStatus(employee.EmploymentStatus), 3, 0);
+
+        var isActive = _selected?.Id == employee.Id;
+
+        var button = new Button
+        {
+            Content = grid,
+            Background = UiTokens.Brush(isActive ? UiTokens.PremiumSelected : UiTokens.Surface),
+            BorderBrush = UiTokens.Brush(UiTokens.Border),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(12),
+            HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
+        };
+
+        button.Click += (_, _) =>
+        {
+            _selected = employee;
+            _entityPage.Content = EmployeeEntityPage(employee);
+            LoadEmployees();
+        };
+
+        return button;
+    }
+
+    private Control EmployeeEntityPage(HumanResourcesEmployeeRow? employee)
     {
         var stack = new StackPanel { Spacing = 14 };
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Entity Page Dipendente",
+            Text = employee is null ? "Entity Page Dipendente" : employee.FullName,
             FontSize = AxTypography.SectionTitle,
             FontWeight = FontWeight.Bold,
-            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
-        });
-
-        stack.Children.Add(new TextBlock
-        {
-            Text = "Prima struttura del fascicolo digitale dipendente. Nei prossimi sprint verrà collegata ai record reali.",
-            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+            Foreground = UiTokens.Brush(UiTokens.TextPrimary),
             TextWrapping = TextWrapping.Wrap
         });
 
+        if (employee is null)
+        {
+            stack.Children.Add(AxEmptyState.Create("👤", "Seleziona un dipendente", "Il fascicolo mostrerà anagrafica, asset, documenti e timeline."));
+            return AxCard.Create(stack);
+        }
+
+        var assets = _service.CountEmployeeAssets(employee);
+        var documents = _service.CountEmployeeDocuments(employee);
+
         stack.Children.Add(new AxInfoPanel("Anagrafica")
-            .AddItem("Nome", "Seleziona un dipendente", "👤")
-            .AddItem("Reparto", "Da collegare al database HR", "🏢")
-            .AddItem("Ruolo", "Da collegare al database HR", "💼")
+            .AddItem("Matricola", employee.EmployeeCode, "🏷️")
+            .AddItem("Email", employee.Email, "✉️")
+            .AddItem("Telefono", employee.Phone, "☎️")
+            .AddItem("Reparto", employee.Department, "🏢")
+            .AddItem("Ruolo", employee.Role, "💼")
             .ToCard());
 
         stack.Children.Add(new AxInfoPanel("Relazioni")
-            .AddItem("Asset assegnati", snapshot.AssignedAssets.ToString(), "💻")
-            .AddItem("Documenti collegati", snapshot.Documents.ToString(), "📄")
+            .AddItem("Asset assegnati", assets.ToString(), "💻")
+            .AddItem("Documenti collegati", documents.ToString(), "📄")
+            .AddItem("Stato", string.IsNullOrWhiteSpace(employee.EmploymentStatus) ? "N/D" : employee.EmploymentStatus, "✅")
             .ToCard());
 
         var timeline = new AxTimeline("Timeline HR");
-        foreach (var item in _service.EmployeeTimeline())
+        foreach (var item in _service.EmployeeTimeline(employee))
             timeline.AddEvent(item, "", "", "•");
 
         stack.Children.Add(timeline.ToCard());
 
         return AxCard.Create(stack);
+    }
+
+    private static TextBlock Header(string text, int column)
+    {
+        var block = new TextBlock
+        {
+            Text = text,
+            FontWeight = FontWeight.Bold,
+            Foreground = UiTokens.Brush(UiTokens.TextSecondary)
+        };
+        Grid.SetColumn(block, column);
+        return block;
+    }
+
+    private static TextBlock Cell(string text)
+    {
+        return new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(text) ? "—" : text,
+            Foreground = UiTokens.Brush(UiTokens.TextPrimary),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap
+        };
     }
 
     private void Navigate(string moduleId, string title)
