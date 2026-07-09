@@ -1,15 +1,14 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "EP-003A-design-system-v2-foundation",
-  "type": "design-system",
-  "visible_changes": false,
+  "version": "EP-004A-human-resources-enterprise",
+  "type": "enterprise-experience",
+  "visible_changes": true,
   "features": [
-    "AxKpiCard",
-    "AxToolbar",
-    "AxSearchBox",
-    "AxStatusBadge",
-    "AxInfoPanel",
-    "AxTimeline",
-    "AxDashboardWidget"
+    "Human Resources Enterprise View",
+    "HR KPI cards",
+    "HR toolbar",
+    "Employee Entity Page foundation",
+    "Asset and Document relation placeholders",
+    "HR timeline foundation"
   ]
 }

@@ -18,6 +18,7 @@ using Accyourate.App.Platform.About;
 using Accyourate.App.Platform.Backup;
 using Accyourate.App.Platform.Update;
 using Accyourate.App.Platform.Home;
+using Accyourate.App.HumanResources.Enterprise;
 
 namespace Accyourate.App.UIFramework.Shell;
 
@@ -47,7 +48,7 @@ public sealed class WorkspaceModuleFactory
             "control-room" => new WidgetControlRoomBuilder(_database, _user).Build(() => { }),
             "ai-catalog" => IntentCatalogSummary(),
             "notifications" => new NotificationCenterView(),
-            "human-resources" => new HumanResourcesView(),
+            "human-resources" => new HumanResourcesEnterpriseView(_navigate),
             "delivery-reports" => new DeliveryReportView(),
             "settings-center" => new SettingsCenterView(),
             "document-center" => new DocumentCenterView(),
