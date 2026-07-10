@@ -15,57 +15,71 @@ public static class AxKpiCard
         Action? onClick = null,
         AxButtonKind kind = AxButtonKind.Secondary)
     {
-        var stack = new StackPanel
+        var layout = new Grid
         {
-            Spacing = 6,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*"),
+            MinHeight = 146,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch
         };
 
-        stack.Children.Add(new TextBlock
+        var iconBlock = new TextBlock
         {
             Text = icon,
-            FontSize = 28,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
-        });
+            FontSize = 26,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 2)
+        };
+        Grid.SetRow(iconBlock, 0);
+        layout.Children.Add(iconBlock);
 
-        stack.Children.Add(new TextBlock
+        var valueBlock = new TextBlock
         {
             Text = value,
-            FontSize = AxTypography.Kpi,
+            FontSize = 36,
             FontWeight = FontWeight.Bold,
             Foreground = UiTokens.Brush(UiTokens.TextPrimary),
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-            TextAlignment = TextAlignment.Center
-        });
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            TextAlignment = TextAlignment.Center,
+            TextWrapping = TextWrapping.NoWrap
+        };
+        Grid.SetRow(valueBlock, 1);
+        layout.Children.Add(valueBlock);
 
-        stack.Children.Add(new TextBlock
+        var titleBlock = new TextBlock
         {
             Text = title,
-            FontSize = AxTypography.Body,
+            FontSize = 15,
             FontWeight = FontWeight.Bold,
             Foreground = UiTokens.Brush(UiTokens.TextPrimary),
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center,
-            TextWrapping = TextWrapping.Wrap
-        });
+            TextWrapping = TextWrapping.Wrap,
+        };
+        Grid.SetRow(titleBlock, 2);
+        layout.Children.Add(titleBlock);
 
-        if (!string.IsNullOrWhiteSpace(subtitle))
+        var subtitleBlock = new TextBlock
         {
-            stack.Children.Add(new TextBlock
-            {
-                Text = subtitle,
-                FontSize = AxTypography.Label,
-                Foreground = UiTokens.Brush(UiTokens.TextSecondary),
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                TextAlignment = TextAlignment.Center,
-                TextWrapping = TextWrapping.Wrap
-            });
-        }
+            Text = string.IsNullOrWhiteSpace(subtitle) ? " " : subtitle,
+            FontSize = 12,
+            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom,
+            TextAlignment = TextAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 4, 0, 2)
+        };
+        Grid.SetRow(subtitleBlock, 3);
+        layout.Children.Add(subtitleBlock);
 
-        var card = AxCard.Create(stack);
+        var card = AxCard.Create(layout, 18);
         card.Width = 220;
-        card.MinHeight = 138;
+        card.MinHeight = 184;
         card.Margin = new Thickness(0, 0, 12, 12);
+        card.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
 
         if (onClick is null)
             return card;
@@ -76,7 +90,8 @@ public static class AxKpiCard
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
             Padding = new Thickness(0),
-            HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
+            HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+            VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Stretch
         };
 
         button.Click += (_, _) => onClick();

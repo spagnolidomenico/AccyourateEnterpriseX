@@ -1,13 +1,12 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "EP-005A-enterprise-relations-foundation",
-  "type": "enterprise-integration",
+  "version": "EP-005B-R1-kpi-layout-fix",
+  "type": "ui-fix",
   "visible_changes": true,
   "features": [
-    "EmployeeRelationsService",
-    "Employee to Assets relations",
-    "Employee to Documents relations",
-    "Employee to Delivery Reports relations",
-    "HR Entity Page relation panels"
+    "KPI subtitle overflow fixed",
+    "Shared AxKpiCard used by Enterprise Dashboard",
+    "Uniform KPI card height",
+    "Improved DPI scaling resilience"
   ]
 }

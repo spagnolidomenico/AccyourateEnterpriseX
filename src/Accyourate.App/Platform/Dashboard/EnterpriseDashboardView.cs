@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Accyourate.App.UIFramework.Tokens;
+using Accyourate.App.UIFramework.DesignSystem;
 
 namespace Accyourate.App.Platform.Dashboard;
 
@@ -64,8 +65,8 @@ public sealed class EnterpriseDashboardView : UserControl
             Spacing = 18
         };
 
-        _kpis.ItemWidth = 230;
-        _kpis.ItemHeight = 140;
+        _kpis.ItemWidth = 232;
+        _kpis.ItemHeight = 196;
         content.Children.Add(_kpis);
 
         content.Children.Add(Section("Azioni rapide", _actions));
@@ -117,49 +118,9 @@ public sealed class EnterpriseDashboardView : UserControl
         _actions.Children.Add(Info("Impostazioni", "Configura azienda, numerazioni e percorsi."));
     }
 
-    private static Border Kpi(string icon, string value, string label, string subtitle)
+    private static Control Kpi(string icon, string value, string label, string subtitle)
     {
-        var stack = new StackPanel { Spacing = 6 };
-
-        stack.Children.Add(new TextBlock
-        {
-            Text = icon,
-            FontSize = 26
-        });
-
-        stack.Children.Add(new TextBlock
-        {
-            Text = value,
-            FontSize = 30,
-            FontWeight = FontWeight.Bold,
-            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
-        });
-
-        stack.Children.Add(new TextBlock
-        {
-            Text = label,
-            FontWeight = FontWeight.SemiBold,
-            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
-        });
-
-        stack.Children.Add(new TextBlock
-        {
-            Text = subtitle,
-            FontSize = 12,
-            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
-            TextWrapping = TextWrapping.Wrap
-        });
-
-        return new Border
-        {
-            Background = UiTokens.Brush(UiTokens.Surface),
-            BorderBrush = UiTokens.Brush(UiTokens.Border),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(22),
-            Padding = new Thickness(18),
-            Margin = new Thickness(0, 0, 12, 12),
-            Child = stack
-        };
+        return AxKpiCard.Create(icon, label, value, subtitle);
     }
 
     private static Control Section(string title, Control content)
