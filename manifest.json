@@ -1,15 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "EP-004B-hr-real-data-integration",
+  "version": "EP-005A-enterprise-relations-foundation",
   "type": "enterprise-integration",
   "visible_changes": true,
   "features": [
-    "Real employee list",
-    "Employee search",
-    "Employee Entity Page real data",
-    "Status badges",
-    "Employee asset count",
-    "Employee document count",
-    "Employee timeline foundation"
+    "EmployeeRelationsService",
+    "Employee to Assets relations",
+    "Employee to Documents relations",
+    "Employee to Delivery Reports relations",
+    "HR Entity Page relation panels"
   ]
 }
