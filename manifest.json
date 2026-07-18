@@ -1,12 +1,13 @@
 {
   "name": "Accyourate Enterprise X",
-  "version": "EP-005B-R1-kpi-layout-fix",
-  "type": "ui-fix",
-  "visible_changes": true,
+  "version": "M2-A-ax-enterprise-table-foundation",
+  "type": "ui-framework",
+  "visible_changes": false,
   "features": [
-    "KPI subtitle overflow fixed",
-    "Shared AxKpiCard used by Enterprise Dashboard",
-    "Uniform KPI card height",
-    "Improved DPI scaling resilience"
+    "AxEnterpriseTable<T>",
+    "AxEnterpriseColumn<T>",
+    "Shared column layout",
+    "Horizontal overflow handling",
+    "Uniform row selection"
   ]
 }

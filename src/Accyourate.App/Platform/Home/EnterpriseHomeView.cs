@@ -121,8 +121,8 @@ public sealed class EnterpriseHomeView : UserControl
     {
         var wrap = new WrapPanel
         {
-            ItemWidth = 255,
-            ItemHeight = 148
+            ItemWidth = 252,
+            ItemHeight = 202
         };
 
         wrap.Children.Add(Kpi("👥", "Dipendenti", snapshot.Employees.ToString(), "Apri Human Resources", "human-resources", "Human Resources"));
@@ -135,40 +135,13 @@ public sealed class EnterpriseHomeView : UserControl
 
     private Control Kpi(string icon, string title, string value, string subtitle, string moduleId, string moduleTitle)
     {
-        var stack = new StackPanel { Spacing = 6 };
-
-        stack.Children.Add(new TextBlock { Text = icon, FontSize = 28 });
-        stack.Children.Add(new TextBlock
-        {
-            Text = value,
-            FontSize = 30,
-            FontWeight = FontWeight.Bold,
-            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
-        });
-        stack.Children.Add(new TextBlock
-        {
-            Text = title,
-            FontWeight = FontWeight.Bold,
-            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
-        });
-        stack.Children.Add(new TextBlock
-        {
-            Text = subtitle,
-            FontSize = 12,
-            Foreground = UiTokens.Brush(UiTokens.TextSecondary)
-        });
-
-        var button = new Button
-        {
-            Content = AxCard.Create(stack),
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            Padding = new Thickness(0),
-            Margin = new Thickness(0, 0, 12, 12)
-        };
-
-        button.Click += (_, _) => Navigate(moduleId, moduleTitle);
-        return button;
+        return AxKpiCard.Create(
+            icon,
+            title,
+            value,
+            subtitle,
+            () => Navigate(moduleId, moduleTitle),
+            AxButtonKind.Secondary);
     }
 
     private Control QuickActions()

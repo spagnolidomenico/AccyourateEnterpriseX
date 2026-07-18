@@ -5,6 +5,7 @@ using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
 using Accyourate.App.UIFramework.Tokens;
 using Accyourate.App.UIFramework.Controls;
+using Accyourate.App.UIFramework.Layout;
 
 namespace Accyourate.App.AssetManagement;
 
@@ -20,6 +21,9 @@ public sealed class AssetManagementView : UserControl
     private readonly StackPanel _kpis = new();
     private readonly ContentControl _details = new();
     private readonly TextBlock _message = new();
+    private readonly Grid _adaptiveContent = new();
+    private Control? _assetList;
+    private Control? _detailsHost;
 
     private IReadOnlyList<Asset> _assets = Array.Empty<Asset>();
     private Asset? _selected;
@@ -56,10 +60,15 @@ public sealed class AssetManagementView : UserControl
             TextWrapping = TextWrapping.Wrap
         });
 
+        var kpiWrap = new WrapPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            Margin = new Thickness(0, 8, 0, 4)
+        };
         _kpis.Orientation = Avalonia.Layout.Orientation.Horizontal;
         _kpis.Spacing = 12;
-        _kpis.Margin = new Thickness(0, 8, 0, 4);
-        header.Children.Add(_kpis);
+        kpiWrap.Children.Add(_kpis);
+        header.Children.Add(kpiWrap);
 
         _message.TextWrapping = TextWrapping.Wrap;
         _message.Foreground = UiTokens.Brush(UiTokens.BrandBlue);
@@ -68,13 +77,19 @@ public sealed class AssetManagementView : UserControl
         DockPanel.SetDock(header, Dock.Top);
         root.Children.Add(header);
 
-        var toolbar = new Grid
+        var toolbar = new StackPanel
         {
             Margin = new Thickness(24, 0, 24, 16),
-            ColumnDefinitions = new ColumnDefinitions("*,170,170,18,Auto")
+            Spacing = 10
+        };
+
+        var filters = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,160,160")
         };
 
         _search.Watermark = "Cerca per codice, categoria, modello, seriale, stato...";
+        _search.MinWidth = 260;
         _search.TextChanged += (_, _) => RefreshRows();
 
         _category.ItemsSource = new[] { "Tutte", "Desktop PC", "Notebook", "Mac", "Stampante", "Smartphone", "Tablet", "Monitor", "Accessorio", "Licenza software", "Dispositivo medicale", "Altro" };
@@ -85,38 +100,37 @@ public sealed class AssetManagementView : UserControl
         _status.SelectedIndex = 0;
         _status.SelectionChanged += (_, _) => RefreshRows();
 
-        Add(toolbar, _search, 0, 0);
-        Add(toolbar, _category, 1, 0);
-        Add(toolbar, _status, 2, 0);
+        Add(filters, _search, 0, 0);
+        Add(filters, _category, 1, 0);
+        Add(filters, _status, 2, 0);
+        toolbar.Children.Add(filters);
 
-        var actions = new EnterpriseToolbar()
-            .AddSecondary("↻ Aggiorna", Load, "Ricarica asset")
-            .AddPrimary("+ Nuovo", OpenNewAsset, "Crea un nuovo asset")
-            .AddSecondary("Assegna", OpenAssignAsset, "Assegna un asset a un dipendente")
-            .AddPlaceholder("Importa Excel", "Prossimo sprint: importazione Excel")
-            .AddPlaceholder("Esporta Excel", "Prossimo sprint: esportazione Excel");
+        var actions = new WrapPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right
+        };
 
-        Grid.SetColumn(actions, 4);
-        Grid.SetColumnSpan(actions, 1);
-        Grid.SetRow(actions, 0);
+        actions.Children.Add(ActionButton("↻ Aggiorna", Load));
+        actions.Children.Add(ActionButton("+ Nuovo", OpenNewAsset, true));
+        actions.Children.Add(ActionButton("Assegna", OpenAssignAsset));
+        actions.Children.Add(ActionButton("Importa Excel", () => ShowMessage("Importazione Excel disponibile in uno sprint successivo.")));
+        actions.Children.Add(ActionButton("Esporta Excel", () => ShowMessage("Esportazione Excel disponibile in uno sprint successivo.")));
         toolbar.Children.Add(actions);
 
         DockPanel.SetDock(toolbar, Dock.Top);
         root.Children.Add(toolbar);
 
-        var content = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("*,380"),
-            RowDefinitions = new RowDefinitions("*"),
-            Margin = new Thickness(24, 0, 24, 24)
-        };
+        _adaptiveContent.Margin = new Thickness(24, 0, 24, 24);
 
         var list = new DockPanel();
+        const string assetColumns = "110,140,160,190,150,130";
 
         var tableHeader = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("100,130,160,*,130,120"),
-            Margin = new Thickness(0, 0, 0, 8)
+            ColumnDefinitions = new ColumnDefinitions(assetColumns),
+            Margin = new Thickness(0, 0, 0, 8),
+            MinWidth = 880
         };
 
         Add(tableHeader, Header("Codice"), 0, 0);
@@ -138,24 +152,39 @@ public sealed class AssetManagementView : UserControl
             {
                 Content = _rows,
                 VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
+                HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                MinWidth = 0
             }
         });
 
-        Add(content, list, 0, 0);
+        _assetList = new ScrollViewer
+        {
+            Content = list,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
+        };
 
         _details.Content = EmptyDetails();
-
-        var detailsHost = new ScrollViewer
+        _detailsHost = new ScrollViewer
         {
             Content = _details,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+            MinHeight = 280
         };
 
-        Add(content, detailsHost, 1, 0);
+        EnterpriseAdaptiveLayout.ArrangeMasterDetails(_adaptiveContent, _assetList, _detailsHost, Bounds.Width);
+        SizeChanged += (_, e) =>
+        {
+            if (_assetList is not null && _detailsHost is not null)
+                EnterpriseAdaptiveLayout.ArrangeMasterDetails(_adaptiveContent, _assetList, _detailsHost, e.NewSize.Width);
 
-        root.Children.Add(content);
+            filters.ColumnDefinitions = EnterpriseAdaptiveLayout.IsNarrow(e.NewSize.Width)
+                ? new ColumnDefinitions("*,110,110")
+                : new ColumnDefinitions("*,160,160");
+        };
+
+        root.Children.Add(_adaptiveContent);
         return root;
     }
 
@@ -226,7 +255,8 @@ public sealed class AssetManagementView : UserControl
     {
         var grid = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("100,130,160,*,130,120")
+            ColumnDefinitions = new ColumnDefinitions("110,140,160,190,150,130"),
+            MinWidth = 880
         };
 
         Add(grid, Cell(asset.AssetCode, true), 0, 0);
@@ -279,13 +309,14 @@ public sealed class AssetManagementView : UserControl
 
         var actions = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("*,*,*,*"),
+            ColumnDefinitions = new ColumnDefinitions("*,12,*"),
+            RowDefinitions = new RowDefinitions("Auto,10,Auto"),
             Margin = new Thickness(0, 4, 0, 8)
         };
         Add(actions, SmallButton("Modifica", () => OpenEditAsset(asset)), 0, 0);
-        Add(actions, SmallButton("Elimina", () => DeleteAsset(asset), true), 1, 0);
         Add(actions, SmallButton("Assegna", () => OpenAssignAsset(asset)), 2, 0);
-        Add(actions, SmallButton("Restituisci", () => ReturnAsset(asset), true), 3, 0);
+        Add(actions, SmallButton("Elimina", () => DeleteAsset(asset), true), 0, 2);
+        Add(actions, SmallButton("Restituisci", () => ReturnAsset(asset), true), 2, 2);
         stack.Children.Add(actions);
 
         stack.Children.Add(SectionLabel("Informazioni principali"));
@@ -525,6 +556,7 @@ public sealed class AssetManagementView : UserControl
             Foreground = UiTokens.Brush(strong ? UiTokens.TextPrimary : UiTokens.TextSecondary),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
             Margin = new Thickness(10, 0)
         };
     }
@@ -537,6 +569,8 @@ public sealed class AssetManagementView : UserControl
             CornerRadius = new CornerRadius(12),
             Padding = new Thickness(10, 5),
             Margin = new Thickness(8, 0),
+            MinWidth = 126,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
             Child = new TextBlock
             {
                 Text = status,
@@ -605,6 +639,23 @@ public sealed class AssetManagementView : UserControl
         return b;
     }
 
+    private static Button ActionButton(string text, Action action, bool primary = false)
+    {
+        var button = new Button
+        {
+            Content = text,
+            Background = UiTokens.Brush(primary ? UiTokens.BrandBlue : UiTokens.Surface),
+            Foreground = primary ? Brushes.White : UiTokens.Brush(UiTokens.TextPrimary),
+            FontWeight = primary ? FontWeight.Bold : FontWeight.Normal,
+            Padding = new Thickness(12, 9),
+            CornerRadius = new CornerRadius(12),
+            Margin = new Thickness(6, 0, 0, 6),
+            MinWidth = 96
+        };
+        button.Click += (_, _) => action();
+        return button;
+    }
+
     private static Button SmallButton(string text, Action action, bool danger = false)
     {
         var b = new Button
@@ -613,9 +664,11 @@ public sealed class AssetManagementView : UserControl
             Background = UiTokens.Brush(danger ? UiTokens.SurfaceAlt : UiTokens.BrandBlue),
             Foreground = danger ? UiTokens.Brush(UiTokens.Danger) : Brushes.White,
             FontWeight = FontWeight.Bold,
-            Padding = new Thickness(10, 8),
+            Padding = new Thickness(12, 9),
             CornerRadius = new CornerRadius(12),
-            Margin = new Thickness(4)
+            Margin = new Thickness(0),
+            MinWidth = 118,
+            HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center
         };
         b.Click += (_, _) => action();
         return b;

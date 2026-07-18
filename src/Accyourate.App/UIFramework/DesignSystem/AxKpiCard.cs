@@ -7,6 +7,9 @@ namespace Accyourate.App.UIFramework.DesignSystem;
 
 public static class AxKpiCard
 {
+    public const double DefaultWidth = 236;
+    public const double DefaultHeight = 186;
+
     public static Control Create(
         string icon,
         string title,
@@ -17,69 +20,84 @@ public static class AxKpiCard
     {
         var layout = new Grid
         {
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*"),
-            MinHeight = 146,
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch
+            RowDefinitions = new RowDefinitions("38,54,34,*"),
+            MinWidth = DefaultWidth,
+            Width = DefaultWidth,
+            MinHeight = DefaultHeight,
+            Height = DefaultHeight
         };
 
-        var iconBlock = new TextBlock
+        var iconText = new TextBlock
         {
             Text = icon,
             FontSize = 26,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-            Margin = new Thickness(0, 0, 0, 2)
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            TextAlignment = TextAlignment.Center
         };
-        Grid.SetRow(iconBlock, 0);
-        layout.Children.Add(iconBlock);
+        Grid.SetRow(iconText, 0);
+        layout.Children.Add(iconText);
 
-        var valueBlock = new TextBlock
+        var valueText = new TextBlock
         {
-            Text = value,
-            FontSize = 36,
+            Text = string.IsNullOrWhiteSpace(value) ? "0" : value,
+            FontSize = 40,
             FontWeight = FontWeight.Bold,
             Foreground = UiTokens.Brush(UiTokens.TextPrimary),
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.NoWrap
         };
-        Grid.SetRow(valueBlock, 1);
-        layout.Children.Add(valueBlock);
+        Grid.SetRow(valueText, 1);
+        layout.Children.Add(valueText);
 
-        var titleBlock = new TextBlock
+        var titleText = new TextBlock
         {
             Text = title,
-            FontSize = 15,
+            FontSize = 16,
             FontWeight = FontWeight.Bold,
             Foreground = UiTokens.Brush(UiTokens.TextPrimary),
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
+            MaxWidth = 196
         };
-        Grid.SetRow(titleBlock, 2);
-        layout.Children.Add(titleBlock);
+        Grid.SetRow(titleText, 2);
+        layout.Children.Add(titleText);
 
-        var subtitleBlock = new TextBlock
+        var subtitleText = new TextBlock
         {
             Text = string.IsNullOrWhiteSpace(subtitle) ? " " : subtitle,
-            FontSize = 12,
+            FontSize = 13,
+            FontWeight = FontWeight.SemiBold,
             Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom,
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 4, 0, 2)
+            MaxWidth = 196,
+            Margin = new Thickness(0, 6, 0, 2)
         };
-        Grid.SetRow(subtitleBlock, 3);
-        layout.Children.Add(subtitleBlock);
+        Grid.SetRow(subtitleText, 3);
+        layout.Children.Add(subtitleText);
 
-        var card = AxCard.Create(layout, 18);
-        card.Width = 220;
-        card.MinHeight = 184;
-        card.Margin = new Thickness(0, 0, 12, 12);
-        card.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
+        var card = new Border
+        {
+            Background = UiTokens.Brush(UiTokens.Surface),
+            BorderBrush = UiTokens.Brush(UiTokens.Border),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(22),
+            Padding = new Thickness(20, 14, 20, 16),
+            Margin = new Thickness(0, 0, 12, 12),
+            MinWidth = DefaultWidth,
+            Width = DefaultWidth,
+            MinHeight = DefaultHeight,
+            Height = DefaultHeight,
+            ClipToBounds = true,
+            Child = layout
+        };
 
         if (onClick is null)
             return card;
@@ -90,6 +108,10 @@ public static class AxKpiCard
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
             Padding = new Thickness(0),
+            MinWidth = DefaultWidth,
+            Width = DefaultWidth,
+            MinHeight = DefaultHeight,
+            Height = DefaultHeight,
             HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
             VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Stretch
         };

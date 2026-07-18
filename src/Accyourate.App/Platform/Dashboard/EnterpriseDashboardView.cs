@@ -65,8 +65,8 @@ public sealed class EnterpriseDashboardView : UserControl
             Spacing = 18
         };
 
-        _kpis.ItemWidth = 232;
-        _kpis.ItemHeight = 196;
+        _kpis.ItemWidth = 252;
+        _kpis.ItemHeight = 202;
         content.Children.Add(_kpis);
 
         content.Children.Add(Section("Azioni rapide", _actions));
