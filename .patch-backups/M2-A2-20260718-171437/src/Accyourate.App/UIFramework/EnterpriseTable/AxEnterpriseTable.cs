@@ -20,7 +20,7 @@ public sealed class AxEnterpriseTable<T> : Border
         Background = UiTokens.Brush(UiTokens.Surface);
         BorderBrush = UiTokens.Brush(UiTokens.Border);
         BorderThickness = new Thickness(1);
-        CornerRadius = new CornerRadius(14);
+        CornerRadius = new CornerRadius(16);
 
         var content = new StackPanel();
 
@@ -29,7 +29,7 @@ public sealed class AxEnterpriseTable<T> : Border
             Background = UiTokens.Brush(UiTokens.SurfaceAlt),
             BorderBrush = UiTokens.Brush(UiTokens.Border),
             BorderThickness = new Thickness(0, 0, 0, 1),
-            Padding = new Thickness(14, 11),
+            Padding = new Thickness(12, 10),
             Child = _header
         };
 
@@ -47,15 +47,8 @@ public sealed class AxEnterpriseTable<T> : Border
     }
 
     public event Action<T>? SelectionChanged;
-    public event Action<T>? ItemActivated;
 
     public T? SelectedItem => _selectedItem;
-
-    public void SetSelectedItem(T? item)
-    {
-        _selectedItem = item;
-        RefreshSelection();
-    }
 
     public void ConfigureColumns(IReadOnlyList<AxEnterpriseColumn<T>> columns)
     {
@@ -102,7 +95,7 @@ public sealed class AxEnterpriseTable<T> : Border
     private void BuildRows()
     {
         _rows.Children.Clear();
-        _rows.Spacing = 0;
+        _rows.Spacing = 4;
 
         if (_items.Count == 0)
         {
@@ -121,8 +114,6 @@ public sealed class AxEnterpriseTable<T> : Border
 
         foreach (var item in _items)
             _rows.Children.Add(BuildRow(item));
-
-        RefreshSelection();
     }
 
     private Control BuildRow(T item)
@@ -148,9 +139,8 @@ public sealed class AxEnterpriseTable<T> : Border
         {
             Content = grid,
             Background = Brushes.Transparent,
-            BorderBrush = UiTokens.Brush(UiTokens.Border),
-            BorderThickness = new Thickness(0, 0, 0, 1),
-            Padding = new Thickness(14, 9),
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(12, 8),
             HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
             MinHeight = 52
         };
@@ -161,7 +151,6 @@ public sealed class AxEnterpriseTable<T> : Border
             SelectionChanged?.Invoke(item);
             RefreshSelection();
         };
-        button.DoubleTapped += (_, _) => ItemActivated?.Invoke(item);
 
         button.Tag = item;
         return button;

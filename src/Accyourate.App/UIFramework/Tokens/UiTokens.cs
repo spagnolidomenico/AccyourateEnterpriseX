@@ -1,46 +1,50 @@
 using Avalonia.Media;
+using Accyourate.App.UIFramework.Foundation;
 
 namespace Accyourate.App.UIFramework.Tokens;
 
+/// <summary>
+/// Backward-compatible token facade. New foundation code should consume
+/// AxSemanticTokens, AxLayoutTokens and AxTypographyTokens directly.
+/// </summary>
 public static class UiTokens
 {
-    public const string BrandBlue = "#0A84FF";
-    public const string BrandAccent = "#B5162B";
-    public const string Background = "#F5F5F7";
-    public const string Surface = "#FFFFFF";
-    public const string SurfaceAlt = "#F2F2F7";
-    public const string Sidebar = "#FBFBFD";
-    public const string Border = "#E5E5EA";
-    public const string TextPrimary = "#1D1D1F";
-    public const string TextSecondary = "#6E6E73";
-    public const string Success = "#34C759";
-    public const string Warning = "#FF9F0A";
-    public const string Danger = "#FF3B30";
-    public const string Info = "#0A84FF";
+    public const string BrandBlue = AxSemanticTokens.BrandPrimary;
+    public const string BrandAccent = AxSemanticTokens.BrandAccent;
+    public const string Background = AxSemanticTokens.Background;
+    public const string Surface = AxSemanticTokens.Surface;
+    public const string SurfaceAlt = AxSemanticTokens.SurfaceSubtle;
+    public const string Sidebar = AxSemanticTokens.NavigationSurface;
+    public const string Border = AxSemanticTokens.Border;
+    public const string TextPrimary = AxSemanticTokens.TextPrimary;
+    public const string TextSecondary = AxSemanticTokens.TextSecondary;
+    public const string TextMuted = AxSemanticTokens.TextMuted;
+    public const string Success = AxSemanticTokens.Success;
+    public const string Warning = AxSemanticTokens.Warning;
+    public const string Danger = AxSemanticTokens.Danger;
+    public const string Info = AxSemanticTokens.Info;
 
+    public const string PremiumBlueSoft = AxSemanticTokens.Selection;
+    public const string PremiumSurfaceGlass = AxSemanticTokens.GlassSurface;
+    public const string PremiumShadow = AxSemanticTokens.Shadow;
+    public const string PremiumHover = AxSemanticTokens.Hover;
+    public const string PremiumSelected = AxSemanticTokens.Selection;
 
-    public const string PremiumBlueSoft = "#E8F1FF";
-    public const string PremiumSurfaceGlass = "#FAFAFC";
-    public const string PremiumShadow = "#18000000";
-    public const string PremiumHover = "#EEF2FF";
-    public const string PremiumSelected = "#E8F1FF";
+    public const string DarkBackground = AxSemanticTokens.DarkBackground;
+    public const string DarkSurface = AxSemanticTokens.DarkSurface;
+    public const string DarkSurfaceAlt = AxSemanticTokens.DarkSurfaceSubtle;
+    public const string DarkSidebar = AxSemanticTokens.DarkNavigationSurface;
+    public const string DarkBorder = AxSemanticTokens.DarkBorder;
+    public const string DarkTextPrimary = AxSemanticTokens.DarkTextPrimary;
+    public const string DarkTextSecondary = AxSemanticTokens.DarkTextSecondary;
 
-
-    public const string DarkBackground = "#0B1020";
-    public const string DarkSurface = "#111827";
-    public const string DarkSurfaceAlt = "#1F2937";
-    public const string DarkSidebar = "#0F172A";
-    public const string DarkBorder = "#273244";
-    public const string DarkTextPrimary = "#F9FAFB";
-    public const string DarkTextSecondary = "#CBD5E1";
-
-    public static string BackgroundFor(UiThemeMode mode) => mode == UiThemeMode.Dark ? DarkBackground : Background;
-    public static string SurfaceFor(UiThemeMode mode) => mode == UiThemeMode.Dark ? DarkSurface : Surface;
-    public static string SurfaceAltFor(UiThemeMode mode) => mode == UiThemeMode.Dark ? DarkSurfaceAlt : SurfaceAlt;
-    public static string SidebarFor(UiThemeMode mode) => mode == UiThemeMode.Dark ? DarkSidebar : Sidebar;
-    public static string BorderFor(UiThemeMode mode) => mode == UiThemeMode.Dark ? DarkBorder : Border;
-    public static string TextPrimaryFor(UiThemeMode mode) => mode == UiThemeMode.Dark ? DarkTextPrimary : TextPrimary;
-    public static string TextSecondaryFor(UiThemeMode mode) => mode == UiThemeMode.Dark ? DarkTextSecondary : TextSecondary;
+    public static string BackgroundFor(UiThemeMode mode) => AxThemePalette.For(mode).Background;
+    public static string SurfaceFor(UiThemeMode mode) => AxThemePalette.For(mode).Surface;
+    public static string SurfaceAltFor(UiThemeMode mode) => AxThemePalette.For(mode).SurfaceSubtle;
+    public static string SidebarFor(UiThemeMode mode) => AxThemePalette.For(mode).NavigationSurface;
+    public static string BorderFor(UiThemeMode mode) => AxThemePalette.For(mode).Border;
+    public static string TextPrimaryFor(UiThemeMode mode) => AxThemePalette.For(mode).TextPrimary;
+    public static string TextSecondaryFor(UiThemeMode mode) => AxThemePalette.For(mode).TextSecondary;
 
     public static IBrush Brush(string color) => Avalonia.Media.Brush.Parse(color);
 }

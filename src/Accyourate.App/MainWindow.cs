@@ -8,6 +8,7 @@ using Accyourate.App.Security;
 using Accyourate.App.Framework;
 using Accyourate.App.Shared.UI;
 using Accyourate.App.Shared.Theme;
+using Accyourate.App.UIFramework.Foundation;
 
 namespace Accyourate.App;
 
@@ -23,14 +24,12 @@ public sealed class MainWindow : Window
         _user = user;
         _database = database;
 
-        Title = "Accyourate Enterprise X - Developer Edition 1.2";
-        Width = 1280;
-        Height = 820;
-        MinWidth = 1100;
-        MinHeight = 720;
-        MinWidth = 1024;
-        MinHeight = 650;
-        Background = Brush.Parse("#F7F7F6");
+        Title = "Accyourate Enterprise X — Developer Edition M3";
+        Width = 1440;
+        Height = 900;
+        MinWidth = 1120;
+        MinHeight = 700;
+        Background = Brush.Parse(AxSemanticTokens.Background);
 
         Content = BuildLayout();
     }
@@ -39,8 +38,8 @@ public sealed class MainWindow : Window
     {
         var root = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("290,*"),
-            RowDefinitions = new RowDefinitions("64,*")
+            ColumnDefinitions = new ColumnDefinitions($"{AxLayoutTokens.SidebarWidth},*"),
+            RowDefinitions = new RowDefinitions("76,*")
         };
 
         var header = BuildHeader();
@@ -61,62 +60,175 @@ public sealed class MainWindow : Window
 
     private Control BuildHeader()
     {
-        var grid = new Grid
+        var header = new Border
         {
-            Background = Brush.Parse("#111827"),
-            ColumnDefinitions = new ColumnDefinitions("290,*,340")
+            Background = Brush.Parse(AxSemanticTokens.DarkBackground),
+            BorderBrush = Brush.Parse("#243047"),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            Padding = new Thickness(24, 0)
         };
 
-        grid.Children.Add(new TextBlock
+        var grid = new Grid
         {
-            Text = "ACCYOURATE ENTERPRISE X",
-            Foreground = Brushes.White,
-            FontSize = 18,
-            FontWeight = FontWeight.Bold,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(24, 0)
+            ColumnDefinitions = new ColumnDefinitions($"{AxLayoutTokens.SidebarWidth - 24},*,Auto"),
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+
+        var brand = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        brand.Children.Add(new Border
+        {
+            Width = 36,
+            Height = 36,
+            CornerRadius = new CornerRadius(10),
+            Background = Brush.Parse(AxSemanticTokens.BrandAccent),
+            Child = new TextBlock
+            {
+                Text = "AX",
+                Foreground = Brushes.White,
+                FontWeight = FontWeight.Bold,
+                FontSize = 14,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            }
         });
+        brand.Children.Add(new StackPanel
+        {
+            Spacing = 1,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = "Accyourate Enterprise X",
+                    Foreground = Brushes.White,
+                    FontSize = 16,
+                    FontWeight = FontWeight.SemiBold
+                },
+                new TextBlock
+                {
+                    Text = "Developer Edition  •  M3 Design System",
+                    Foreground = Brush.Parse("#94A3B8"),
+                    FontSize = 11
+                }
+            }
+        });
+        grid.Children.Add(brand);
 
         _breadcrumb = new TextBlock
         {
-            Text = "Centro Operativo > Dashboard",
-            Foreground = Brushes.White,
-            FontSize = 16,
-            VerticalAlignment = VerticalAlignment.Center
+            Text = "Centro Operativo  /  Dashboard",
+            Foreground = Brush.Parse("#CBD5E1"),
+            FontSize = 14,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(18, 0, 0, 0)
         };
         Grid.SetColumn(_breadcrumb, 1);
         grid.Children.Add(_breadcrumb);
 
-        var user = new TextBlock
+        var actions = new StackPanel
         {
-            Text = $"{_user.DisplayName} • {_user.Role}",
-            Foreground = Brushes.White,
-            VerticalAlignment = VerticalAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 0, 24, 0)
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            VerticalAlignment = VerticalAlignment.Center
         };
-        Grid.SetColumn(user, 2);
-        grid.Children.Add(user);
+        actions.Children.Add(MakeHeaderAction("⌕", "Ricerca globale"));
+        actions.Children.Add(MakeHeaderAction("◐", "Tema"));
+        actions.Children.Add(MakeHeaderAction("🔔", "Notifiche"));
+        actions.Children.Add(new Border
+        {
+            Width = 1,
+            Height = 30,
+            Background = Brush.Parse("#334155"),
+            Margin = new Thickness(4, 0)
+        });
 
-        return grid;
+        var avatarText = string.IsNullOrWhiteSpace(_user.DisplayName)
+            ? "A"
+            : _user.DisplayName.Trim()[0].ToString().ToUpperInvariant();
+        actions.Children.Add(new Border
+        {
+            Width = 36,
+            Height = 36,
+            CornerRadius = new CornerRadius(18),
+            Background = Brush.Parse("#334155"),
+            Child = new TextBlock
+            {
+                Text = avatarText,
+                Foreground = Brushes.White,
+                FontWeight = FontWeight.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            }
+        });
+        actions.Children.Add(new StackPanel
+        {
+            Spacing = 0,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = _user.DisplayName,
+                    Foreground = Brushes.White,
+                    FontSize = 13,
+                    FontWeight = FontWeight.SemiBold
+                },
+                new TextBlock
+                {
+                    Text = _user.Role,
+                    Foreground = Brush.Parse("#94A3B8"),
+                    FontSize = 11
+                }
+            }
+        });
+        Grid.SetColumn(actions, 2);
+        grid.Children.Add(actions);
+
+        header.Child = grid;
+        return header;
+    }
+
+    private static Button MakeHeaderAction(string glyph, string tooltip)
+    {
+        var button = new Button
+        {
+            Content = glyph,
+            Width = 38,
+            Height = 38,
+            Padding = new Thickness(0),
+            Background = Brushes.Transparent,
+            Foreground = Brush.Parse("#CBD5E1"),
+            BorderThickness = new Thickness(0),
+            FontSize = 15
+        };
+        ToolTip.SetTip(button, tooltip);
+        return button;
     }
 
     private Control BuildMenu()
     {
         var border = new Border
         {
-            Background = Brush.Parse("#111827"),
-            Padding = new Thickness(18)
+            Background = Brush.Parse(AxSemanticTokens.DarkNavigationSurface),
+            BorderBrush = Brush.Parse("#243047"),
+            BorderThickness = new Thickness(0, 0, 1, 0),
+            Padding = new Thickness(14, 18)
         };
 
         var stack = new StackPanel { Spacing = 8 };
 
         stack.Children.Add(new TextBlock
         {
-            Text = "Navigazione",
-            Foreground = Brushes.White,
-            FontWeight = FontWeight.Bold,
-            Margin = new Thickness(0, 0, 0, 8)
+            Text = "NAVIGAZIONE",
+            Foreground = Brush.Parse("#64748B"),
+            FontSize = 11,
+            FontWeight = FontWeight.SemiBold,
+            Margin = new Thickness(10, 0, 0, 8)
         });
 
         AddMenuSeparator(stack, "🏠 Centro Operativo");
@@ -401,7 +513,7 @@ public sealed class MainWindow : Window
     private void SetBreadcrumb(string text)
     {
         if (_breadcrumb is not null)
-            _breadcrumb.Text = text;
+            _breadcrumb.Text = text.Replace(" > ", "  /  ");
     }
 
     private void AddMenuButton(StackPanel stack, string text, Action? action = null, string? permission = null)
@@ -412,12 +524,15 @@ public sealed class MainWindow : Window
         var button = new Button
         {
             Content = text,
-            Foreground = Brushes.White,
+            Foreground = Brush.Parse("#D7E0EC"),
             Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,
-            Padding = new Thickness(18, 9, 12, 9),
-            Margin = new Thickness(0, 2)
+            FontSize = 13,
+            Padding = new Thickness(14, 10),
+            Margin = new Thickness(0, 1),
+            CornerRadius = new CornerRadius(AxLayoutTokens.RadiusSmall)
         };
 
         if (action is not null)
@@ -441,13 +556,16 @@ public sealed class MainWindow : Window
         var header = new Button
         {
             Content = $"▶ {title}",
-            Foreground = Brush.Parse("#D1D5DB"),
-            Background = Brush.Parse("#1F2937"),
+            Foreground = Brush.Parse("#E2E8F0"),
+            Background = Brush.Parse("#172033"),
+            BorderThickness = new Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,
-            FontWeight = FontWeight.Bold,
-            Padding = new Thickness(10, 9),
-            Margin = new Thickness(0, 10, 0, 2)
+            FontWeight = FontWeight.SemiBold,
+            FontSize = 13,
+            Padding = new Thickness(12, 11),
+            Margin = new Thickness(0, 10, 0, 2),
+            CornerRadius = new CornerRadius(AxLayoutTokens.RadiusSmall)
         };
 
         header.Click += (_, _) =>
@@ -465,92 +583,356 @@ public sealed class MainWindow : Window
     {
         var scroll = new ScrollViewer
         {
-            Background = Brush.Parse("#F7F7F6"),
+            Background = Brush.Parse(AxSemanticTokens.Background),
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
         };
 
-        var stack = new StackPanel
+        var root = new StackPanel
         {
-            Margin = new Thickness(28),
-            Spacing = 20
+            Margin = new Thickness(32, 28, 32, 36),
+            Spacing = 24
         };
 
-        stack.Children.Add(new TextBlock
+        var welcome = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        welcome.Children.Add(new StackPanel
         {
-            Text = "Centro Operativo",
-            FontSize = 28,
-            FontWeight = FontWeight.Bold,
-            Foreground = Brush.Parse("#B5162B")
+            Spacing = 6,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = $"Buongiorno, {_user.DisplayName}",
+                    FontSize = AxTypographyTokens.Display,
+                    FontWeight = FontWeight.Bold,
+                    Foreground = Brush.Parse(AxSemanticTokens.TextPrimary)
+                },
+                new TextBlock
+                {
+                    Text = "Panoramica operativa dell'organizzazione e dei servizi Enterprise X.",
+                    FontSize = AxTypographyTokens.BodyLarge,
+                    Foreground = Brush.Parse(AxSemanticTokens.TextSecondary)
+                }
+            }
         });
-
-        stack.Children.Add(new TextBlock
+        var environment = new Border
         {
-            Text = "Versione 13.1.0a: Master Data Employees CRUD."
-        });
+            Background = Brush.Parse("#E8F1FF"),
+            BorderBrush = Brush.Parse("#C7DBFF"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(AxLayoutTokens.RadiusPill),
+            Padding = new Thickness(14, 7),
+            VerticalAlignment = VerticalAlignment.Top,
+            Child = new TextBlock
+            {
+                Text = "●  Ambiente di sviluppo",
+                Foreground = Brush.Parse("#2457A6"),
+                FontSize = 12,
+                FontWeight = FontWeight.SemiBold
+            }
+        };
+        Grid.SetColumn(environment, 1);
+        welcome.Children.Add(environment);
+        root.Children.Add(welcome);
 
-        var cards = new Grid
+        var kpis = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("*,*,*,*")
         };
+        AddDashboardCard(kpis, 0, "Dipendenti", "15", "+2 questo trimestre", "👥", AxSemanticTokens.Info);
+        AddDashboardCard(kpis, 1, "Asset IT", "30", "97% operativi", "▣", AxSemanticTokens.Success);
+        AddDashboardCard(kpis, 2, "Dispositivi medici", "12", "2 controlli pianificati", "✚", AxSemanticTokens.Highlight);
+        AddDashboardCard(kpis, 3, "Attività aperte", "7", "3 ad alta priorità", "✓", AxSemanticTokens.Warning);
+        root.Children.Add(kpis);
 
-        var c1 = MakeCard("Navigazione", "OK");
-        var c2 = MakeCard("Permessi", "OK");
-        var c3 = MakeCard("CRUD Base", "OK");
-        var c4 = MakeCard("Analytics", "OK");
-
-        Grid.SetColumn(c1, 0);
-        Grid.SetColumn(c2, 1);
-        Grid.SetColumn(c3, 2);
-        Grid.SetColumn(c4, 3);
-
-        cards.Children.Add(c1);
-        cards.Children.Add(c2);
-        cards.Children.Add(c3);
-        cards.Children.Add(c4);
-
-        stack.Children.Add(cards);
-
-        stack.Children.Add(new Border
+        var body = new Grid
         {
-            Background = Brushes.White,
-            CornerRadius = new CornerRadius(16),
-            Padding = new Thickness(22),
-            Child = new StackPanel
+            ColumnDefinitions = new ColumnDefinitions("1.55*,1*")
+        };
+
+        var operations = MakeSurface();
+        operations.Child = new StackPanel
+        {
+            Spacing = 18,
+            Children =
             {
-                Spacing = 8,
-                Children =
-                {
-                    new TextBlock { Text = "Foundation 1.2 completata", FontSize = 20, FontWeight = FontWeight.Bold },
-                    new TextBlock { Text = "• Menu filtrato per permessi" },
-                    new TextBlock { Text = "• Breadcrumb superiore" },
-                    new TextBlock { Text = "• Moduli registrati in ModuleRegistry" },
-                    new TextBlock { Text = "• Finestra CRUD standard riutilizzabile" },
-                    new TextBlock { Text = "• Dashboard registrata come IWorkspaceModule" }
-                }
+                MakeSectionHeader("Stato operativo", "Aggiornamento del workspace corrente"),
+                MakeStatusRow("Navigazione e permessi", "Operativo", "Menu e moduli filtrati per ruolo", AxSemanticTokens.Success),
+                MakeDivider(),
+                MakeStatusRow("Master Data", "Operativo", "Employees CRUD e registry disponibili", AxSemanticTokens.Success),
+                MakeDivider(),
+                MakeStatusRow("Design System M3.1", "Attivo", "Foundation e token canonici caricati", AxSemanticTokens.Info),
+                MakeDivider(),
+                MakeStatusRow("Controlli programmati", "2 in scadenza", "Verificare dispositivi e strumenti", AxSemanticTokens.Warning)
             }
-        });
+        };
+        operations.Margin = new Thickness(0, 0, 18, 0);
+        body.Children.Add(operations);
 
-        scroll.Content = stack;
-        return scroll;
-    }
-
-    private static Control MakeCard(string title, string value)
-    {
-        return new Border
+        var quickPanel = new StackPanel { Spacing = 18 };
+        var quickActions = MakeSurface();
+        quickActions.Child = new StackPanel
         {
-            Background = Brushes.White,
-            CornerRadius = new CornerRadius(14),
-            Padding = new Thickness(18),
-            Margin = new Thickness(6),
-            Child = new StackPanel
+            Spacing = 14,
+            Children =
             {
-                Children =
+                MakeSectionHeader("Azioni rapide", "Accesso alle attività frequenti"),
+                MakeQuickAction("⌕", "Ricerca globale", "Trova asset, persone e documenti"),
+                MakeQuickAction("＋", "Nuovo elemento", "Apri il modulo di inserimento"),
+                MakeQuickAction("▤", "Report operativo", "Consulta indicatori e scadenze")
+            }
+        };
+        quickPanel.Children.Add(quickActions);
+
+        var release = MakeSurface();
+        release.Child = new StackPanel
+        {
+            Spacing = 12,
+            Children =
+            {
+                MakeSectionHeader("Release corrente", "Accyourate Enterprise X"),
+                new TextBlock
                 {
-                    new TextBlock { Text = title, FontWeight = FontWeight.Bold },
-                    new TextBlock { Text = value, FontSize = 28, Foreground = Brush.Parse("#B5162B") }
+                    Text = "M3 • Design System Foundation",
+                    FontSize = 16,
+                    FontWeight = FontWeight.SemiBold,
+                    Foreground = Brush.Parse(AxSemanticTokens.TextPrimary)
+                },
+                new TextBlock
+                {
+                    Text = "Token primitivi e semantici centralizzati, compatibilità legacy preservata e nuova dashboard pilota.",
+                    TextWrapping = TextWrapping.Wrap,
+                    Foreground = Brush.Parse(AxSemanticTokens.TextSecondary),
+                    FontSize = 13,
+                    LineHeight = 19
+                },
+                new Border
+                {
+                    Height = 8,
+                    CornerRadius = new CornerRadius(4),
+                    Background = Brush.Parse("#E2E8F0"),
+                    Child = new Border
+                    {
+                        Width = 210,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        CornerRadius = new CornerRadius(4),
+                        Background = Brush.Parse(AxSemanticTokens.BrandPrimary)
+                    }
+                },
+                new TextBlock
+                {
+                    Text = "Foundation completata • migrazione componenti in corso",
+                    FontSize = 11,
+                    Foreground = Brush.Parse(AxSemanticTokens.TextMuted)
                 }
             }
         };
+        quickPanel.Children.Add(release);
+        Grid.SetColumn(quickPanel, 1);
+        body.Children.Add(quickPanel);
+        root.Children.Add(body);
+
+        scroll.Content = root;
+        return scroll;
+    }
+
+    private static void AddDashboardCard(Grid grid, int column, string title, string value, string detail, string glyph, string accent)
+    {
+        var card = MakeSurface();
+        card.Padding = new Thickness(20);
+        if (column < 3)
+            card.Margin = new Thickness(0, 0, 14, 0);
+        card.Child = new StackPanel
+        {
+            Spacing = 14,
+            Children =
+            {
+                new Grid
+                {
+                    ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = title,
+                            Foreground = Brush.Parse(AxSemanticTokens.TextSecondary),
+                            FontSize = 13,
+                            FontWeight = FontWeight.SemiBold,
+                            VerticalAlignment = VerticalAlignment.Center
+                        },
+                        new Border
+                        {
+                            Width = 36,
+                            Height = 36,
+                            CornerRadius = new CornerRadius(10),
+                            Background = MakeTintBrush(accent),
+                            Child = new TextBlock
+                            {
+                                Text = glyph,
+                                Foreground = Brush.Parse(accent),
+                                HorizontalAlignment = HorizontalAlignment.Center,
+                                VerticalAlignment = VerticalAlignment.Center,
+                                FontSize = 16,
+                                FontWeight = FontWeight.Bold
+                            }
+                        }.WithColumn(1)
+                    }
+                },
+                new TextBlock
+                {
+                    Text = value,
+                    FontSize = 30,
+                    FontWeight = FontWeight.Bold,
+                    Foreground = Brush.Parse(AxSemanticTokens.TextPrimary)
+                },
+                new TextBlock
+                {
+                    Text = detail,
+                    Foreground = Brush.Parse(AxSemanticTokens.TextMuted),
+                    FontSize = 12
+                }
+            }
+        };
+        Grid.SetColumn(card, column);
+        grid.Children.Add(card);
+    }
+
+    private static IBrush MakeTintBrush(string color)
+    {
+        var parsed = Color.Parse(color);
+        return new SolidColorBrush(Color.FromArgb(24, parsed.R, parsed.G, parsed.B));
+    }
+
+    private static Border MakeSurface() => new()
+    {
+        Background = Brush.Parse(AxSemanticTokens.Surface),
+        BorderBrush = Brush.Parse(AxSemanticTokens.Border),
+        BorderThickness = new Thickness(1),
+        CornerRadius = new CornerRadius(AxLayoutTokens.RadiusLarge),
+        Padding = new Thickness(22)
+    };
+
+    private static StackPanel MakeSectionHeader(string title, string subtitle) => new()
+    {
+        Spacing = 4,
+        Children =
+        {
+            new TextBlock
+            {
+                Text = title,
+                FontSize = AxTypographyTokens.TitleSmall,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = Brush.Parse(AxSemanticTokens.TextPrimary)
+            },
+            new TextBlock
+            {
+                Text = subtitle,
+                FontSize = 12,
+                Foreground = Brush.Parse(AxSemanticTokens.TextMuted)
+            }
+        }
+    };
+
+    private static Grid MakeStatusRow(string title, string status, string detail, string accent)
+    {
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+        grid.Children.Add(new Border
+        {
+            Width = 10,
+            Height = 10,
+            CornerRadius = new CornerRadius(5),
+            Background = Brush.Parse(accent),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 14, 0)
+        });
+        var text = new StackPanel
+        {
+            Spacing = 3,
+            Children =
+            {
+                new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, Foreground = Brush.Parse(AxSemanticTokens.TextPrimary) },
+                new TextBlock { Text = detail, FontSize = 12, Foreground = Brush.Parse(AxSemanticTokens.TextMuted) }
+            }
+        };
+        text.Margin = new Thickness(0, 0, 14, 0);
+        Grid.SetColumn(text, 1);
+        grid.Children.Add(text);
+        var badge = new Border
+        {
+            Background = MakeTintBrush(accent),
+            CornerRadius = new CornerRadius(AxLayoutTokens.RadiusPill),
+            Padding = new Thickness(10, 5),
+            VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock { Text = status, Foreground = Brush.Parse(accent), FontSize = 11, FontWeight = FontWeight.SemiBold }
+        };
+        Grid.SetColumn(badge, 2);
+        grid.Children.Add(badge);
+        return grid;
+    }
+
+    private static Border MakeDivider() => new()
+    {
+        Height = 1,
+        Background = Brush.Parse(AxSemanticTokens.Border)
+    };
+
+    private static Border MakeQuickAction(string glyph, string title, string detail)
+    {
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+        grid.Children.Add(new Border
+        {
+            Width = 38,
+            Height = 38,
+            CornerRadius = new CornerRadius(10),
+            Background = Brush.Parse(AxSemanticTokens.Selection),
+            Margin = new Thickness(0, 0, 12, 0),
+            Child = new TextBlock
+            {
+                Text = glyph,
+                Foreground = Brush.Parse(AxSemanticTokens.BrandPrimary),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                FontSize = 16,
+                FontWeight = FontWeight.Bold
+            }
+        });
+        var text = new StackPanel
+        {
+            Spacing = 2,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children =
+            {
+                new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, Foreground = Brush.Parse(AxSemanticTokens.TextPrimary) },
+                new TextBlock { Text = detail, FontSize = 11, Foreground = Brush.Parse(AxSemanticTokens.TextMuted) }
+            }
+        };
+        text.Margin = new Thickness(0, 0, 12, 0);
+        Grid.SetColumn(text, 1);
+        grid.Children.Add(text);
+        var arrow = new TextBlock
+        {
+            Text = "›",
+            FontSize = 22,
+            Foreground = Brush.Parse(AxSemanticTokens.TextMuted),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(arrow, 2);
+        grid.Children.Add(arrow);
+        return new Border
+        {
+            Background = Brush.Parse(AxSemanticTokens.SurfaceSubtle),
+            CornerRadius = new CornerRadius(AxLayoutTokens.RadiusMedium),
+            Padding = new Thickness(12),
+            Child = grid
+        };
+    }
+}
+
+internal static class MainWindowGridExtensions
+{
+    public static T WithColumn<T>(this T control, int column) where T : Control
+    {
+        Grid.SetColumn(control, column);
+        return control;
     }
 }

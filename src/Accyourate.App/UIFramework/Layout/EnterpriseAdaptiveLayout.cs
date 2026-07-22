@@ -1,12 +1,11 @@
-using Avalonia;
 using Avalonia.Controls;
 
 namespace Accyourate.App.UIFramework.Layout;
 
 public static class EnterpriseAdaptiveLayout
 {
-    public const double CompactWidth = 1180;
-    public const double NarrowWidth = 900;
+    public const double CompactWidth = 1080;
+    public const double NarrowWidth = 920;
 
     public static bool IsCompact(double width) => width > 0 && width < CompactWidth;
 
@@ -19,7 +18,7 @@ public static class EnterpriseAdaptiveLayout
         if (IsCompact(width))
         {
             grid.ColumnDefinitions = new ColumnDefinitions("*");
-            grid.RowDefinitions = new RowDefinitions("Auto,16,Auto");
+            grid.RowDefinitions = new RowDefinitions("*,16,Auto");
 
             Grid.SetColumn(master, 0);
             Grid.SetRow(master, 0);
@@ -31,7 +30,7 @@ public static class EnterpriseAdaptiveLayout
             return;
         }
 
-        grid.ColumnDefinitions = new ColumnDefinitions("*,18,380");
+        grid.ColumnDefinitions = new ColumnDefinitions("*,16,340");
         grid.RowDefinitions = new RowDefinitions("*");
 
         Grid.SetColumn(master, 0);
