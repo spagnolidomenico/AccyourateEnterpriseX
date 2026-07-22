@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Accyourate.App.DesignSystem;
+using Accyourate.App.UIFramework.Foundation;
 
 namespace Accyourate.App;
 
@@ -15,7 +16,7 @@ public sealed class DesignSystemShowcaseWindow : Window
         MinWidth = 1024;
         MinHeight = 700;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        Background = AccyourateDesignTokens.Brush(AccyourateDesignTokens.Background);
+        Background = AxThemeManager.Brush(AxSemanticTokens.Background);
         Content = BuildLayout();
     }
 
@@ -27,10 +28,10 @@ public sealed class DesignSystemShowcaseWindow : Window
         page.Children.Add(AxTypography.Body("Versione 7.2: componenti grafici comuni per rifattorizzare progressivamente tutta l'interfaccia mantenendo le funzionalità già validate."));
 
         var kpis = new WrapPanel { ItemWidth = 270, ItemHeight = 140 };
-        kpis.Children.Add(AxCards.Kpi("⌁", "Dispositivi", "128", "Digital Twin", AccyourateDesignTokens.Purple));
-        kpis.Children.Add(AxCards.Kpi("▣", "Asset IT", "42", "Inventario", AccyourateDesignTokens.Info));
-        kpis.Children.Add(AxCards.Kpi("✓", "Conformità", "97%", "Qualità", AccyourateDesignTokens.Success));
-        kpis.Children.Add(AxCards.Kpi("!", "Scadenze", "5", "Da verificare", AccyourateDesignTokens.Warning));
+        kpis.Children.Add(AxCards.Kpi("⌁", "Dispositivi", "128", "Digital Twin", AxSemanticTokens.Highlight));
+        kpis.Children.Add(AxCards.Kpi("▣", "Asset IT", "42", "Inventario", AxSemanticTokens.Info));
+        kpis.Children.Add(AxCards.Kpi("✓", "Conformità", "97%", "Qualità", AxSemanticTokens.Success));
+        kpis.Children.Add(AxCards.Kpi("!", "Scadenze", "5", "Da verificare", AxSemanticTokens.Warning));
         page.Children.Add(kpis);
 
         var buttons = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 10 };

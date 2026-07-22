@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Accyourate.App.UIFramework.Foundation;
 
 namespace Accyourate.App.DesignSystem;
 
@@ -20,7 +21,7 @@ public static class AxLayout
 
     public static Border PageShell(Control content) => new()
     {
-        Background = AccyourateDesignTokens.Brush(AccyourateDesignTokens.Background),
+        Background = AxThemeManager.Brush(AxSemanticTokens.Background),
         Child = content
     };
 }

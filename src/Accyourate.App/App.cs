@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Themes.Fluent;
 using Accyourate.App.Data;
 using Accyourate.App.Security;
+using Accyourate.App.UIFramework.Foundation;
 
 namespace Accyourate.App;
 
@@ -12,6 +13,7 @@ public sealed class App : Avalonia.Application
     public override void Initialize()
     {
         Styles.Add(new FluentTheme());
+        AxThemeManager.Current.Initialize(this);
     }
 
     public override void OnFrameworkInitializationCompleted()

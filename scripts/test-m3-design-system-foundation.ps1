@@ -42,3 +42,25 @@ if (-not $SkipBuild) {
 }
 
 Write-Host "M3.1 foundation verificata con successo." -ForegroundColor Green
+
+Write-Host "Verifica M3.3: cleanup token legacy e Theme Manager..." -ForegroundColor Cyan
+
+$legacyUsages = Get-ChildItem "src/Accyourate.App" -Recurse -Filter *.cs |
+    Where-Object { $_.FullName -notlike "*AccyourateDesignTokens.cs" } |
+    Select-String -Pattern "AccyourateDesignTokens"
+
+if ($legacyUsages) {
+    throw "Sono ancora presenti riferimenti a AccyourateDesignTokens fuori dal file di compatibilità."
+}
+
+$themeManagerPath = "src/Accyourate.App/UIFramework/Foundation/AxThemeManager.cs"
+if (-not (Test-Path $themeManagerPath)) {
+    throw "AxThemeManager.cs non trovato."
+}
+
+$themeManager = Get-Content $themeManagerPath -Raw
+if ($themeManager -notmatch "RequestedThemeVariant" -or $themeManager -notmatch "ThemeChanged") {
+    throw "AxThemeManager non espone il contratto di gestione tema previsto."
+}
+
+Write-Host "M3.3 Design System Cleanup: OK" -ForegroundColor Green

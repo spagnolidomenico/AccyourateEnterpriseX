@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Media;
+using Accyourate.App.UIFramework.Foundation;
 
 namespace Accyourate.App.DesignSystem;
 
@@ -10,7 +11,7 @@ public static class AxTypography
         Text = text,
         FontSize = 30,
         FontWeight = FontWeight.Bold,
-        Foreground = AccyourateDesignTokens.Brush(AccyourateDesignTokens.TextPrimary)
+        Foreground = AxThemeManager.Brush(AxSemanticTokens.TextPrimary)
     };
 
     public static TextBlock SectionTitle(string text) => new()
@@ -18,7 +19,7 @@ public static class AxTypography
         Text = text,
         FontSize = 20,
         FontWeight = FontWeight.Bold,
-        Foreground = AccyourateDesignTokens.Brush(AccyourateDesignTokens.TextPrimary)
+        Foreground = AxThemeManager.Brush(AxSemanticTokens.TextPrimary)
     };
 
     public static TextBlock Body(string text) => new()
@@ -26,7 +27,7 @@ public static class AxTypography
         Text = text,
         FontSize = 14,
         TextWrapping = TextWrapping.Wrap,
-        Foreground = AccyourateDesignTokens.Brush(AccyourateDesignTokens.TextSecondary)
+        Foreground = AxThemeManager.Brush(AxSemanticTokens.TextSecondary)
     };
 
     public static TextBlock Caption(string text) => new()
@@ -34,6 +35,6 @@ public static class AxTypography
         Text = text,
         FontSize = 12,
         TextWrapping = TextWrapping.Wrap,
-        Foreground = AccyourateDesignTokens.Brush(AccyourateDesignTokens.TextMuted)
+        Foreground = AxThemeManager.Brush(AxSemanticTokens.TextMuted)
     };
 }

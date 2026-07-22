@@ -26,6 +26,7 @@ using EnterpriseSearchWorkspaceModuleCore = Accyourate.App.UIFramework.Workspace
 using AboutWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.AboutWorkspaceModule;
 using BackupWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.BackupWorkspaceModule;
 using UpdateWorkspaceModuleCore = Accyourate.App.UIFramework.WorkspaceModules.UpdateWorkspaceModule;
+using Accyourate.App.UIFramework.Foundation;
 
 namespace Accyourate.App;
 
@@ -41,7 +42,7 @@ public sealed class EnterpriseWorkspaceWindow : Window
     private readonly ContentControl _content = new();
     private readonly TextBlock _breadcrumb = new();
     private readonly TextBlock _status = new();
-    private UiThemeMode _themeMode = UiThemeMode.Light;
+    private UiThemeMode _themeMode = AxThemeManager.Current.Mode;
     private readonly WorkspaceTabManager _dashboardTabManager = new();
     private WorkspaceHost? _dashboardTabHost;
     private readonly WorkspaceTabManager _digitalTwinTabManager = new();
@@ -591,8 +592,8 @@ public sealed class EnterpriseWorkspaceWindow : Window
 
     private void ToggleTheme()
     {
-        _themeMode = _themeMode == UiThemeMode.Light ? UiThemeMode.Dark : UiThemeMode.Light;
-        Background = UiTokens.Brush(UiTokens.BackgroundFor(_themeMode));
+        _themeMode = AxThemeManager.Current.Toggle();
+        Background = AxThemeManager.Brush(AxThemeManager.Current.Palette.Background);
         _status.Text = $"Tema: {_themeMode} | Modulo attivo: {_navigation.CurrentTitle} | Cronologia: {_navigation.History.Count}";
     }
 

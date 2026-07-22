@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Accyourate.App.UIFramework.Foundation;
 
 namespace Accyourate.App.DesignSystem;
 
@@ -10,11 +11,11 @@ public static class AxBadges
     {
         var color = kind switch
         {
-            "success" => AccyourateDesignTokens.Success,
-            "warning" => AccyourateDesignTokens.Warning,
-            "danger" => AccyourateDesignTokens.Danger,
-            "info" => AccyourateDesignTokens.Info,
-            _ => AccyourateDesignTokens.TextMuted
+            "success" => AxSemanticTokens.Success,
+            "warning" => AxSemanticTokens.Warning,
+            "danger" => AxSemanticTokens.Danger,
+            "info" => AxSemanticTokens.Info,
+            _ => AxSemanticTokens.TextMuted
         };
 
         return new Border

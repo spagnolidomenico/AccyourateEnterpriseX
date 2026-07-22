@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Accyourate.App.UIFramework.Foundation;
 
 namespace Accyourate.App.DesignSystem;
 
@@ -8,9 +9,9 @@ public static class AxCards
 {
     public static Border Card(Control content) => new()
     {
-        Background = AccyourateDesignTokens.Brush(AccyourateDesignTokens.Surface),
-        CornerRadius = new CornerRadius(AccyourateDesignTokens.RadiusLarge),
-        Padding = new Thickness(AccyourateDesignTokens.SpaceL),
+        Background = AxThemeManager.Brush(AxSemanticTokens.Surface),
+        CornerRadius = new CornerRadius(AxLayoutTokens.RadiusLarge),
+        Padding = new Thickness(AxLayoutTokens.Space6),
         Margin = new Thickness(6),
         BoxShadow = new BoxShadows(new BoxShadow
         {
@@ -27,14 +28,14 @@ public static class AxCards
         var row = new StackPanel
         {
             Orientation = Avalonia.Layout.Orientation.Horizontal,
-            Spacing = AccyourateDesignTokens.SpaceL
+            Spacing = AxLayoutTokens.Space6
         };
 
         row.Children.Add(new Border
         {
             Width = 58,
             Height = 58,
-            Background = AccyourateDesignTokens.Brush(color),
+            Background = AxThemeManager.Brush(color),
             CornerRadius = new CornerRadius(14),
             Child = new TextBlock
             {
@@ -47,9 +48,9 @@ public static class AxCards
         });
 
         var text = new StackPanel();
-        text.Children.Add(new TextBlock { Text = title, Foreground = AccyourateDesignTokens.Brush(AccyourateDesignTokens.TextPrimary) });
-        text.Children.Add(new TextBlock { Text = value, FontSize = 28, FontWeight = FontWeight.Bold, Foreground = AccyourateDesignTokens.Brush(AccyourateDesignTokens.TextPrimary) });
-        text.Children.Add(new TextBlock { Text = subtitle, Foreground = AccyourateDesignTokens.Brush(AccyourateDesignTokens.TextSecondary) });
+        text.Children.Add(new TextBlock { Text = title, Foreground = AxThemeManager.Brush(AxSemanticTokens.TextPrimary) });
+        text.Children.Add(new TextBlock { Text = value, FontSize = 28, FontWeight = FontWeight.Bold, Foreground = AxThemeManager.Brush(AxSemanticTokens.TextPrimary) });
+        text.Children.Add(new TextBlock { Text = subtitle, Foreground = AxThemeManager.Brush(AxSemanticTokens.TextSecondary) });
         row.Children.Add(text);
 
         return Card(row);
