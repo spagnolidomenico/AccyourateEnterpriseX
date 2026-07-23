@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Input;
 using Avalonia.Media;
 using Accyourate.App.Models;
 using Accyourate.App.Data;
@@ -18,29 +19,39 @@ public sealed class MainWindow : Window
     private readonly DatabaseService _database;
     private TextBlock? _breadcrumb;
     private StackPanel? _currentMenuGroup;
+    private Grid? _rootGrid;
+    private Border? _menuBorder;
+    private bool _sidebarCollapsed;
+
+    private const double ExpandedSidebarWidth = AxLayoutTokens.SidebarWidth;
+    private const double CollapsedSidebarWidth = 72;
 
     public MainWindow(CurrentUser user, DatabaseService database)
     {
         _user = user;
         _database = database;
 
-        Title = "Accyourate Enterprise X — Developer Edition M3";
+        Title = "Accyourate Enterprise X — Developer Edition M3.4";
         Width = 1440;
         Height = 900;
         MinWidth = 1120;
         MinHeight = 700;
         Background = Brush.Parse(AxSemanticTokens.Background);
 
+        _sidebarCollapsed = LoadSidebarState();
         Content = BuildLayout();
+        KeyDown += OnWindowKeyDown;
     }
 
     private Control BuildLayout()
     {
         var root = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions($"{AxLayoutTokens.SidebarWidth},*"),
+            ColumnDefinitions = new ColumnDefinitions($"{(_sidebarCollapsed ? CollapsedSidebarWidth : ExpandedSidebarWidth)},*"),
             RowDefinitions = new RowDefinitions("76,*")
         };
+
+        _rootGrid = root;
 
         var header = BuildHeader();
         Grid.SetColumnSpan(header, 2);
@@ -136,9 +147,10 @@ public sealed class MainWindow : Window
             Spacing = 10,
             VerticalAlignment = VerticalAlignment.Center
         };
-        actions.Children.Add(MakeHeaderAction("⌕", "Ricerca globale"));
-        actions.Children.Add(MakeHeaderAction("◐", "Tema"));
-        actions.Children.Add(MakeHeaderAction("🔔", "Notifiche"));
+        actions.Children.Add(MakeHeaderAction("☰", "Comprimi o espandi menu", ToggleSidebar));
+        actions.Children.Add(MakeHeaderAction("⌕", "Ricerca globale (Ctrl+K)", OpenCommandPalette));
+        actions.Children.Add(MakeHeaderAction("◐", "Cambia tema", ToggleTheme));
+        actions.Children.Add(MakeHeaderAction("🔔", "Notifiche", () => new NotificationsWindow().Show()));
         actions.Children.Add(new Border
         {
             Width = 1,
@@ -193,7 +205,7 @@ public sealed class MainWindow : Window
         return header;
     }
 
-    private static Button MakeHeaderAction(string glyph, string tooltip)
+    private static Button MakeHeaderAction(string glyph, string tooltip, Action? action = null)
     {
         var button = new Button
         {
@@ -207,6 +219,8 @@ public sealed class MainWindow : Window
             FontSize = 15
         };
         ToolTip.SetTip(button, tooltip);
+        if (action is not null)
+            button.Click += (_, _) => action();
         return button;
     }
 
@@ -219,6 +233,8 @@ public sealed class MainWindow : Window
             BorderThickness = new Thickness(0, 0, 1, 0),
             Padding = new Thickness(14, 18)
         };
+
+        _menuBorder = border;
 
         var stack = new StackPanel { Spacing = 8 };
 
@@ -677,9 +693,9 @@ public sealed class MainWindow : Window
             Children =
             {
                 MakeSectionHeader("Azioni rapide", "Accesso alle attività frequenti"),
-                MakeQuickAction("⌕", "Ricerca globale", "Trova asset, persone e documenti"),
-                MakeQuickAction("＋", "Nuovo elemento", "Apri il modulo di inserimento"),
-                MakeQuickAction("▤", "Report operativo", "Consulta indicatori e scadenze")
+                MakeQuickAction("⌕", "Ricerca globale", "Trova asset, persone e documenti", OpenCommandPalette),
+                MakeQuickAction("＋", "Nuovo asset", "Apri Asset Management", () => new AssetsWindow(_database, _user).Show()),
+                MakeQuickAction("▤", "Analytics", "Consulta indicatori e scadenze", () => new AnalyticsDashboardWindow(_database, _user).Show())
             }
         };
         quickPanel.Children.Add(quickActions);
@@ -693,14 +709,14 @@ public sealed class MainWindow : Window
                 MakeSectionHeader("Release corrente", "Accyourate Enterprise X"),
                 new TextBlock
                 {
-                    Text = "M3 • Design System Foundation",
+                    Text = "M3.4 • Enterprise Workspace",
                     FontSize = 16,
                     FontWeight = FontWeight.SemiBold,
                     Foreground = Brush.Parse(AxSemanticTokens.TextPrimary)
                 },
                 new TextBlock
                 {
-                    Text = "Token primitivi e semantici centralizzati, compatibilità legacy preservata e nuova dashboard pilota.",
+                    Text = "Workspace enterprise con sidebar comprimibile, Command Palette Ctrl+K, azioni rapide operative e navigazione centralizzata.",
                     TextWrapping = TextWrapping.Wrap,
                     Foreground = Brush.Parse(AxSemanticTokens.TextSecondary),
                     FontSize = 13,
@@ -721,7 +737,7 @@ public sealed class MainWindow : Window
                 },
                 new TextBlock
                 {
-                    Text = "Foundation completata • migrazione componenti in corso",
+                    Text = "Workspace foundation completata • Asset Management prossimo obiettivo",
                     FontSize = 11,
                     Foreground = Brush.Parse(AxSemanticTokens.TextMuted)
                 }
@@ -876,7 +892,7 @@ public sealed class MainWindow : Window
         Background = Brush.Parse(AxSemanticTokens.Border)
     };
 
-    private static Border MakeQuickAction(string glyph, string title, string detail)
+    private static Button MakeQuickAction(string glyph, string title, string detail, Action action)
     {
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
         grid.Children.Add(new Border
@@ -918,13 +934,139 @@ public sealed class MainWindow : Window
         };
         Grid.SetColumn(arrow, 2);
         grid.Children.Add(arrow);
-        return new Border
+        var button = new Button
         {
             Background = Brush.Parse(AxSemanticTokens.SurfaceSubtle),
+            BorderThickness = new Thickness(0),
             CornerRadius = new CornerRadius(AxLayoutTokens.RadiusMedium),
             Padding = new Thickness(12),
-            Child = grid
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Content = grid
         };
+        button.Click += (_, _) => action();
+        return button;
+    }
+
+    private void OnWindowKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.K && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            e.Handled = true;
+            OpenCommandPalette();
+        }
+    }
+
+    private void OpenCommandPalette()
+    {
+        var palette = new CommandPaletteWindow(_database, _user, NavigateFromCommandPalette);
+        palette.ShowDialog(this);
+    }
+
+    private void NavigateFromCommandPalette(string moduleId, string title)
+    {
+        SetBreadcrumb($"Workspace > {title}");
+
+        switch (moduleId)
+        {
+            case "workspace-home":
+            case "dashboard":
+                Activate();
+                break;
+            case "assets":
+                new AssetsWindow(_database, _user).Show();
+                break;
+            case "employees":
+                new EmployeesWindow(_database, _user).Show();
+                break;
+            case "analytics":
+                new AnalyticsDashboardWindow(_database, _user).Show();
+                break;
+            case "medical":
+                new MedicalDevicesWindow(_database, _user).Show();
+                break;
+            case "branding":
+                new BrandingCenterWindow(_database, _user).Show();
+                break;
+            case "design-system":
+                new DesignSystemShowcaseWindow().Show();
+                break;
+            case "architecture":
+                new ArchitectureWindow(_database).Show();
+                break;
+            case "notifications":
+                new NotificationsWindow().Show();
+                break;
+            case "settings":
+                new SettingsWindow(_database).Show();
+                break;
+            case "ai-assistant":
+                new EnterpriseAiAssistantWindow(_database, _user).Show();
+                break;
+            case "ai-catalog":
+                new AiIntentCatalogManagerWindow().Show();
+                break;
+            case "action-engine":
+                new ActionEngineWindow(_database, _user).Show();
+                break;
+            case "universal-command-bar":
+                new UniversalCommandBarWindow(_database, _user).Show();
+                break;
+            default:
+                new EnterpriseWorkspaceWindow(_database, _user).Show();
+                break;
+        }
+    }
+
+    private void ToggleTheme()
+    {
+        var mode = AxThemeManager.Current.Toggle();
+        Title = $"Accyourate Enterprise X — M3.4 — Tema {mode}";
+    }
+
+    private void ToggleSidebar()
+    {
+        _sidebarCollapsed = !_sidebarCollapsed;
+        if (_rootGrid is not null)
+            _rootGrid.ColumnDefinitions[0].Width = new GridLength(_sidebarCollapsed ? CollapsedSidebarWidth : ExpandedSidebarWidth);
+
+        if (_menuBorder is not null)
+            _menuBorder.Padding = _sidebarCollapsed ? new Thickness(8, 18) : new Thickness(14, 18);
+
+        SaveSidebarState();
+    }
+
+    private static string SidebarStatePath
+    {
+        get
+        {
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AccyourateEnterpriseX");
+            Directory.CreateDirectory(folder);
+            return Path.Combine(folder, "workspace.sidebar");
+        }
+    }
+
+    private static bool LoadSidebarState()
+    {
+        try
+        {
+            return File.Exists(SidebarStatePath) && File.ReadAllText(SidebarStatePath).Trim() == "collapsed";
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void SaveSidebarState()
+    {
+        try
+        {
+            File.WriteAllText(SidebarStatePath, _sidebarCollapsed ? "collapsed" : "expanded");
+        }
+        catch
+        {
+            // Lo stato della sidebar non deve mai impedire l'avvio dell'applicazione.
+        }
     }
 }
 

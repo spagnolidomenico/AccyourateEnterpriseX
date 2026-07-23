@@ -30,6 +30,7 @@ public sealed class CommandPaletteWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = UiTokens.Brush(UiTokens.Background);
         Content = BuildLayout();
+        Opened += (_, _) => _search.Focus();
         Refresh();
     }
 
@@ -80,12 +81,16 @@ public sealed class CommandPaletteWindow : Window
             new ShellModuleDescriptor { Id = "action-engine", Title = "Action Engine", Section = "Intelligence", Icon = "AX" },
             new ShellModuleDescriptor { Id = "universal-command-bar", Title = "Universal Command Bar", Section = "Intelligence", Icon = "⌕" },
             new ShellModuleDescriptor { Id = "dashboard", Title = "Dashboard", Section = "Centro Operativo", Icon = "▥" },
+            new ShellModuleDescriptor { Id = "assets", Title = "Asset Management", Section = "Moduli Base", Icon = "▣" },
+            new ShellModuleDescriptor { Id = "employees", Title = "Dipendenti", Section = "Moduli Base", Icon = "👥" },
             new ShellModuleDescriptor { Id = "analytics", Title = "Analytics", Section = "Centro Operativo", Icon = "▧" },
             new ShellModuleDescriptor { Id = "medical", Title = "Medical Device Suite", Section = "Medical", Icon = "⌁" },
             new ShellModuleDescriptor { Id = "digital-twin", Title = "Digital Twin Platform", Section = "Medical", Icon = "DT" },
             new ShellModuleDescriptor { Id = "branding", Title = "Branding Center", Section = "Amministrazione", Icon = "🏷" },
             new ShellModuleDescriptor { Id = "design-system", Title = "Design System", Section = "Amministrazione", Icon = "🎛" },
-            new ShellModuleDescriptor { Id = "architecture", Title = "Enterprise Architecture", Section = "Amministrazione", Icon = "🏗" }
+            new ShellModuleDescriptor { Id = "architecture", Title = "Enterprise Architecture", Section = "Amministrazione", Icon = "🏗" },
+            new ShellModuleDescriptor { Id = "notifications", Title = "Notifiche", Section = "Core", Icon = "🔔" },
+            new ShellModuleDescriptor { Id = "settings", Title = "Impostazioni", Section = "Amministrazione", Icon = "⚙" }
         };
 
         foreach (var module in modules.Where(m => string.IsNullOrWhiteSpace(q) || $"{m.Title} {m.Section}".ToLowerInvariant().Contains(q)))
