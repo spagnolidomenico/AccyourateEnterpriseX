@@ -11,15 +11,18 @@ public sealed class EmployeeRelationsService
         _appFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AccyourateEnterpriseX");
     }
 
-    public EmployeeRelationsSnapshot Load(string employeeId, string employeeName)
+    public EmployeeRelationsSnapshot Load(string? employeeId, string? employeeName)
     {
+        var safeEmployeeId = employeeId ?? string.Empty;
+        var safeEmployeeName = employeeName ?? string.Empty;
+
         return new EmployeeRelationsSnapshot
         {
-            EmployeeId = employeeId ?? string.Empty,
-            EmployeeName = employeeName ?? string.Empty,
-            Assets = LoadAssets(employeeId, employeeName),
-            Documents = LoadDocuments(employeeId, employeeName),
-            DeliveryReports = LoadDeliveryReports(employeeId, employeeName)
+            EmployeeId = safeEmployeeId,
+            EmployeeName = safeEmployeeName,
+            Assets = LoadAssets(safeEmployeeId, safeEmployeeName),
+            Documents = LoadDocuments(safeEmployeeId, safeEmployeeName),
+            DeliveryReports = LoadDeliveryReports(safeEmployeeId, safeEmployeeName)
         };
     }
 

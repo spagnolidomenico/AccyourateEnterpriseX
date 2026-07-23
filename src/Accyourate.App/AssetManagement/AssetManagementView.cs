@@ -24,6 +24,7 @@ public sealed class AssetManagementView : UserControl
     private readonly StackPanel _kpis = new();
     private readonly ContentControl _details = new();
     private readonly TextBlock _message = new();
+    private readonly TextBlock _resultSummary = new();
     private readonly Grid _adaptiveContent = new();
     private Control? _assetList;
     private Control? _detailsHost;
@@ -191,6 +192,7 @@ public sealed class AssetManagementView : UserControl
                 DeleteAsset(_selected);
         }, danger: true));
         actions.Children.Add(ActionButton("↻ Aggiorna", Load));
+        actions.Children.Add(ActionButton("Reimposta filtri", ResetFilters));
         content.Children.Add(actions);
 
         var filters = new Grid
@@ -218,6 +220,11 @@ public sealed class AssetManagementView : UserControl
         Add(filters, LabeledFilter("Stato", _status), 4, 0);
         Add(filters, LabeledFilter("Produttore", _manufacturer), 6, 0);
         content.Children.Add(filters);
+
+        _resultSummary.FontSize = 12;
+        _resultSummary.Foreground = UiTokens.Brush(UiTokens.TextSecondary);
+        _resultSummary.Margin = new Thickness(2, 0, 0, 0);
+        content.Children.Add(_resultSummary);
 
         surface.Child = content;
         return surface;
@@ -250,11 +257,13 @@ public sealed class AssetManagementView : UserControl
             a.Status.Equals("Attivo", StringComparison.OrdinalIgnoreCase));
         var assigned = _assets.Count(a => a.Status.Equals("Assegnato", StringComparison.OrdinalIgnoreCase));
         var maintenance = _assets.Count(a => a.Status.Equals("In manutenzione", StringComparison.OrdinalIgnoreCase));
+        var expiringWarranty = _assets.Count(a => IsWarrantyExpiring(a.WarrantyEndDate));
 
         _kpis.Children.Add(new EnterpriseKpiCard("▣", total.ToString(), "Asset totali", "Tutti gli asset registrati"));
         _kpis.Children.Add(new EnterpriseKpiCard("✓", available.ToString(), "Disponibili", "Pronti per l'assegnazione"));
         _kpis.Children.Add(new EnterpriseKpiCard("↗", assigned.ToString(), "Assegnati", "Attualmente in uso"));
         _kpis.Children.Add(new EnterpriseKpiCard("⚙", maintenance.ToString(), "Manutenzione", "In lavorazione"));
+        _kpis.Children.Add(new EnterpriseKpiCard("◷", expiringWarranty.ToString(), "Garanzie in scadenza", "Entro i prossimi 90 giorni"));
     }
 
     private void ConfigureAssetTable()
@@ -292,6 +301,22 @@ public sealed class AssetManagementView : UserControl
                 Width = 210,
                 MinWidth = 180,
                 TextSelector = asset => asset.Model
+            },
+            new AxEnterpriseColumn<Asset>
+            {
+                Id = "serial-number",
+                Header = "Seriale",
+                Width = 170,
+                MinWidth = 150,
+                TextSelector = asset => asset.SerialNumber
+            },
+            new AxEnterpriseColumn<Asset>
+            {
+                Id = "assigned-to",
+                Header = "Assegnato a",
+                Width = 190,
+                MinWidth = 170,
+                TextSelector = asset => _assignmentEngine.GetActiveAssignmentForAsset(asset.Id)?.EmployeeName ?? "—"
             },
             new AxEnterpriseColumn<Asset>
             {
@@ -340,6 +365,7 @@ public sealed class AssetManagementView : UserControl
 
         _selected = visibleSelection;
         _assetTable.SetItems(filtered);
+        _resultSummary.Text = $"{filtered.Count} di {_assets.Count} asset visualizzati";
         _assetTable.SetSelectedItem(visibleSelection);
         _details.Content = visibleSelection is not null ? DetailsCard(visibleSelection) : EmptyDetails();
     }
@@ -455,7 +481,7 @@ public sealed class AssetManagementView : UserControl
             Margin = new Thickness(0, 6, 0, 0)
         };
         Add(actions, SmallButton("Modifica", () => OpenEditAsset(asset)), 0, 0);
-        Add(actions, SmallButton("Assegna", () => OpenAssignAsset(asset)), 2, 0);
+        Add(actions, SmallButton("Assegna", () => _ = OpenAssignAsset(asset)), 2, 0);
         Add(actions, SmallButton("Restituisci", () => ReturnAsset(asset)), 0, 2);
         Add(actions, SmallButton("Elimina", () => DeleteAsset(asset), true), 2, 2);
         content.Children.Add(actions);
@@ -635,6 +661,25 @@ public sealed class AssetManagementView : UserControl
         {
             ShowMessage($"Errore eliminazione asset: {ex.Message}", true);
         }
+    }
+
+    private void ResetFilters()
+    {
+        _search.Text = string.Empty;
+        _category.SelectedIndex = 0;
+        _status.SelectedIndex = 0;
+        _manufacturer.SelectedIndex = 0;
+        RefreshRows();
+        ShowMessage("Filtri reimpostati.");
+    }
+
+    private static bool IsWarrantyExpiring(string value)
+    {
+        if (!DateTime.TryParse(value, out var warrantyEnd))
+            return false;
+
+        var today = DateTime.Today;
+        return warrantyEnd.Date >= today && warrantyEnd.Date <= today.AddDays(90);
     }
 
     private void ShowMessage(string text, bool isError = false)
