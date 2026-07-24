@@ -10,10 +10,13 @@ public sealed class AxEnterpriseTable<T> : Border
 {
     private readonly Grid _header = new();
     private readonly StackPanel _rows = new();
+    private readonly ScrollViewer _rowsScroll;
     private readonly ScrollViewer _horizontalScroll;
     private IReadOnlyList<AxEnterpriseColumn<T>> _columns = Array.Empty<AxEnterpriseColumn<T>>();
     private IReadOnlyList<T> _items = Array.Empty<T>();
     private T? _selectedItem;
+    private string? _sortColumnId;
+    private bool _sortAscending = true;
 
     public AxEnterpriseTable()
     {
@@ -21,20 +24,33 @@ public sealed class AxEnterpriseTable<T> : Border
         BorderBrush = UiTokens.Brush(UiTokens.Border);
         BorderThickness = new Thickness(1);
         CornerRadius = new CornerRadius(14);
-
-        var content = new StackPanel();
+        MinHeight = 280;
 
         var headerBorder = new Border
         {
             Background = UiTokens.Brush(UiTokens.SurfaceAlt),
             BorderBrush = UiTokens.Brush(UiTokens.Border),
             BorderThickness = new Thickness(0, 0, 0, 1),
-            Padding = new Thickness(14, 11),
+            Padding = new Thickness(14, 10),
             Child = _header
         };
 
+        _rowsScroll = new ScrollViewer
+        {
+            Content = _rows,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+        };
+
+        var content = new Grid
+        {
+            RowDefinitions = new RowDefinitions("Auto,*"),
+            MinHeight = 0
+        };
+        Grid.SetRow(headerBorder, 0);
         content.Children.Add(headerBorder);
-        content.Children.Add(_rows);
+        Grid.SetRow(_rowsScroll, 1);
+        content.Children.Add(_rowsScroll);
 
         _horizontalScroll = new ScrollViewer
         {
@@ -48,8 +64,11 @@ public sealed class AxEnterpriseTable<T> : Border
 
     public event Action<T>? SelectionChanged;
     public event Action<T>? ItemActivated;
+    public event Action<string, bool>? SortRequested;
 
     public T? SelectedItem => _selectedItem;
+    public bool CompactRows { get; set; } = true;
+    public bool AlternatingRows { get; set; } = true;
 
     public void SetSelectedItem(T? item)
     {
@@ -83,19 +102,59 @@ public sealed class AxEnterpriseTable<T> : Border
         for (var i = 0; i < _columns.Count; i++)
         {
             var column = _columns[i];
-            var text = new TextBlock
-            {
-                Text = column.Header,
-                FontWeight = FontWeight.Bold,
-                Foreground = UiTokens.Brush(UiTokens.TextSecondary),
-                TextWrapping = TextWrapping.NoWrap,
-                TextTrimming = TextTrimming.None,
-                HorizontalAlignment = Alignment(column.Alignment),
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-            };
+            Control headerControl;
 
-            Grid.SetColumn(text, i);
-            _header.Children.Add(text);
+            if (column.IsSortable)
+            {
+                var sortIndicator = string.Equals(_sortColumnId, column.Id, StringComparison.Ordinal)
+                    ? (_sortAscending ? "  ▲" : "  ▼")
+                    : string.Empty;
+
+                var button = new Button
+                {
+                    Content = column.Header + sortIndicator,
+                    Background = Brushes.Transparent,
+                    BorderThickness = new Thickness(0),
+                    Padding = new Thickness(0),
+                    FontWeight = FontWeight.Bold,
+                    Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+                    HorizontalContentAlignment = Alignment(column.Alignment),
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+                };
+
+                button.Click += (_, _) =>
+                {
+                    if (string.Equals(_sortColumnId, column.Id, StringComparison.Ordinal))
+                        _sortAscending = !_sortAscending;
+                    else
+                    {
+                        _sortColumnId = column.Id;
+                        _sortAscending = true;
+                    }
+
+                    BuildHeader();
+                    SortRequested?.Invoke(column.Id, _sortAscending);
+                };
+
+                headerControl = button;
+            }
+            else
+            {
+                headerControl = new TextBlock
+                {
+                    Text = column.Header,
+                    FontWeight = FontWeight.Bold,
+                    Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+                    TextWrapping = TextWrapping.NoWrap,
+                    TextTrimming = TextTrimming.None,
+                    HorizontalAlignment = Alignment(column.Alignment),
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+                };
+            }
+
+            Grid.SetColumn(headerControl, i);
+            _header.Children.Add(headerControl);
         }
     }
 
@@ -119,18 +178,19 @@ public sealed class AxEnterpriseTable<T> : Border
             return;
         }
 
-        foreach (var item in _items)
-            _rows.Children.Add(BuildRow(item));
+        for (var index = 0; index < _items.Count; index++)
+            _rows.Children.Add(BuildRow(_items[index], index));
 
         RefreshSelection();
     }
 
-    private Control BuildRow(T item)
+    private Control BuildRow(T item, int index)
     {
+        var rowHeight = CompactRows ? 46 : 54;
         var grid = new Grid
         {
             ColumnDefinitions = BuildDefinitions(),
-            MinHeight = 52
+            MinHeight = rowHeight
         };
 
         for (var i = 0; i < _columns.Count; i++)
@@ -144,15 +204,19 @@ public sealed class AxEnterpriseTable<T> : Border
             grid.Children.Add(cell);
         }
 
+        var normalBackground = AlternatingRows && index % 2 == 1
+            ? UiTokens.Brush(UiTokens.SurfaceAlt)
+            : UiTokens.Brush(UiTokens.Surface);
+
         var button = new Button
         {
             Content = grid,
-            Background = Brushes.Transparent,
+            Background = normalBackground,
             BorderBrush = UiTokens.Brush(UiTokens.Border),
             BorderThickness = new Thickness(0, 0, 0, 1),
-            Padding = new Thickness(14, 9),
+            Padding = CompactRows ? new Thickness(14, 7) : new Thickness(14, 10),
             HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
-            MinHeight = 52
+            MinHeight = rowHeight
         };
 
         button.Click += (_, _) =>
@@ -163,7 +227,7 @@ public sealed class AxEnterpriseTable<T> : Border
         };
         button.DoubleTapped += (_, _) => ItemActivated?.Invoke(item);
 
-        button.Tag = item;
+        button.Tag = new RowTag(item, normalBackground);
         return button;
     }
 
@@ -171,8 +235,13 @@ public sealed class AxEnterpriseTable<T> : Border
     {
         foreach (var child in _rows.Children.OfType<Button>())
         {
-            var selected = Equals(child.Tag, _selectedItem);
-            child.Background = UiTokens.Brush(selected ? UiTokens.PremiumSelected : UiTokens.Surface);
+            if (child.Tag is not RowTag tag)
+                continue;
+
+            var selected = Equals(tag.Item, _selectedItem);
+            child.Background = selected
+                ? UiTokens.Brush(UiTokens.PremiumSelected)
+                : tag.NormalBackground;
         }
     }
 
@@ -201,4 +270,6 @@ public sealed class AxEnterpriseTable<T> : Border
             _ => Avalonia.Layout.HorizontalAlignment.Left
         };
     }
+
+    private sealed record RowTag(T Item, IBrush NormalBackground);
 }

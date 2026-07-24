@@ -28,9 +28,14 @@ public sealed class AssetManagementView : UserControl
     private readonly Grid _adaptiveContent = new();
     private Control? _assetList;
     private Control? _detailsHost;
+    private Grid? _masterLayout;
+    private Button? _detailsToggleButton;
+    private bool _detailsVisible;
 
     private IReadOnlyList<Asset> _assets = Array.Empty<Asset>();
     private Asset? _selected;
+    private string _sortColumnId = "asset-code";
+    private bool _sortAscending = true;
 
     public AssetManagementView()
     {
@@ -88,14 +93,14 @@ public sealed class AssetManagementView : UserControl
 
         var page = new Grid
         {
-            Margin = new Thickness(24, 18, 24, 24),
+            Margin = new Thickness(24, 14, 24, 18),
             RowDefinitions = new RowDefinitions("Auto,Auto,*")
         };
 
         var kpiWrap = new WrapPanel
         {
             Orientation = Avalonia.Layout.Orientation.Horizontal,
-            Margin = new Thickness(0, 0, 0, 16)
+            Margin = new Thickness(0, 0, 0, 10)
         };
         _kpis.Orientation = Avalonia.Layout.Orientation.Horizontal;
         _kpis.Spacing = 12;
@@ -112,22 +117,20 @@ public sealed class AssetManagementView : UserControl
 
         var master = new Grid
         {
-            RowDefinitions = new RowDefinitions("Auto,14,*"),
+            RowDefinitions = new RowDefinitions("Auto,10,*"),
             MinHeight = 0
         };
+        _masterLayout = master;
 
         var commandSurface = BuildCommandSurface();
         Grid.SetRow(commandSurface, 0);
         master.Children.Add(commandSurface);
 
-        _assetList = new ScrollViewer
-        {
-            Content = _assetTable,
-            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-            MinWidth = 0,
-            MinHeight = 0
-        };
+        _assetList = _assetTable;
+        _assetTable.MinWidth = 0;
+        _assetTable.MinHeight = 0;
+        _assetTable.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
+        _assetTable.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
         Grid.SetRow(_assetList, 2);
         master.Children.Add(_assetList);
 
@@ -140,12 +143,8 @@ public sealed class AssetManagementView : UserControl
             MinHeight = 360
         };
 
-        EnterpriseAdaptiveLayout.ArrangeMasterDetails(_adaptiveContent, master, _detailsHost, Bounds.Width);
-        SizeChanged += (_, e) =>
-        {
-            if (_detailsHost is not null)
-                EnterpriseAdaptiveLayout.ArrangeMasterDetails(_adaptiveContent, master, _detailsHost, e.NewSize.Width);
-        };
+        ArrangeAssetWorkspace(Bounds.Width);
+        SizeChanged += (_, e) => ArrangeAssetWorkspace(e.NewSize.Width);
 
         _adaptiveContent.MinHeight = 0;
         Grid.SetRow(_adaptiveContent, 2);
@@ -161,43 +160,44 @@ public sealed class AssetManagementView : UserControl
             Background = UiTokens.Brush(UiTokens.Surface),
             BorderBrush = UiTokens.Brush(UiTokens.Border),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(16),
-            Padding = new Thickness(14)
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(12)
         };
 
-        var content = new StackPanel { Spacing = 12 };
+        var content = new StackPanel { Spacing = 9 };
 
-        var actions = new WrapPanel
+        var actionsGrid = new Grid
         {
-            Orientation = Avalonia.Layout.Orientation.Horizontal
+            ColumnDefinitions = new ColumnDefinitions("Auto,8,Auto,8,Auto,8,Auto,*,8,Auto,8,Auto")
         };
-        actions.Children.Add(ActionButton("Modifica", () =>
+        Add(actionsGrid, ActionButton("Modifica", () =>
         {
             if (_selected is not null)
                 OpenEditAsset(_selected);
-        }));
-        actions.Children.Add(ActionButton("Assegna", () =>
+        }), 0, 0);
+        Add(actionsGrid, ActionButton("Assegna", () =>
         {
             if (_selected is not null)
                 _ = OpenAssignAsset(_selected);
-        }));
-        actions.Children.Add(ActionButton("Restituisci", () =>
+        }), 2, 0);
+        Add(actionsGrid, ActionButton("Restituisci", () =>
         {
             if (_selected is not null)
                 ReturnAsset(_selected);
-        }));
-        actions.Children.Add(ActionButton("Elimina", () =>
+        }), 4, 0);
+        Add(actionsGrid, ActionButton("Duplica", () =>
         {
             if (_selected is not null)
-                DeleteAsset(_selected);
-        }, danger: true));
-        actions.Children.Add(ActionButton("↻ Aggiorna", Load));
-        actions.Children.Add(ActionButton("Reimposta filtri", ResetFilters));
-        content.Children.Add(actions);
+                DuplicateAsset(_selected);
+        }), 6, 0);
+        _detailsToggleButton = ActionButton("Mostra dettagli", ToggleDetails);
+        Add(actionsGrid, _detailsToggleButton, 9, 0);
+        Add(actionsGrid, ActionButton("↻", Load), 11, 0);
+        content.Children.Add(actionsGrid);
 
         var filters = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("*,12,140,12,140,12,160")
+            ColumnDefinitions = new ColumnDefinitions("*,10,128,10,128,10,150,10,Auto")
         };
 
         _search.Watermark = "Cerca per codice, categoria, produttore, modello o seriale...";
@@ -219,6 +219,7 @@ public sealed class AssetManagementView : UserControl
         Add(filters, LabeledFilter("Categoria", _category), 2, 0);
         Add(filters, LabeledFilter("Stato", _status), 4, 0);
         Add(filters, LabeledFilter("Produttore", _manufacturer), 6, 0);
+        Add(filters, ActionButton("Reimposta", ResetFilters), 8, 0);
         content.Children.Add(filters);
 
         _resultSummary.FontSize = 12;
@@ -244,7 +245,7 @@ public sealed class AssetManagementView : UserControl
             : _assets.FirstOrDefault();
 
         _assetTable.SetSelectedItem(_selected);
-        _details.Content = _selected is not null ? DetailsCard(_selected) : EmptyDetails();
+        _details.Content = _selected is not null && _detailsVisible ? DetailsCard(_selected) : EmptyDetails();
     }
 
     private void RefreshKpis()
@@ -259,80 +260,82 @@ public sealed class AssetManagementView : UserControl
         var maintenance = _assets.Count(a => a.Status.Equals("In manutenzione", StringComparison.OrdinalIgnoreCase));
         var expiringWarranty = _assets.Count(a => IsWarrantyExpiring(a.WarrantyEndDate));
 
-        _kpis.Children.Add(new EnterpriseKpiCard("▣", total.ToString(), "Asset totali", "Tutti gli asset registrati"));
-        _kpis.Children.Add(new EnterpriseKpiCard("✓", available.ToString(), "Disponibili", "Pronti per l'assegnazione"));
-        _kpis.Children.Add(new EnterpriseKpiCard("↗", assigned.ToString(), "Assegnati", "Attualmente in uso"));
-        _kpis.Children.Add(new EnterpriseKpiCard("⚙", maintenance.ToString(), "Manutenzione", "In lavorazione"));
-        _kpis.Children.Add(new EnterpriseKpiCard("◷", expiringWarranty.ToString(), "Garanzie in scadenza", "Entro i prossimi 90 giorni"));
+        _kpis.Children.Add(CompactKpi("▣", total.ToString(), "Asset totali"));
+        _kpis.Children.Add(CompactKpi("✓", available.ToString(), "Disponibili"));
+        _kpis.Children.Add(CompactKpi("↗", assigned.ToString(), "Assegnati"));
+        _kpis.Children.Add(CompactKpi("⚙", maintenance.ToString(), "Manutenzione"));
+        _kpis.Children.Add(CompactKpi("◷", expiringWarranty.ToString(), "Garanzie 90 gg"));
+    }
+
+    private static EnterpriseKpiCard CompactKpi(string icon, string value, string label)
+    {
+        return new EnterpriseKpiCard(icon, value, label)
+        {
+            MinWidth = 168,
+            MinHeight = 72,
+            Padding = new Thickness(12, 10)
+        };
     }
 
     private void ConfigureAssetTable()
     {
+        _assetTable.CompactRows = true;
+        _assetTable.AlternatingRows = true;
         _assetTable.ConfigureColumns(new[]
         {
             new AxEnterpriseColumn<Asset>
             {
                 Id = "asset-code",
+                IsSortable = true,
                 Header = "Codice",
-                Width = 120,
-                MinWidth = 120,
+                Width = 118,
+                MinWidth = 110,
                 CellFactory = asset => Cell(asset.AssetCode, true)
             },
             new AxEnterpriseColumn<Asset>
             {
-                Id = "category",
-                Header = "Categoria",
-                Width = 150,
-                MinWidth = 140,
-                TextSelector = asset => asset.Category
-            },
-            new AxEnterpriseColumn<Asset>
-            {
-                Id = "manufacturer",
-                Header = "Produttore",
-                Width = 170,
-                MinWidth = 150,
-                TextSelector = asset => asset.Manufacturer
-            },
-            new AxEnterpriseColumn<Asset>
-            {
-                Id = "model",
-                Header = "Modello",
-                Width = 210,
-                MinWidth = 180,
-                TextSelector = asset => asset.Model
+                Id = "asset",
+                IsSortable = true,
+                Header = "Asset",
+                Width = 285,
+                MinWidth = 240,
+                CellFactory = AssetIdentityCell
             },
             new AxEnterpriseColumn<Asset>
             {
                 Id = "serial-number",
+                IsSortable = true,
                 Header = "Seriale",
-                Width = 170,
-                MinWidth = 150,
-                TextSelector = asset => asset.SerialNumber
+                Width = 155,
+                MinWidth = 140,
+                TextSelector = asset => string.IsNullOrWhiteSpace(asset.SerialNumber) ? "—" : asset.SerialNumber
             },
             new AxEnterpriseColumn<Asset>
             {
                 Id = "assigned-to",
+                IsSortable = true,
                 Header = "Assegnato a",
-                Width = 190,
-                MinWidth = 170,
+                Width = 185,
+                MinWidth = 165,
                 TextSelector = asset => _assignmentEngine.GetActiveAssignmentForAsset(asset.Id)?.EmployeeName ?? "—"
             },
             new AxEnterpriseColumn<Asset>
             {
                 Id = "status",
+                IsSortable = true,
                 Header = "Stato",
-                Width = 160,
-                MinWidth = 150,
+                Width = 145,
+                MinWidth = 135,
                 Alignment = AxColumnAlignment.Center,
                 CellFactory = asset => StatusBadge(asset.Status)
             },
             new AxEnterpriseColumn<Asset>
             {
                 Id = "warranty",
+                IsSortable = true,
                 Header = "Garanzia",
-                Width = 140,
-                MinWidth = 130,
+                Width = 135,
+                MinWidth = 125,
                 TextSelector = asset => FormatDate(asset.WarrantyEndDate)
             }
         });
@@ -340,9 +343,20 @@ public sealed class AssetManagementView : UserControl
         _assetTable.SelectionChanged += asset =>
         {
             _selected = asset;
-            _details.Content = DetailsCard(asset);
+            if (_detailsVisible)
+                _details.Content = DetailsCard(asset);
         };
-        _assetTable.ItemActivated += OpenEditAsset;
+        _assetTable.ItemActivated += asset =>
+        {
+            _selected = asset;
+            ShowDetails();
+        };
+        _assetTable.SortRequested += (columnId, ascending) =>
+        {
+            _sortColumnId = columnId;
+            _sortAscending = ascending;
+            RefreshRows();
+        };
     }
 
     private void RefreshRows()
@@ -352,13 +366,14 @@ public sealed class AssetManagementView : UserControl
         var selectedStatus = _status.SelectedItem?.ToString() ?? "Tutti";
         var selectedManufacturer = _manufacturer.SelectedItem?.ToString() ?? "Tutti";
 
-        var filtered = _assets.Where(a =>
+        var filteredQuery = _assets.Where(a =>
             (string.IsNullOrWhiteSpace(query) ||
              $"{a.AssetCode} {a.Category} {a.Manufacturer} {a.Model} {a.SerialNumber} {a.Status} {a.OperatingSystem}".ToLowerInvariant().Contains(query)) &&
             (selectedCategory == "Tutte" || a.Category == selectedCategory) &&
             (selectedStatus == "Tutti" || a.Status == selectedStatus) &&
-            (selectedManufacturer == "Tutti" || a.Manufacturer == selectedManufacturer))
-            .ToList();
+            (selectedManufacturer == "Tutti" || a.Manufacturer == selectedManufacturer));
+
+        var filtered = ApplySort(filteredQuery).ToList();
 
         var visibleSelection = filtered.FirstOrDefault(a => a.Id == _selected?.Id)
             ?? filtered.FirstOrDefault();
@@ -367,7 +382,103 @@ public sealed class AssetManagementView : UserControl
         _assetTable.SetItems(filtered);
         _resultSummary.Text = $"{filtered.Count} di {_assets.Count} asset visualizzati";
         _assetTable.SetSelectedItem(visibleSelection);
-        _details.Content = visibleSelection is not null ? DetailsCard(visibleSelection) : EmptyDetails();
+        _details.Content = visibleSelection is not null && _detailsVisible ? DetailsCard(visibleSelection) : EmptyDetails();
+    }
+
+    private IEnumerable<Asset> ApplySort(IEnumerable<Asset> assets)
+    {
+        Func<Asset, string> selector = _sortColumnId switch
+        {
+            "asset" => asset => $"{asset.Manufacturer} {asset.Model} {asset.Category}",
+            "serial-number" => asset => asset.SerialNumber,
+            "assigned-to" => asset => _assignmentEngine.GetActiveAssignmentForAsset(asset.Id)?.EmployeeName ?? string.Empty,
+            "status" => asset => asset.Status,
+            "warranty" => asset => NormalizeDateForSort(asset.WarrantyEndDate),
+            _ => asset => asset.AssetCode
+        };
+
+        return _sortAscending
+            ? assets.OrderBy(selector, StringComparer.OrdinalIgnoreCase)
+            : assets.OrderByDescending(selector, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeDateForSort(string value)
+    {
+        return DateTime.TryParse(value, out var date)
+            ? date.ToString("yyyyMMddHHmmss")
+            : string.Empty;
+    }
+
+    private void ArrangeAssetWorkspace(double width)
+    {
+        if (_masterLayout is null || _detailsHost is null)
+            return;
+
+        _adaptiveContent.Children.Clear();
+        _adaptiveContent.RowDefinitions = new RowDefinitions("*");
+
+        if (!_detailsVisible)
+        {
+            _adaptiveContent.ColumnDefinitions = new ColumnDefinitions("*");
+            Grid.SetColumn(_masterLayout, 0);
+            Grid.SetRow(_masterLayout, 0);
+            _adaptiveContent.Children.Add(_masterLayout);
+            return;
+        }
+
+        var detailsWidth = width >= 1500 ? 360 : 330;
+        _adaptiveContent.ColumnDefinitions = new ColumnDefinitions($"*,12,{detailsWidth}");
+        Grid.SetColumn(_masterLayout, 0);
+        Grid.SetRow(_masterLayout, 0);
+        _adaptiveContent.Children.Add(_masterLayout);
+        Grid.SetColumn(_detailsHost, 2);
+        Grid.SetRow(_detailsHost, 0);
+        _adaptiveContent.Children.Add(_detailsHost);
+    }
+
+    private void ToggleDetails()
+    {
+        if (_detailsVisible)
+            HideDetails();
+        else
+            ShowDetails();
+    }
+
+    private void ShowDetails()
+    {
+        _detailsVisible = true;
+        _detailsToggleButton!.Content = "Nascondi dettagli";
+        _details.Content = _selected is not null ? DetailsCard(_selected) : EmptyDetails();
+        ArrangeAssetWorkspace(Bounds.Width);
+    }
+
+    private void HideDetails()
+    {
+        _detailsVisible = false;
+        _detailsToggleButton!.Content = "Mostra dettagli";
+        ArrangeAssetWorkspace(Bounds.Width);
+    }
+
+    private Control AssetIdentityCell(Asset asset)
+    {
+        var panel = new StackPanel { Spacing = 1 };
+        panel.Children.Add(new TextBlock
+        {
+            Text = $"{asset.Manufacturer} {asset.Model}".Trim(),
+            FontWeight = FontWeight.SemiBold,
+            Foreground = UiTokens.Brush(UiTokens.TextPrimary),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxWidth = 270
+        });
+        panel.Children.Add(new TextBlock
+        {
+            Text = asset.Category,
+            FontSize = 11,
+            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxWidth = 270
+        });
+        return panel;
     }
 
     private Control DetailsCard(Asset asset)
@@ -390,13 +501,17 @@ public sealed class AssetManagementView : UserControl
         Grid.SetColumn(label, 0);
         eyebrow.Children.Add(label);
 
-        var closeHint = new TextBlock
+        var closeHint = new Button
         {
-            Text = "×",
+            Content = "×",
             FontSize = 18,
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(6, 0),
             Foreground = UiTokens.Brush(UiTokens.TextSecondary),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
         };
+        closeHint.Click += (_, _) => HideDetails();
         Grid.SetColumn(closeHint, 1);
         eyebrow.Children.Add(closeHint);
         content.Children.Add(eyebrow);
@@ -477,13 +592,15 @@ public sealed class AssetManagementView : UserControl
         var actions = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("*,10,*"),
-            RowDefinitions = new RowDefinitions("Auto,10,Auto"),
+            RowDefinitions = new RowDefinitions("Auto,10,Auto,10,Auto"),
             Margin = new Thickness(0, 6, 0, 0)
         };
         Add(actions, SmallButton("Modifica", () => OpenEditAsset(asset)), 0, 0);
-        Add(actions, SmallButton("Assegna", () => _ = OpenAssignAsset(asset)), 2, 0);
-        Add(actions, SmallButton("Restituisci", () => ReturnAsset(asset)), 0, 2);
-        Add(actions, SmallButton("Elimina", () => DeleteAsset(asset), true), 2, 2);
+        Add(actions, SmallButton("Duplica", () => DuplicateAsset(asset)), 2, 0);
+        Add(actions, SmallButton("Assegna", () => _ = OpenAssignAsset(asset)), 0, 2);
+        Add(actions, SmallButton("Restituisci", () => ReturnAsset(asset)), 2, 2);
+        Add(actions, SmallButton("Stampa scheda", () => ShowMessage("Stampa scheda predisposta per il prossimo sprint.")), 0, 4);
+        Add(actions, SmallButton("Elimina", () => DeleteAsset(asset), true), 2, 4);
         content.Children.Add(actions);
 
         return new AxInspectorPanel(content);
@@ -646,6 +763,41 @@ public sealed class AssetManagementView : UserControl
         {
             ShowMessage($"Errore salvataggio asset: {ex.Message}", true);
         }
+    }
+
+    private void DuplicateAsset(Asset source)
+    {
+        var copy = new Asset
+        {
+            AssetCode = BuildDuplicateAssetCode(source.AssetCode),
+            Category = source.Category,
+            Manufacturer = source.Manufacturer,
+            Model = source.Model,
+            SerialNumber = string.Empty,
+            AssetTag = string.Empty,
+            Status = "Da verificare",
+            PurchaseDate = source.PurchaseDate,
+            WarrantyEndDate = source.WarrantyEndDate,
+            OperatingSystem = source.OperatingSystem,
+            BitLockerEnabled = source.BitLockerEnabled,
+            Notes = string.IsNullOrWhiteSpace(source.Notes)
+                ? $"Duplicato da {source.AssetCode}."
+                : $"{source.Notes}\nDuplicato da {source.AssetCode}."
+        };
+
+        OpenEditAsset(copy);
+    }
+
+    private string BuildDuplicateAssetCode(string sourceCode)
+    {
+        var baseCode = string.IsNullOrWhiteSpace(sourceCode) ? "ASSET" : sourceCode.Trim();
+        var candidate = $"{baseCode}-COPY";
+        var suffix = 2;
+
+        while (_service.AssetCodeExists(candidate))
+            candidate = $"{baseCode}-COPY-{suffix++}";
+
+        return candidate;
     }
 
     private void DeleteAsset(Asset asset)
