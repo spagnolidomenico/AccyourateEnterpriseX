@@ -10,6 +10,7 @@ using Accyourate.App.Framework;
 using Accyourate.App.Shared.UI;
 using Accyourate.App.Shared.Theme;
 using Accyourate.App.UIFramework.Foundation;
+using Accyourate.App.AssetManagement;
 
 namespace Accyourate.App;
 
@@ -21,9 +22,14 @@ public sealed class MainWindow : Window
     private StackPanel? _currentMenuGroup;
     private Grid? _rootGrid;
     private Border? _menuBorder;
+    private Border? _contextBorder;
+    private StackPanel? _contextMenu;
+    private TextBlock? _contextTitle;
     private bool _sidebarCollapsed;
     private CommandPaletteWindow? _commandPalette;
     private bool _commandPaletteOpening;
+    private ContentControl? _workspaceContent;
+    private Window? _embeddedModuleWindow;
 
     private const double ExpandedSidebarWidth = AxLayoutTokens.SidebarWidth;
     private const double CollapsedSidebarWidth = 72;
@@ -33,7 +39,7 @@ public sealed class MainWindow : Window
         _user = user;
         _database = database;
 
-        Title = "Accyourate Enterprise X — M4.0 Enterprise UX";
+        Title = "Accyourate Enterprise X — M4.1 Adaptive Workspace";
         Width = 1440;
         Height = 900;
         MinWidth = 1120;
@@ -49,7 +55,7 @@ public sealed class MainWindow : Window
     {
         var root = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions($"{(_sidebarCollapsed ? CollapsedSidebarWidth : ExpandedSidebarWidth)},*"),
+            ColumnDefinitions = new ColumnDefinitions($"{(_sidebarCollapsed ? CollapsedSidebarWidth : ExpandedSidebarWidth)},220,*"),
             RowDefinitions = new RowDefinitions("64,*")
         };
 
@@ -61,12 +67,25 @@ public sealed class MainWindow : Window
 
         var header = BuildHeader();
         Grid.SetColumn(header, 1);
+        Grid.SetColumnSpan(header, 2);
         root.Children.Add(header);
 
-        var content = BuildDashboard();
-        Grid.SetRow(content, 1);
-        Grid.SetColumn(content, 1);
-        root.Children.Add(content);
+        var context = BuildContextSidebar();
+        Grid.SetRow(context, 1);
+        Grid.SetColumn(context, 1);
+        root.Children.Add(context);
+
+        _workspaceContent = new ContentControl
+        {
+            Content = BuildDashboard(),
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            VerticalContentAlignment = VerticalAlignment.Stretch
+        };
+        Grid.SetRow(_workspaceContent, 1);
+        Grid.SetColumn(_workspaceContent, 2);
+        root.Children.Add(_workspaceContent);
+
+        SetContextArea("Home");
 
         return root;
     }
@@ -137,7 +156,7 @@ public sealed class MainWindow : Window
         };
         actions.Children.Add(MakeLightHeaderAction("⌘K", "Apri Command Palette", OpenCommandPalette));
         actions.Children.Add(MakeLightHeaderAction("◐", "Cambia tema", ToggleTheme));
-        actions.Children.Add(MakeLightHeaderAction("🔔", "Notifiche", () => new NotificationsWindow().Show()));
+        actions.Children.Add(MakeLightHeaderAction("🔔", "Notifiche", () => OpenModuleInWorkspace(new NotificationsWindow(), "Home > Notifiche")));
         actions.Children.Add(new Border
         {
             Width = 1,
@@ -229,8 +248,7 @@ public sealed class MainWindow : Window
         };
 
         _menuBorder = border;
-
-        var stack = new StackPanel { Spacing = 8 };
+        var stack = new StackPanel { Spacing = 6 };
 
         var brand = new StackPanel
         {
@@ -270,292 +288,204 @@ public sealed class MainWindow : Window
         }
         stack.Children.Add(brand);
 
-        stack.Children.Add(new TextBlock
+        if (!_sidebarCollapsed)
         {
-            Text = "WORKSPACE",
-            Foreground = Brush.Parse("#64748B"),
-            FontSize = 11,
-            FontWeight = FontWeight.SemiBold,
-            Margin = new Thickness(10, 0, 0, 8)
-        });
-
-        AddMenuSeparator(stack, "🏠 Centro Operativo");
-
-        AddMenuButton(stack, "🏠 Dashboard", () => SetBreadcrumb("Centro Operativo > Dashboard"), PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "🧭 Enterprise Navigation", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Enterprise Navigation");
-            var win = new EnterpriseNavigationGuideWindow();
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "✨ Enterprise UX Center", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Enterprise UX Center");
-            var win = new EnterpriseUxCenterWindow();
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "🎛 Design System", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Design System");
-            var win = new DesignSystemShowcaseWindow();
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "🧩 Enterprise Shell Foundation", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Enterprise Shell Foundation");
-            var win = new EnterpriseShellFoundationWindow();
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "🖥 Enterprise Workspace", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Enterprise Workspace");
-            var win = new EnterpriseWorkspaceWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "AI Enterprise AI Assistant", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Enterprise AI Assistant");
-            var win = new EnterpriseAiAssistantWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "AI Intent Catalog", () =>
-        {
-            SetBreadcrumb("Centro Operativo > AI Intent Catalog");
-            var win = new AiIntentCatalogManagerWindow();
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "AX Action Engine", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Action Engine");
-            var win = new ActionEngineWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "⌕ Universal Command Bar", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Universal Command Bar");
-            var win = new UniversalCommandBarWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-
-
-
-
-
-
-        AddMenuButton(stack, "🖼 Splash/Login Branding", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Splash/Login Branding");
-            var win = new BrandedSplashLoginWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "🏠 Branded Home", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Branded Home");
-            var win = new BrandedHomeWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-
-        AddMenuButton(stack, "🏷 Branding Center", () =>
-        {
-            SetBreadcrumb("Amministrazione > Branding Center");
-            var win = new BrandingCenterWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DiagnosticsView);
-
-
-
-        AddMenuButton(stack, "🍎 Apple Style Dashboard", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Apple Style Dashboard");
-            var win = new AppleStyleDashboardWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-
-        AddMenuButton(stack, "🔝 Top Bar Preview", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Top Bar Preview");
-            var win = new EnterpriseTopBarWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-
-        AddMenuButton(stack, "📊 Enterprise Dashboard", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Enterprise Dashboard");
-            var win = new EnterpriseDashboardWindow(_database);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "📈 Analytics Dashboard", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Analytics Dashboard");
-            var win = new AnalyticsDashboardWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuButton(stack, "🔎 Ricerca Globale", () =>
-        {
-            SetBreadcrumb("Centro Operativo > Ricerca Globale");
-            var win = new GlobalSearchWindow(_database);
-            win.Show();
-        }, PermissionCodes.DashboardView);
-
-        AddMenuSeparator(stack, "📋 Moduli Base");
-
-        foreach (var module in ModuleRegistry.Modules)
-        {
-            AddMenuButton(stack, module.Title, () =>
+            stack.Children.Add(new TextBlock
             {
-                SetBreadcrumb($"Moduli > {module.Title}");
-
-                if (module.Code == "people")
-                {
-                    var people = new EmployeesWindow(_database, _user);
-                    people.Show();
-                    return;
-                }
-
-                if (module.Code == "assets")
-                {
-                    var assets = new AssetsWindow(_database, _user);
-                    assets.Show();
-                    return;
-                }
-
-                if (module.Code == "medical")
-                {
-                    var medical = new MedicalDevicesWindow(_database, _user);
-                    medical.Show();
-                    return;
-                }
-
-                var win = new CrudPlaceholderWindow(module, _user);
-                win.Show();
-            }, module.Permission);
+                Text = "AREE",
+                Foreground = Brush.Parse("#64748B"),
+                FontSize = 11,
+                FontWeight = FontWeight.SemiBold,
+                Margin = new Thickness(10, 0, 0, 8)
+            });
         }
 
-        AddMenuSeparator(stack, "🏥 Medical Suite");
+        AddAreaButton(stack, "🏠", "Home", "Home");
+        AddAreaButton(stack, "💻", "Asset", "Asset");
+        AddAreaButton(stack, "👥", "Persone", "Persone");
+        AddAreaButton(stack, "✚", "Medical", "Medical");
+        AddAreaButton(stack, "🌐", "Infrastruttura", "Infrastruttura");
+        AddAreaButton(stack, "📁", "Documenti", "Documenti");
+        AddAreaButton(stack, "AI", "Intelligenza artificiale", "AI");
+        AddAreaButton(stack, "⚙", "Amministrazione", "Amministrazione");
 
-        AddMenuButton(stack, "🏭 Produzione & Qualità", () =>
+        border.Child = stack;
+        return border;
+    }
+
+    private void AddAreaButton(StackPanel stack, string glyph, string label, string area)
+    {
+        var content = _sidebarCollapsed ? glyph : $"{glyph}  {label}";
+        var button = new Button
         {
-            SetBreadcrumb("Medical Suite > Production & Quality");
-            var win = new ProductionQualityWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.MedicalView);
+            Content = content,
+            Foreground = Brush.Parse("#E2E8F0"),
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = _sidebarCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left,
+            FontSize = 13,
+            Padding = new Thickness(12, 10),
+            CornerRadius = new CornerRadius(AxLayoutTokens.RadiusSmall)
+        };
+        ToolTip.SetTip(button, label);
+        button.Click += (_, _) => SetContextArea(area);
+        stack.Children.Add(button);
+    }
 
-        AddMenuSeparator(stack, "📦 Logistica");
-
-        AddMenuButton(stack, "📦 Magazzino & Logistica", () =>
+    private Control BuildContextSidebar()
+    {
+        _contextTitle = new TextBlock
         {
-            SetBreadcrumb("Logistica > Warehouse & Logistics");
-            var win = new WarehouseLogisticsWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.MedicalView);
+            Text = "Home",
+            FontSize = 18,
+            FontWeight = FontWeight.Bold,
+            Foreground = Brush.Parse(AxSemanticTokens.TextPrimary),
+            Margin = new Thickness(18, 20, 18, 14)
+        };
+        _contextMenu = new StackPanel { Spacing = 4, Margin = new Thickness(10, 0, 10, 16) };
 
-        AddMenuSeparator(stack, "🧺 Assistenza");
-
-        AddMenuButton(stack, "🧺 Lavaggi & Manutenzione", () =>
-        {
-            SetBreadcrumb("Assistenza > Laundry & Maintenance");
-            var win = new LaundryMaintenanceWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.MedicalView);
-
-        AddMenuSeparator(stack, "📁 Documentale");
-
-        AddMenuButton(stack, "📁 Document Management", () =>
-        {
-            SetBreadcrumb("Documentale > Document Management");
-            var win = new DocumentManagementWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DocumentsView);
-
-        AddMenuSeparator(stack, "⚙️ Amministrazione");
-
-        AddMenuButton(stack, "Gestione Utenti", () =>
-        {
-            SetBreadcrumb("Amministrazione > Gestione Utenti");
-            var win = new UsersWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.UsersManage);
-
-        AddMenuButton(stack, "🛠 Diagnostica", () =>
-        {
-            SetBreadcrumb("Amministrazione > Diagnostica");
-            var win = new DiagnosticsWindow(_database);
-            win.Show();
-        }, PermissionCodes.DiagnosticsView);
-
-        AddMenuButton(stack, "🧬 Workflow", () =>
-        {
-            SetBreadcrumb("Amministrazione > Workflow");
-            var win = new WorkflowWindow(_database);
-            win.Show();
-        }, PermissionCodes.DiagnosticsView);
-
-        AddMenuButton(stack, "💾 Infrastruttura", () =>
-        {
-            SetBreadcrumb("Amministrazione > Infrastruttura");
-            var win = new InfrastructureWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DiagnosticsView);
-
-        AddMenuButton(stack, "⚙️ Impostazioni", () =>
-        {
-            SetBreadcrumb("Amministrazione > Impostazioni");
-            var win = new SettingsWindow(_database);
-            win.Show();
-        }, PermissionCodes.DiagnosticsView);
-
-        AddMenuButton(stack, "🎨 Personalizzazione Tema", () =>
-        {
-            SetBreadcrumb("Amministrazione > Personalizzazione Tema");
-            var win = new ThemePersonalizationWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.DiagnosticsView);
-
-        AddMenuButton(stack, "🏗 Enterprise Architecture", () =>
-        {
-            SetBreadcrumb("Amministrazione > Enterprise Architecture");
-            var win = new ArchitectureWindow(_database);
-            win.Show();
-        }, PermissionCodes.DiagnosticsView);
-
-        AddMenuButton(stack, "🔔 Notifiche", () =>
-        {
-            SetBreadcrumb("Core > Notifiche");
-            var win = new NotificationsWindow();
-            win.Show();
-        }, PermissionCodes.DiagnosticsView);
-
-        AddMenuButton(stack, "🔑 Cambio Password", () =>
-        {
-            SetBreadcrumb("Account > Cambio Password");
-            var win = new ChangePasswordWindow(_database, _user);
-            win.Show();
-        }, PermissionCodes.PasswordChange);
-
-        border.Child = new ScrollViewer
+        var panel = new DockPanel();
+        DockPanel.SetDock(_contextTitle, Dock.Top);
+        panel.Children.Add(_contextTitle);
+        panel.Children.Add(new ScrollViewer
         {
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
-            Content = stack
+            Content = _contextMenu
+        });
+
+        _contextBorder = new Border
+        {
+            Background = Brush.Parse("#F8FAFC"),
+            BorderBrush = Brush.Parse("#E5E7EB"),
+            BorderThickness = new Thickness(0, 0, 1, 0),
+            Child = panel
+        };
+        return _contextBorder;
+    }
+
+    private void SetContextArea(string area)
+    {
+        if (_contextMenu is null || _contextTitle is null)
+            return;
+
+        _contextTitle.Text = area;
+        _contextMenu.Children.Clear();
+        SetBreadcrumb($"Workspace > {area}");
+
+        switch (area)
+        {
+            case "Home":
+                AddContextButton("🏠 Centro Operativo", OpenOperationalCenter);
+                AddContextButton("🔔 Notifiche", () => OpenModuleInWorkspace(new NotificationsWindow(), "Home > Notifiche"));
+                AddContextButton("📊 Analytics", () => OpenModuleInWorkspace(new AnalyticsDashboardWindow(_database, _user), "Analytics"));
+                AddContextButton("⌕ Ricerca globale", OpenCommandPalette);
+                break;
+            case "Asset":
+                AddContextButton("📋 Tutti gli asset", () => OpenAssetWorkspace(null, "Tutti gli asset"));
+                AddContextButton("💻 Notebook", () => OpenAssetWorkspace("Notebook", "Notebook"));
+                AddContextButton("🖥 Desktop", () => OpenAssetWorkspace("Desktop PC", "Desktop"));
+                AddContextButton("🖨 Stampanti", () => OpenAssetWorkspace("Stampante", "Stampanti"));
+                AddContextButton("📱 Smartphone", () => OpenAssetWorkspace("Smartphone", "Smartphone"));
+                AddContextButton("🏷 Etichette e QR", () => OpenAssetWorkspace(null, "Etichette e QR"));
+                AddContextButton("📈 Report asset", () => OpenModuleInWorkspace(new AnalyticsDashboardWindow(_database, _user), "Analytics"));
+                break;
+            case "Persone":
+                AddContextButton("👥 Dipendenti", () => OpenModuleInWorkspace(new EmployeesWindow(_database, _user), "Persone > Dipendenti"));
+                AddContextButton("📄 Verbali consegna", () => OpenModuleInWorkspace(new DocumentManagementWindow(_database, _user), "Documenti"));
+                AddContextButton("🏢 Anagrafica aziendale", () => OpenModuleInWorkspace(new EmployeesWindow(_database, _user), "Persone > Dipendenti"));
+                break;
+            case "Medical":
+                AddContextButton("✚ Dispositivi medici", () => OpenModuleInWorkspace(new MedicalDevicesWindow(_database, _user), "Medical > Dispositivi medici"));
+                AddContextButton("🏭 Produzione e qualità", () => OpenModuleInWorkspace(new ProductionQualityWindow(_database, _user), "Medical > Produzione e qualità"));
+                AddContextButton("🧺 Lavaggi e manutenzione", () => OpenModuleInWorkspace(new LaundryMaintenanceWindow(_database, _user), "Medical > Lavaggi e manutenzione"));
+                break;
+            case "Infrastruttura":
+                AddContextButton("🌐 Rete aziendale", () => OpenModuleInWorkspace(new InfrastructureWindow(_database, _user), "Infrastruttura > Rete aziendale"));
+                AddContextButton("📦 Magazzino e logistica", () => OpenModuleInWorkspace(new WarehouseLogisticsWindow(_database, _user), "Infrastruttura > Magazzino e logistica"));
+                AddContextButton("💾 Backup", () => OpenModuleInWorkspace(new SettingsWindow(_database), "Amministrazione > Impostazioni"));
+                AddContextButton("🛠 Diagnostica", () => OpenModuleInWorkspace(new DiagnosticsWindow(_database), "Infrastruttura > Diagnostica"));
+                break;
+            case "Documenti":
+                AddContextButton("📁 Centro documenti", () => OpenModuleInWorkspace(new DocumentManagementWindow(_database, _user), "Documenti"));
+                AddContextButton("📄 Verbali", () => OpenModuleInWorkspace(new DocumentManagementWindow(_database, _user), "Documenti"));
+                break;
+            case "AI":
+                AddContextButton("AI Assistant", () => OpenModuleInWorkspace(new EnterpriseAiAssistantWindow(_database, _user), "AI > Assistant"));
+                AddContextButton("AI Intent Catalog", () => OpenModuleInWorkspace(new AiIntentCatalogManagerWindow(), "AI > Intent Catalog"));
+                AddContextButton("AX Action Engine", () => OpenModuleInWorkspace(new ActionEngineWindow(_database, _user), "AI > Action Engine"));
+                AddContextButton("⌕ Universal Command Bar", () => OpenModuleInWorkspace(new UniversalCommandBarWindow(_database, _user), "AI > Universal Command Bar"));
+                break;
+            case "Amministrazione":
+                AddContextButton("👤 Gestione utenti", () => OpenModuleInWorkspace(new UsersWindow(_database, _user), "Amministrazione > Gestione utenti"));
+                AddContextButton("⚙ Impostazioni", () => OpenModuleInWorkspace(new SettingsWindow(_database), "Amministrazione > Impostazioni"));
+                AddContextButton("🎨 Tema", () => OpenModuleInWorkspace(new ThemePersonalizationWindow(_database, _user), "Amministrazione > Tema"));
+                AddContextButton("🏷 Branding Center", () => OpenModuleInWorkspace(new BrandingCenterWindow(_database, _user), "Amministrazione > Branding Center"));
+                AddContextButton("🏗 Architettura", () => OpenModuleInWorkspace(new ArchitectureWindow(_database), "Amministrazione > Architettura"));
+                break;
+        }
+    }
+
+
+    private void OpenOperationalCenter()
+    {
+        if (_workspaceContent is null)
+            return;
+
+        _workspaceContent.Content = BuildDashboard();
+        SetBreadcrumb("Workspace > Centro Operativo");
+    }
+
+    private void OpenAssetWorkspace(string? category, string label)
+    {
+        if (_workspaceContent is null)
+            return;
+
+        _workspaceContent.Content = new AssetManagementView(category);
+        SetBreadcrumb($"Workspace > Asset > {label}");
+    }
+
+
+    private void OpenModuleInWorkspace(Window moduleWindow, string breadcrumb)
+    {
+        if (_workspaceContent is null)
+            return;
+
+        var moduleContent = moduleWindow.Content;
+        moduleWindow.Content = null;
+
+        _workspaceContent.Content = null;
+        _embeddedModuleWindow = moduleWindow;
+        _workspaceContent.Content = moduleContent ?? new TextBlock
+        {
+            Text = "Il modulo non contiene una vista incorporabile.",
+            Margin = new Thickness(24),
+            FontSize = 16
         };
 
-        return border;
+        SetBreadcrumb($"Workspace > {breadcrumb}");
+    }
+
+    private void AddContextButton(string text, Action action)
+    {
+        if (_contextMenu is null)
+            return;
+
+        var button = new Button
+        {
+            Content = text,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Left,
+            Background = Brushes.Transparent,
+            Foreground = Brush.Parse("#334155"),
+            BorderThickness = new Thickness(0),
+            FontSize = 13,
+            Padding = new Thickness(12, 10),
+            CornerRadius = new CornerRadius(8)
+        };
+        button.Click += (_, _) => action();
+        _contextMenu.Children.Add(button);
     }
 
     private void SetBreadcrumb(string text)
@@ -726,8 +656,8 @@ public sealed class MainWindow : Window
             {
                 MakeSectionHeader("Azioni rapide", "Accesso alle attività frequenti"),
                 MakeQuickAction("⌕", "Ricerca globale", "Trova asset, persone e documenti", OpenCommandPalette),
-                MakeQuickAction("＋", "Nuovo asset", "Apri Asset Management", () => new AssetsWindow(_database, _user).Show()),
-                MakeQuickAction("▤", "Analytics", "Consulta indicatori e scadenze", () => new AnalyticsDashboardWindow(_database, _user).Show())
+                MakeQuickAction("＋", "Nuovo asset", "Apri Asset Management", () => OpenAssetWorkspace(null, "Tutti gli asset")),
+                MakeQuickAction("▤", "Analytics", "Consulta indicatori e scadenze", () => OpenModuleInWorkspace(new AnalyticsDashboardWindow(_database, _user), "Analytics"))
             }
         };
         quickPanel.Children.Add(quickActions);
@@ -741,14 +671,14 @@ public sealed class MainWindow : Window
                 MakeSectionHeader("Release corrente", "Accyourate Enterprise X"),
                 new TextBlock
                 {
-                    Text = "M3.4 • Enterprise Workspace",
+                    Text = "M4.1 • Adaptive Workspace",
                     FontSize = 16,
                     FontWeight = FontWeight.SemiBold,
                     Foreground = Brush.Parse(AxSemanticTokens.TextPrimary)
                 },
                 new TextBlock
                 {
-                    Text = "Workspace enterprise con sidebar comprimibile, Command Palette Ctrl+K, azioni rapide operative e navigazione centralizzata.",
+                    Text = "Navigazione per macro-aree, barra contestuale dedicata ai moduli e Centro Operativo integrato.",
                     TextWrapping = TextWrapping.Wrap,
                     Foreground = Brush.Parse(AxSemanticTokens.TextSecondary),
                     FontSize = 13,
@@ -1033,46 +963,46 @@ public sealed class MainWindow : Window
                 Activate();
                 break;
             case "assets":
-                new AssetsWindow(_database, _user).Show();
+                OpenAssetWorkspace(null, "Tutti gli asset");
                 break;
             case "employees":
-                new EmployeesWindow(_database, _user).Show();
+                OpenModuleInWorkspace(new EmployeesWindow(_database, _user), "Persone > Dipendenti");
                 break;
             case "analytics":
-                new AnalyticsDashboardWindow(_database, _user).Show();
+                OpenModuleInWorkspace(new AnalyticsDashboardWindow(_database, _user), "Analytics");
                 break;
             case "medical":
-                new MedicalDevicesWindow(_database, _user).Show();
+                OpenModuleInWorkspace(new MedicalDevicesWindow(_database, _user), "Medical > Dispositivi medici");
                 break;
             case "branding":
-                new BrandingCenterWindow(_database, _user).Show();
+                OpenModuleInWorkspace(new BrandingCenterWindow(_database, _user), "Amministrazione > Branding Center");
                 break;
             case "design-system":
-                new DesignSystemShowcaseWindow().Show();
+                OpenModuleInWorkspace(new DesignSystemShowcaseWindow(), "Amministrazione > Design System");
                 break;
             case "architecture":
-                new ArchitectureWindow(_database).Show();
+                OpenModuleInWorkspace(new ArchitectureWindow(_database), "Amministrazione > Architettura");
                 break;
             case "notifications":
-                new NotificationsWindow().Show();
+                OpenModuleInWorkspace(new NotificationsWindow(), "Home > Notifiche");
                 break;
             case "settings":
-                new SettingsWindow(_database).Show();
+                OpenModuleInWorkspace(new SettingsWindow(_database), "Amministrazione > Impostazioni");
                 break;
             case "ai-assistant":
-                new EnterpriseAiAssistantWindow(_database, _user).Show();
+                OpenModuleInWorkspace(new EnterpriseAiAssistantWindow(_database, _user), "AI > Assistant");
                 break;
             case "ai-catalog":
-                new AiIntentCatalogManagerWindow().Show();
+                OpenModuleInWorkspace(new AiIntentCatalogManagerWindow(), "AI > Intent Catalog");
                 break;
             case "action-engine":
-                new ActionEngineWindow(_database, _user).Show();
+                OpenModuleInWorkspace(new ActionEngineWindow(_database, _user), "AI > Action Engine");
                 break;
             case "universal-command-bar":
-                new UniversalCommandBarWindow(_database, _user).Show();
+                OpenModuleInWorkspace(new UniversalCommandBarWindow(_database, _user), "AI > Universal Command Bar");
                 break;
             default:
-                new EnterpriseWorkspaceWindow(_database, _user).Show();
+                OpenOperationalCenter();
                 break;
         }
     }
@@ -1080,7 +1010,7 @@ public sealed class MainWindow : Window
     private void ToggleTheme()
     {
         var mode = AxThemeManager.Current.Toggle();
-        Title = $"Accyourate Enterprise X — M3.4 — Tema {mode}";
+        Title = $"Accyourate Enterprise X — M4.1 — Tema {mode}";
     }
 
     private void ToggleSidebar()

@@ -37,12 +37,33 @@ public sealed class AssetManagementView : UserControl
     private string _sortColumnId = "asset-code";
     private bool _sortAscending = true;
 
-    public AssetManagementView()
+    public AssetManagementView(string? initialCategory = null)
     {
         Background = UiTokens.Brush(UiTokens.Background);
         ConfigureAssetTable();
         Content = BuildLayout();
+        ApplyInitialCategoryFilter(initialCategory);
         Load();
+    }
+
+    private void ApplyInitialCategoryFilter(string? initialCategory)
+    {
+        if (string.IsNullOrWhiteSpace(initialCategory))
+        {
+            _category.SelectedIndex = 0;
+            return;
+        }
+
+        var matchingItem = _category.ItemsSource?
+            .Cast<object>()
+            .FirstOrDefault(item => string.Equals(
+                item?.ToString(),
+                initialCategory,
+                StringComparison.OrdinalIgnoreCase));
+
+        _category.SelectedItem = matchingItem;
+        if (matchingItem is null)
+            _category.SelectedIndex = 0;
     }
 
     private Control BuildLayout()
