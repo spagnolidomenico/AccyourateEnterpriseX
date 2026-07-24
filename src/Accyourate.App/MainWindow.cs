@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Input;
 using Avalonia.Media;
+using System.Collections.Generic;
 using Accyourate.App.Models;
 using Accyourate.App.Data;
 using Accyourate.App.Security;
@@ -30,6 +31,11 @@ public sealed class MainWindow : Window
     private bool _commandPaletteOpening;
     private ContentControl? _workspaceContent;
     private Window? _embeddedModuleWindow;
+    private readonly Dictionary<string, Button> _areaButtons = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Button> _contextButtons = new(StringComparer.OrdinalIgnoreCase);
+    private string _activeArea = "Home";
+    private string? _activeContextKey;
+    private string? _currentWorkspaceKey;
 
     private const double ExpandedSidebarWidth = AxLayoutTokens.SidebarWidth;
     private const double CollapsedSidebarWidth = 72;
@@ -39,7 +45,7 @@ public sealed class MainWindow : Window
         _user = user;
         _database = database;
 
-        Title = "Accyourate Enterprise X — M4.1 Adaptive Workspace";
+        Title = "Accyourate Enterprise X — M4.2 Workspace Stabilization";
         Width = 1440;
         Height = 900;
         MinWidth = 1120;
@@ -330,7 +336,23 @@ public sealed class MainWindow : Window
         };
         ToolTip.SetTip(button, label);
         button.Click += (_, _) => SetContextArea(area);
+        _areaButtons[area] = button;
+        ApplyAreaButtonState(button, string.Equals(area, _activeArea, StringComparison.OrdinalIgnoreCase));
         stack.Children.Add(button);
+    }
+
+    private static void ApplyAreaButtonState(Button button, bool isActive)
+    {
+        button.Background = isActive ? Brush.Parse("#24324A") : Brushes.Transparent;
+        button.Foreground = isActive ? Brushes.White : Brush.Parse("#E2E8F0");
+        button.FontWeight = isActive ? FontWeight.SemiBold : FontWeight.Normal;
+    }
+
+    private static void ApplyContextButtonState(Button button, bool isActive)
+    {
+        button.Background = isActive ? Brush.Parse("#E8F1FF") : Brushes.Transparent;
+        button.Foreground = isActive ? Brush.Parse(AxSemanticTokens.BrandPrimary) : Brush.Parse("#334155");
+        button.FontWeight = isActive ? FontWeight.SemiBold : FontWeight.Normal;
     }
 
     private Control BuildContextSidebar()
@@ -370,13 +392,20 @@ public sealed class MainWindow : Window
         if (_contextMenu is null || _contextTitle is null)
             return;
 
+        _activeArea = area;
+        foreach (var pair in _areaButtons)
+            ApplyAreaButtonState(pair.Value, string.Equals(pair.Key, area, StringComparison.OrdinalIgnoreCase));
+
         _contextTitle.Text = area;
         _contextMenu.Children.Clear();
+        _contextButtons.Clear();
+        _activeContextKey = null;
         SetBreadcrumb($"Workspace > {area}");
 
         switch (area)
         {
             case "Home":
+                OpenOperationalCenter();
                 AddContextButton("🏠 Centro Operativo", OpenOperationalCenter);
                 AddContextButton("🔔 Notifiche", () => OpenModuleInWorkspace(new NotificationsWindow(), "Home > Notifiche"));
                 AddContextButton("📊 Analytics", () => OpenModuleInWorkspace(new AnalyticsDashboardWindow(_database, _user), "Analytics"));
@@ -433,7 +462,12 @@ public sealed class MainWindow : Window
         if (_workspaceContent is null)
             return;
 
+        const string key = "home:operational-center";
+        if (string.Equals(_currentWorkspaceKey, key, StringComparison.Ordinal))
+            return;
+
         _workspaceContent.Content = BuildDashboard();
+        _currentWorkspaceKey = key;
         SetBreadcrumb("Workspace > Centro Operativo");
     }
 
@@ -442,7 +476,12 @@ public sealed class MainWindow : Window
         if (_workspaceContent is null)
             return;
 
+        var key = $"asset:{category ?? "all"}:{label}";
+        if (string.Equals(_currentWorkspaceKey, key, StringComparison.Ordinal))
+            return;
+
         _workspaceContent.Content = new AssetManagementView(category);
+        _currentWorkspaceKey = key;
         SetBreadcrumb($"Workspace > Asset > {label}");
     }
 
@@ -450,6 +489,10 @@ public sealed class MainWindow : Window
     private void OpenModuleInWorkspace(Window moduleWindow, string breadcrumb)
     {
         if (_workspaceContent is null)
+            return;
+
+        var key = $"module:{breadcrumb}";
+        if (string.Equals(_currentWorkspaceKey, key, StringComparison.Ordinal))
             return;
 
         var moduleContent = moduleWindow.Content;
@@ -464,6 +507,7 @@ public sealed class MainWindow : Window
             FontSize = 16
         };
 
+        _currentWorkspaceKey = key;
         SetBreadcrumb($"Workspace > {breadcrumb}");
     }
 
@@ -484,7 +528,16 @@ public sealed class MainWindow : Window
             Padding = new Thickness(12, 10),
             CornerRadius = new CornerRadius(8)
         };
-        button.Click += (_, _) => action();
+        var key = $"{_activeArea}:{text}";
+        button.Click += (_, _) =>
+        {
+            _activeContextKey = key;
+            foreach (var pair in _contextButtons)
+                ApplyContextButtonState(pair.Value, string.Equals(pair.Key, key, StringComparison.Ordinal));
+            action();
+        };
+        _contextButtons[key] = button;
+        ApplyContextButtonState(button, string.Equals(_activeContextKey, key, StringComparison.Ordinal));
         _contextMenu.Children.Add(button);
     }
 
@@ -671,14 +724,14 @@ public sealed class MainWindow : Window
                 MakeSectionHeader("Release corrente", "Accyourate Enterprise X"),
                 new TextBlock
                 {
-                    Text = "M4.1 • Adaptive Workspace",
+                    Text = "M4.2 • Workspace Stabilization",
                     FontSize = 16,
                     FontWeight = FontWeight.SemiBold,
                     Foreground = Brush.Parse(AxSemanticTokens.TextPrimary)
                 },
                 new TextBlock
                 {
-                    Text = "Navigazione per macro-aree, barra contestuale dedicata ai moduli e Centro Operativo integrato.",
+                    Text = "Stato attivo della navigazione, prevenzione dei caricamenti duplicati e workspace più coerente.",
                     TextWrapping = TextWrapping.Wrap,
                     Foreground = Brush.Parse(AxSemanticTokens.TextSecondary),
                     FontSize = 13,
