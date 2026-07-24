@@ -22,6 +22,8 @@ public sealed class MainWindow : Window
     private Grid? _rootGrid;
     private Border? _menuBorder;
     private bool _sidebarCollapsed;
+    private CommandPaletteWindow? _commandPalette;
+    private bool _commandPaletteOpening;
 
     private const double ExpandedSidebarWidth = AxLayoutTokens.SidebarWidth;
     private const double CollapsedSidebarWidth = 72;
@@ -31,7 +33,7 @@ public sealed class MainWindow : Window
         _user = user;
         _database = database;
 
-        Title = "Accyourate Enterprise X — Developer Edition M3.4";
+        Title = "Accyourate Enterprise X — M4.0 Enterprise UX";
         Width = 1440;
         Height = 900;
         MinWidth = 1120;
@@ -48,18 +50,18 @@ public sealed class MainWindow : Window
         var root = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions($"{(_sidebarCollapsed ? CollapsedSidebarWidth : ExpandedSidebarWidth)},*"),
-            RowDefinitions = new RowDefinitions("76,*")
+            RowDefinitions = new RowDefinitions("64,*")
         };
 
         _rootGrid = root;
 
-        var header = BuildHeader();
-        Grid.SetColumnSpan(header, 2);
-        root.Children.Add(header);
-
         var menu = BuildMenu();
-        Grid.SetRow(menu, 1);
+        Grid.SetRowSpan(menu, 2);
         root.Children.Add(menu);
+
+        var header = BuildHeader();
+        Grid.SetColumn(header, 1);
+        root.Children.Add(header);
 
         var content = BuildDashboard();
         Grid.SetRow(content, 1);
@@ -73,90 +75,75 @@ public sealed class MainWindow : Window
     {
         var header = new Border
         {
-            Background = Brush.Parse(AxSemanticTokens.DarkBackground),
-            BorderBrush = Brush.Parse("#243047"),
+            Background = Brush.Parse("#FFFFFF"),
+            BorderBrush = Brush.Parse("#E5E7EB"),
             BorderThickness = new Thickness(0, 0, 0, 1),
             Padding = new Thickness(24, 0)
         };
 
         var grid = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions($"{AxLayoutTokens.SidebarWidth - 24},*,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
             VerticalAlignment = VerticalAlignment.Stretch
         };
 
-        var brand = new StackPanel
+        var left = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Spacing = 12,
+            Spacing = 16,
             VerticalAlignment = VerticalAlignment.Center
         };
-        brand.Children.Add(new Border
+
+        var menuButton = MakeHeaderAction("☰", "Comprimi o espandi menu", ToggleSidebar);
+        menuButton.Foreground = Brush.Parse("#334155");
+        left.Children.Add(menuButton);
+
+        var search = new TextBox
         {
-            Width = 36,
-            Height = 36,
-            CornerRadius = new CornerRadius(10),
-            Background = Brush.Parse(AxSemanticTokens.BrandAccent),
-            Child = new TextBlock
-            {
-                Text = "AX",
-                Foreground = Brushes.White,
-                FontWeight = FontWeight.Bold,
-                FontSize = 14,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            }
-        });
-        brand.Children.Add(new StackPanel
+            Width = 420,
+            Height = 40,
+            Watermark = "Cerca nel gestionale o premi Ctrl+K…",
+            Background = Brush.Parse("#F4F5F8"),
+            Foreground = Brush.Parse("#111827"),
+            BorderBrush = Brush.Parse("#E5E7EB"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(12),
+            Padding = new Thickness(14, 8),
+            VerticalContentAlignment = VerticalAlignment.Center
+        };
+        search.IsReadOnly = true;
+        search.PointerPressed += (_, e) =>
         {
-            Spacing = 1,
-            VerticalAlignment = VerticalAlignment.Center,
-            Children =
-            {
-                new TextBlock
-                {
-                    Text = "Accyourate Enterprise X",
-                    Foreground = Brushes.White,
-                    FontSize = 16,
-                    FontWeight = FontWeight.SemiBold
-                },
-                new TextBlock
-                {
-                    Text = "Developer Edition  •  M3 Design System",
-                    Foreground = Brush.Parse("#94A3B8"),
-                    FontSize = 11
-                }
-            }
-        });
-        grid.Children.Add(brand);
+            e.Handled = true;
+            OpenCommandPalette();
+        };
+        left.Children.Add(search);
 
         _breadcrumb = new TextBlock
         {
-            Text = "Centro Operativo  /  Dashboard",
-            Foreground = Brush.Parse("#CBD5E1"),
-            FontSize = 14,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(18, 0, 0, 0)
+            Text = "Workspace  /  Dashboard",
+            Foreground = Brush.Parse("#64748B"),
+            FontSize = 13,
+            VerticalAlignment = VerticalAlignment.Center
         };
-        Grid.SetColumn(_breadcrumb, 1);
-        grid.Children.Add(_breadcrumb);
+        left.Children.Add(_breadcrumb);
+        grid.Children.Add(left);
 
         var actions = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Spacing = 10,
+            Spacing = 8,
             VerticalAlignment = VerticalAlignment.Center
         };
-        actions.Children.Add(MakeHeaderAction("☰", "Comprimi o espandi menu", ToggleSidebar));
-        actions.Children.Add(MakeHeaderAction("⌕", "Ricerca globale (Ctrl+K)", OpenCommandPalette));
-        actions.Children.Add(MakeHeaderAction("◐", "Cambia tema", ToggleTheme));
-        actions.Children.Add(MakeHeaderAction("🔔", "Notifiche", () => new NotificationsWindow().Show()));
+        actions.Children.Add(MakeLightHeaderAction("⌘K", "Apri Command Palette", OpenCommandPalette));
+        actions.Children.Add(MakeLightHeaderAction("◐", "Cambia tema", ToggleTheme));
+        actions.Children.Add(MakeLightHeaderAction("🔔", "Notifiche", () => new NotificationsWindow().Show()));
         actions.Children.Add(new Border
         {
             Width = 1,
-            Height = 30,
-            Background = Brush.Parse("#334155"),
-            Margin = new Thickness(4, 0)
+            Height = 28,
+            Background = Brush.Parse("#E5E7EB"),
+            Margin = new Thickness(5, 0)
         });
 
         var avatarText = string.IsNullOrWhiteSpace(_user.DisplayName)
@@ -164,10 +151,10 @@ public sealed class MainWindow : Window
             : _user.DisplayName.Trim()[0].ToString().ToUpperInvariant();
         actions.Children.Add(new Border
         {
-            Width = 36,
-            Height = 36,
-            CornerRadius = new CornerRadius(18),
-            Background = Brush.Parse("#334155"),
+            Width = 34,
+            Height = 34,
+            CornerRadius = new CornerRadius(17),
+            Background = Brush.Parse(AxSemanticTokens.BrandAccent),
             Child = new TextBlock
             {
                 Text = avatarText,
@@ -177,32 +164,39 @@ public sealed class MainWindow : Window
                 VerticalAlignment = VerticalAlignment.Center
             }
         });
-        actions.Children.Add(new StackPanel
+        actions.Children.Add(new TextBlock
         {
-            Spacing = 0,
-            VerticalAlignment = VerticalAlignment.Center,
-            Children =
-            {
-                new TextBlock
-                {
-                    Text = _user.DisplayName,
-                    Foreground = Brushes.White,
-                    FontSize = 13,
-                    FontWeight = FontWeight.SemiBold
-                },
-                new TextBlock
-                {
-                    Text = _user.Role,
-                    Foreground = Brush.Parse("#94A3B8"),
-                    FontSize = 11
-                }
-            }
+            Text = _user.DisplayName,
+            Foreground = Brush.Parse("#111827"),
+            FontSize = 13,
+            FontWeight = FontWeight.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center
         });
-        Grid.SetColumn(actions, 2);
+        Grid.SetColumn(actions, 1);
         grid.Children.Add(actions);
 
         header.Child = grid;
         return header;
+    }
+
+    private static Button MakeLightHeaderAction(string glyph, string tooltip, Action? action = null)
+    {
+        var button = new Button
+        {
+            Content = glyph,
+            MinWidth = 38,
+            Height = 38,
+            Padding = new Thickness(10, 0),
+            Background = Brushes.Transparent,
+            Foreground = Brush.Parse("#334155"),
+            BorderThickness = new Thickness(0),
+            FontSize = 13,
+            CornerRadius = new CornerRadius(10)
+        };
+        ToolTip.SetTip(button, tooltip);
+        if (action is not null)
+            button.Click += (_, _) => action();
+        return button;
     }
 
     private static Button MakeHeaderAction(string glyph, string tooltip, Action? action = null)
@@ -231,16 +225,54 @@ public sealed class MainWindow : Window
             Background = Brush.Parse(AxSemanticTokens.DarkNavigationSurface),
             BorderBrush = Brush.Parse("#243047"),
             BorderThickness = new Thickness(0, 0, 1, 0),
-            Padding = new Thickness(14, 18)
+            Padding = new Thickness(12, 16)
         };
 
         _menuBorder = border;
 
         var stack = new StackPanel { Spacing = 8 };
 
+        var brand = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 11,
+            Margin = new Thickness(8, 2, 8, 22),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        brand.Children.Add(new Border
+        {
+            Width = 38,
+            Height = 38,
+            CornerRadius = new CornerRadius(10),
+            Background = Brush.Parse(AxSemanticTokens.BrandAccent),
+            Child = new TextBlock
+            {
+                Text = "AX",
+                Foreground = Brushes.White,
+                FontWeight = FontWeight.Bold,
+                FontSize = 14,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            }
+        });
+        if (!_sidebarCollapsed)
+        {
+            brand.Children.Add(new StackPanel
+            {
+                Spacing = 0,
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    new TextBlock { Text = "Accyourate", Foreground = Brushes.White, FontSize = 15, FontWeight = FontWeight.SemiBold },
+                    new TextBlock { Text = "Enterprise X", Foreground = Brush.Parse("#CBD5E1"), FontSize = 12 }
+                }
+            });
+        }
+        stack.Children.Add(brand);
+
         stack.Children.Add(new TextBlock
         {
-            Text = "NAVIGAZIONE",
+            Text = "WORKSPACE",
             Foreground = Brush.Parse("#64748B"),
             FontSize = 11,
             FontWeight = FontWeight.SemiBold,
@@ -540,13 +572,13 @@ public sealed class MainWindow : Window
         var button = new Button
         {
             Content = text,
-            Foreground = Brush.Parse("#D7E0EC"),
+            Foreground = Brush.Parse("#E2E8F0"),
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,
             FontSize = 13,
-            Padding = new Thickness(14, 10),
+            Padding = new Thickness(12, 9),
             Margin = new Thickness(0, 1),
             CornerRadius = new CornerRadius(AxLayoutTokens.RadiusSmall)
         };
@@ -958,8 +990,36 @@ public sealed class MainWindow : Window
 
     private void OpenCommandPalette()
     {
-        var palette = new CommandPaletteWindow(_database, _user, NavigateFromCommandPalette);
-        palette.ShowDialog(this);
+        if (_commandPalette is not null)
+        {
+            _commandPalette.Activate();
+            return;
+        }
+
+        if (_commandPaletteOpening)
+        {
+            return;
+        }
+
+        _commandPaletteOpening = true;
+
+        try
+        {
+            var palette = new CommandPaletteWindow(_database, _user, NavigateFromCommandPalette);
+            _commandPalette = palette;
+
+            palette.Closed += (_, _) =>
+            {
+                _commandPalette = null;
+                _commandPaletteOpening = false;
+            };
+
+            palette.Show(this);
+        }
+        finally
+        {
+            _commandPaletteOpening = false;
+        }
     }
 
     private void NavigateFromCommandPalette(string moduleId, string title)
