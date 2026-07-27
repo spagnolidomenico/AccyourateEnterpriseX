@@ -190,7 +190,8 @@ public sealed class AxEnterpriseTable<T> : Border
         var grid = new Grid
         {
             ColumnDefinitions = BuildDefinitions(),
-            MinHeight = rowHeight
+            MinHeight = rowHeight,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
         };
 
         for (var i = 0; i < _columns.Count; i++)
@@ -226,6 +227,20 @@ public sealed class AxEnterpriseTable<T> : Border
             RefreshSelection();
         };
         button.DoubleTapped += (_, _) => ItemActivated?.Invoke(item);
+        button.PointerEntered += (_, _) =>
+        {
+            if (!Equals(item, _selectedItem))
+                button.Background = UiTokens.Brush(UiTokens.PremiumHover);
+        };
+        button.PointerExited += (_, _) =>
+        {
+            if (button.Tag is RowTag rowTag)
+            {
+                button.Background = Equals(item, _selectedItem)
+                    ? UiTokens.Brush(UiTokens.PremiumSelected)
+                    : rowTag.NormalBackground;
+            }
+        };
 
         button.Tag = new RowTag(item, normalBackground);
         return button;
