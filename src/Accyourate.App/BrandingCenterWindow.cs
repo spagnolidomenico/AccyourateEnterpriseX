@@ -68,10 +68,10 @@ public sealed class BrandingCenterWindow : Window
         _user = user;
 
         Title = "Accyourate Enterprise X - Branding & Template Designer";
-        Width = 1280;
-        Height = 840;
-        MinWidth = 1040;
-        MinHeight = 720;
+        Width = 1480;
+        Height = 900;
+        MinWidth = 1180;
+        MinHeight = 760;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = UiTokens.Brush(UiTokens.Background);
         Content = BuildLayout();
@@ -129,11 +129,71 @@ public sealed class BrandingCenterWindow : Window
         DockPanel.SetDock(_message, Dock.Top);
         root.Children.Add(_message);
 
-        var tabs = new TabControl { Margin = new Thickness(24, 0, 24, 24) };
+        var tabs = new TabControl { Margin = new Thickness(0), MinWidth = 540 };
         tabs.Items.Add(new TabItem { Header = "Azienda", Content = BuildCompanyPage() });
         tabs.Items.Add(new TabItem { Header = "Template documenti", Content = BuildTemplatePage() });
-        tabs.Items.Add(new TabItem { Header = "Anteprima", Content = BuildPreviewPage() });
-        root.Children.Add(tabs);
+
+        var livePreviewHeader = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+        Add(livePreviewHeader, new StackPanel
+        {
+            Spacing = 2,
+            Children =
+            {
+                new TextBlock { Text = "Anteprima documento", FontSize = 18, FontWeight = FontWeight.Bold },
+                new TextBlock
+                {
+                    Text = "Si aggiorna automaticamente mentre modifichi logo, dati e impostazioni.",
+                    Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+                    TextWrapping = TextWrapping.Wrap
+                }
+            }
+        }, 0, 0);
+        Add(livePreviewHeader, new Border
+        {
+            Background = SafeBrush("#E8F5E9", "#E8F5E9"),
+            CornerRadius = new CornerRadius(999),
+            Padding = new Thickness(10, 5),
+            VerticalAlignment = VerticalAlignment.Top,
+            Child = new TextBlock
+            {
+                Text = "● LIVE",
+                FontSize = 11,
+                FontWeight = FontWeight.Bold,
+                Foreground = SafeBrush("#2E7D32", "#2E7D32")
+            }
+        }, 1, 0);
+
+        var previewPane = new Border
+        {
+            Background = UiTokens.Brush(UiTokens.SurfaceAlt),
+            BorderBrush = UiTokens.Brush(UiTokens.Border),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(14),
+            Margin = new Thickness(14, 0, 0, 0),
+            Child = new DockPanel
+            {
+                Children =
+                {
+                    livePreviewHeader,
+                    BuildPreviewPage()
+                }
+            }
+        };
+        DockPanel.SetDock(livePreviewHeader, Dock.Top);
+
+        var workspace = new Grid
+        {
+            Margin = new Thickness(24, 0, 24, 24),
+            ColumnDefinitions = new ColumnDefinitions("3*,2*")
+        };
+        Add(workspace, tabs, 0, 0);
+        Add(workspace, previewPane, 1, 0);
+        root.Children.Add(workspace);
         return root;
     }
 
@@ -273,8 +333,8 @@ public sealed class BrandingCenterWindow : Window
 
         var paper = new Border
         {
-            Width = 720,
-            MinHeight = 700,
+            Width = 520,
+            MinHeight = 680,
             Background = Brushes.White,
             BorderBrush = UiTokens.Brush(UiTokens.Border),
             BorderThickness = new Thickness(1),
@@ -299,7 +359,7 @@ public sealed class BrandingCenterWindow : Window
 
         return Scroll(new StackPanel
         {
-            Margin = new Thickness(4, 18, 4, 30),
+            Margin = new Thickness(2, 8, 2, 18),
             HorizontalAlignment = HorizontalAlignment.Center,
             Children = { paper }
         });
@@ -444,20 +504,27 @@ public sealed class BrandingCenterWindow : Window
             document.Branding.ShowCompanyDetails = template.ShowCompanyDetails;
             document.Branding.ShowDocumentMetadata = template.ShowDocumentMetadata;
             document.Branding.ShowFooter = template.ShowFooter;
+            document.Branding.DocumentVersion = template.DocumentVersion;
+            document.Branding.ConfidentialityText = template.ConfidentialityText;
+            document.Branding.ShowPageNumber = template.ShowPageNumber;
+            document.Branding.ShowPrintTimestamp = template.ShowPrintTimestamp;
             document.AddTitle("Anteprima del modello aziendale");
+            document.AddStatus("Stato asset", "Assegnato");
             document.AddHeading("Identificazione");
-            document.AddText("Codice asset: NB-001");
-            document.AddText("Categoria: Notebook");
-            document.AddText("Produttore: Dell");
-            document.AddText("Modello: Latitude 7450");
-            document.AddBlank();
+            document.AddKeyValue("Codice asset", "NB-001");
+            document.AddKeyValue("Categoria", "Notebook");
+            document.AddKeyValue("Produttore", "Dell");
+            document.AddKeyValue("Modello", "Latitude 7450");
             document.AddHeading("Assegnazione");
-            document.AddText("Dipendente: Mario Rossi");
-            document.AddText("Reparto: Ufficio tecnico");
+            document.AddKeyValue("Dipendente", "Mario Rossi");
+            document.AddKeyValue("Reparto", "Ufficio tecnico");
+            if (template.ShowQrCodePlaceholder)
+                document.AddQrPlaceholder("QR NB-001");
             if (template.ShowSignatures)
             {
-                document.AddSignature(template.LeftSignatureLabel);
-                document.AddSignature(template.RightSignatureLabel);
+                document.AddSignaturePair(
+                    string.IsNullOrWhiteSpace(template.LeftSignatureLabel) ? "Consegnato da" : template.LeftSignatureLabel,
+                    string.IsNullOrWhiteSpace(template.RightSignatureLabel) ? "Ricevuto da" : template.RightSignatureLabel);
             }
 
             var folder = Path.Combine(_settings.Documents.DocumentRootPath, "Anteprime Template");

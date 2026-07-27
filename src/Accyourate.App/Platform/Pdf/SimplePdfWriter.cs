@@ -73,27 +73,117 @@ public sealed class SimplePdfWriter
     {
         var pages = new List<string>();
         var content = new StringBuilder();
+        var pageNumber = 1;
         var y = StartPage(content, document, logo);
 
         foreach (var line in document.Lines)
         {
-            if (y < 90)
+            var requiredHeight = line.Kind switch
             {
-                EndPage(content, document);
+                PdfLineKind.SignaturePair => 64f,
+                PdfLineKind.QrPlaceholder => 90f,
+                PdfLineKind.Section => 30f,
+                _ => 22f
+            };
+
+            if (y - requiredHeight < 78)
+            {
+                EndPage(content, document, pageNumber++);
                 pages.Add(content.ToString());
                 content.Clear();
                 y = StartPage(content, document, logo);
             }
 
-            if (!string.IsNullOrWhiteSpace(line.Text))
-                content.AppendLine($"BT /{(line.Bold ? "F2" : "F1")} {line.FontSize} Tf 54 {Y(y)} Td ({Esc(line.Text)}) Tj ET");
-
-            y -= Math.Max(line.FontSize + line.GapAfter, 12);
+            switch (line.Kind)
+            {
+                case PdfLineKind.SignaturePair:
+                    DrawSignaturePair(content, line, y);
+                    y -= Math.Max(line.GapAfter, 58);
+                    break;
+                case PdfLineKind.Section:
+                    DrawSection(content, document, line.Text, y);
+                    y -= 30;
+                    break;
+                case PdfLineKind.KeyValue:
+                    DrawKeyValue(content, line.Text, line.RightText, y);
+                    y -= 22;
+                    break;
+                case PdfLineKind.Status:
+                    DrawStatus(content, document, line.Text, line.RightText, y);
+                    y -= 28;
+                    break;
+                case PdfLineKind.QrPlaceholder:
+                    DrawQrPlaceholder(content, line.Text, y);
+                    y -= Math.Max(line.GapAfter, 82);
+                    break;
+                default:
+                    if (!string.IsNullOrWhiteSpace(line.Text))
+                        content.AppendLine($"BT /{(line.Bold ? "F2" : "F1")} {line.FontSize} Tf 54 {Y(y)} Td ({Esc(line.Text)}) Tj ET");
+                    y -= Math.Max(line.FontSize + line.GapAfter, 12);
+                    break;
+            }
         }
 
-        EndPage(content, document);
+        EndPage(content, document, pageNumber);
         pages.Add(content.ToString());
         return pages;
+    }
+
+
+
+    private static void DrawSection(StringBuilder builder, SimplePdfDocument document, string text, float y)
+    {
+        var (r, g, b) = ParseColor(document.Branding.PrimaryColor);
+        builder.AppendLine($"{N(r)} {N(g)} {N(b)} rg");
+        builder.AppendLine($"54 {N(y - 7)} 487 22 re f");
+        builder.AppendLine($"BT /F2 10.5 Tf 64 {Y(y)} Td ({Esc(text.ToUpperInvariant())}) Tj ET");
+        builder.AppendLine("0 0 0 rg");
+    }
+
+    private static void DrawKeyValue(StringBuilder builder, string label, string value, float y)
+    {
+        builder.AppendLine("0.93 0.93 0.93 RG");
+        builder.AppendLine($"54 {N(y - 8)} m 541 {N(y - 8)} l S");
+        builder.AppendLine($"BT /F2 9.5 Tf 62 {Y(y)} Td ({Esc(label)}) Tj ET");
+        builder.AppendLine($"BT /F1 10 Tf 225 {Y(y)} Td ({Esc(value)}) Tj ET");
+    }
+
+    private static void DrawStatus(StringBuilder builder, SimplePdfDocument document, string label, string value, float y)
+    {
+        var (r, g, b) = ParseColor(document.Branding.PrimaryColor);
+        builder.AppendLine("0.96 0.96 0.96 rg");
+        builder.AppendLine($"54 {N(y - 10)} 487 25 re f");
+        builder.AppendLine("0 0 0 rg");
+        builder.AppendLine($"BT /F2 9.5 Tf 64 {Y(y)} Td ({Esc(label)}) Tj ET");
+        builder.AppendLine($"{N(r)} {N(g)} {N(b)} rg");
+        builder.AppendLine($"BT /F2 10 Tf 225 {Y(y)} Td ({Esc(value)}) Tj ET");
+        builder.AppendLine("0 0 0 rg");
+    }
+
+    private static void DrawQrPlaceholder(StringBuilder builder, string caption, float y)
+    {
+        const double size = 68;
+        const double x = 473;
+        var bottom = y - 64;
+        builder.AppendLine("0.75 0.75 0.75 RG");
+        builder.AppendLine($"{N(x)} {N(bottom)} {N(size)} {N(size)} re S");
+        builder.AppendLine($"{N(x)} {N(bottom)} m {N(x + size)} {N(bottom + size)} l S");
+        builder.AppendLine($"{N(x + size)} {N(bottom)} m {N(x)} {N(bottom + size)} l S");
+        builder.AppendLine($"BT /F2 7 Tf {N(x + 9)} {N(bottom - 11)} Td ({Esc(caption)}) Tj ET");
+    }
+    private static void DrawSignaturePair(StringBuilder builder, PdfTextLine line, float y)
+    {
+        const double leftX = 54d;
+        const double rightX = 318d;
+        const double lineWidth = 223d;
+        var labelY = y;
+        var signatureY = y - 31d;
+
+        builder.AppendLine($"BT /F1 {line.FontSize} Tf {N(leftX)} {Y(labelY)} Td ({Esc(line.Text)}) Tj ET");
+        builder.AppendLine($"BT /F1 {line.FontSize} Tf {N(rightX)} {Y(labelY)} Td ({Esc(line.RightText)}) Tj ET");
+        builder.AppendLine("0.45 0.45 0.45 RG");
+        builder.AppendLine($"{N(leftX)} {N(signatureY)} m {N(leftX + lineWidth)} {N(signatureY)} l S");
+        builder.AppendLine($"{N(rightX)} {N(signatureY)} m {N(rightX + lineWidth)} {N(signatureY)} l S");
     }
 
     private static float StartPage(StringBuilder builder, SimplePdfDocument document, JpegData? logo)
@@ -219,7 +309,7 @@ public sealed class SimplePdfWriter
         return "Corporate";
     }
 
-    private static void EndPage(StringBuilder builder, SimplePdfDocument document)
+    private static void EndPage(StringBuilder builder, SimplePdfDocument document, int pageNumber)
     {
         if (!document.Branding.ShowFooter)
             return;
@@ -229,7 +319,15 @@ public sealed class SimplePdfWriter
         var footer = string.IsNullOrWhiteSpace(document.Branding.FooterText)
             ? "Documento generato automaticamente da Accyourate Enterprise X"
             : document.Branding.FooterText;
-        builder.AppendLine($"BT /F1 8 Tf 54 40 Td ({Esc(footer)}) Tj ET");
+        builder.AppendLine($"BT /F1 7.5 Tf 54 42 Td ({Esc(footer)}) Tj ET");
+        var metadata = new List<string>();
+        if (!string.IsNullOrWhiteSpace(document.Branding.DocumentVersion)) metadata.Add($"Rev. {document.Branding.DocumentVersion}");
+        if (document.Branding.ShowPrintTimestamp) metadata.Add($"Stampato il {DateTime.Now:dd/MM/yyyy HH:mm}");
+        if (!string.IsNullOrWhiteSpace(document.Branding.ConfidentialityText)) metadata.Add(document.Branding.ConfidentialityText);
+        if (metadata.Count > 0)
+            builder.AppendLine($"BT /F1 6.8 Tf 54 29 Td ({Esc(string.Join(" | ", metadata))}) Tj ET");
+        if (document.Branding.ShowPageNumber)
+            builder.AppendLine($"BT /F2 8 Tf 500 40 Td ({Esc($"Pagina {pageNumber}")}) Tj ET");
     }
 
     private static (double R, double G, double B) ParseColor(string hex)

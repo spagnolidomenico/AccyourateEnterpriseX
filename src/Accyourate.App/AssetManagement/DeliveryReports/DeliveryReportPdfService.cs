@@ -93,8 +93,8 @@ public sealed class DeliveryReportPdfService
         d.AddHeading("Dichiarazione");
         d.AddText("Il dipendente dichiara di ricevere i beni sopra elencati in buono stato e si impegna a custodirli con diligenza, restituendoli su richiesta dell'azienda o al termine del rapporto/assegnazione.");
         if (!string.IsNullOrWhiteSpace(report.Notes)) { d.AddBlank(); d.AddHeading("Note"); d.AddText(report.Notes); }
-        d.AddSignature("Firma dipendente");
-        d.AddSignature("Firma azienda");
+        d.AddBlank(16);
+        d.AddSignaturePair("Firma dipendente", "Firma azienda");
         return d;
     }
 

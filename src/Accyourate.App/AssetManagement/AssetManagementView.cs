@@ -1261,34 +1261,33 @@ public sealed class AssetManagementView : UserControl
             document.Branding.ShowCompanyDetails = template.ShowCompanyDetails;
             document.Branding.ShowDocumentMetadata = template.ShowDocumentMetadata;
             document.Branding.ShowFooter = template.ShowFooter;
+            document.Branding.DocumentVersion = template.DocumentVersion;
+            document.Branding.ConfidentialityText = template.ConfidentialityText;
+            document.Branding.ShowPageNumber = template.ShowPageNumber;
+            document.Branding.ShowPrintTimestamp = template.ShowPrintTimestamp;
 
             document.AddTitle("Scheda identificativa asset");
-            document.AddText($"Generata il: {DateTime.Now:dd/MM/yyyy HH:mm}");
-            document.AddBlank();
+            document.AddStatus("Stato asset", ValueOrDash(asset.Status));
 
             document.AddHeading("Identità");
-            document.AddText($"Codice asset: {ValueOrDash(asset.AssetCode)}");
-            document.AddText($"Categoria: {ValueOrDash(asset.Category)}");
-            document.AddText($"Produttore: {ValueOrDash(asset.Manufacturer)}");
-            document.AddText($"Modello: {ValueOrDash(asset.Model)}");
-            document.AddText($"Stato: {ValueOrDash(asset.Status)}");
-            document.AddBlank();
+            document.AddKeyValue("Codice asset", ValueOrDash(asset.AssetCode));
+            document.AddKeyValue("Categoria", ValueOrDash(asset.Category));
+            document.AddKeyValue("Produttore", ValueOrDash(asset.Manufacturer));
+            document.AddKeyValue("Modello", ValueOrDash(asset.Model));
 
             document.AddHeading("Inventario e sicurezza");
-            document.AddText($"Numero seriale: {ValueOrDash(asset.SerialNumber)}");
-            document.AddText($"Asset tag: {ValueOrDash(asset.AssetTag)}");
-            document.AddText($"Sistema operativo: {ValueOrDash(asset.OperatingSystem)}");
-            document.AddText($"BitLocker: {(asset.BitLockerEnabled ? "Attivo" : "Non attivo")}");
-            document.AddBlank();
+            document.AddKeyValue("Numero seriale", ValueOrDash(asset.SerialNumber));
+            document.AddKeyValue("Asset tag", ValueOrDash(asset.AssetTag));
+            document.AddKeyValue("Sistema operativo", ValueOrDash(asset.OperatingSystem));
+            document.AddKeyValue("BitLocker", asset.BitLockerEnabled ? "Attivo" : "Non attivo");
 
             document.AddHeading("Assegnazione");
-            document.AddText($"Assegnato a: {ValueOrDash(assignment?.EmployeeName)}");
-            document.AddBlank();
+            document.AddKeyValue("Assegnato a", ValueOrDash(assignment?.EmployeeName));
 
             document.AddHeading("Acquisto e garanzia");
-            document.AddText($"Data acquisto: {FormatDate(asset.PurchaseDate)}");
-            document.AddText($"Scadenza garanzia: {FormatDate(asset.WarrantyEndDate)}");
-            document.AddText($"Stato garanzia: {WarrantyLabel(asset.WarrantyEndDate)}");
+            document.AddKeyValue("Data acquisto", FormatDate(asset.PurchaseDate));
+            document.AddKeyValue("Scadenza garanzia", FormatDate(asset.WarrantyEndDate));
+            document.AddStatus("Stato garanzia", WarrantyLabel(asset.WarrantyEndDate));
 
             if (!string.IsNullOrWhiteSpace(asset.Notes))
             {
@@ -1299,14 +1298,17 @@ public sealed class AssetManagementView : UserControl
 
             document.AddBlank();
             document.AddHeading("Tracciamento");
-            document.AddText($"Creato: {FormatDate(asset.CreatedAt)}");
-            document.AddText($"Ultimo aggiornamento: {FormatDate(asset.UpdatedAt)}");
+            document.AddKeyValue("Creato", FormatDate(asset.CreatedAt));
+            document.AddKeyValue("Ultimo aggiornamento", FormatDate(asset.UpdatedAt));
+            if (template.ShowQrCodePlaceholder)
+                document.AddQrPlaceholder($"QR {ValueOrDash(asset.AssetCode)}");
 
             if (template.ShowSignatures)
             {
                 document.AddBlank(18);
-                document.AddSignature(string.IsNullOrWhiteSpace(template.LeftSignatureLabel) ? "Consegnato da" : template.LeftSignatureLabel);
-                document.AddSignature(string.IsNullOrWhiteSpace(template.RightSignatureLabel) ? "Ricevuto da" : template.RightSignatureLabel);
+                document.AddSignaturePair(
+                    string.IsNullOrWhiteSpace(template.LeftSignatureLabel) ? "Consegnato da" : template.LeftSignatureLabel,
+                    string.IsNullOrWhiteSpace(template.RightSignatureLabel) ? "Ricevuto da" : template.RightSignatureLabel);
             }
 
             var root = string.IsNullOrWhiteSpace(settings.Documents.DocumentRootPath)
