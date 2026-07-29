@@ -131,6 +131,8 @@ public sealed class SimplePdfWriter
     private static void DrawSection(StringBuilder builder, SimplePdfDocument document, string text, float y)
     {
         var (r, g, b) = ParseColor(document.Branding.PrimaryColor);
+        if (0.2126 * r + 0.7152 * g + 0.0722 * b > 0.82)
+            (r, g, b) = (0.04f, 0.52f, 1f);
         builder.AppendLine($"{N(r)} {N(g)} {N(b)} rg");
         builder.AppendLine($"54 {N(y - 7)} 487 22 re f");
         builder.AppendLine("1 1 1 rg");

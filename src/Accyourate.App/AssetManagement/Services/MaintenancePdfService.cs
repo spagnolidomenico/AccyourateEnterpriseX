@@ -29,10 +29,19 @@ public sealed class MaintenancePdfService
         d.AddHeading("Verbale intervento di manutenzione");d.AddKeyValue("Numero",number);d.AddKeyValue("Operatore",user);
         d.AddHeading("Asset");d.AddKeyValue("Codice",a.AssetCode);d.AddKeyValue("Produttore e modello",$"{a.Manufacturer} {a.Model}".Trim());d.AddKeyValue("Seriale",a.SerialNumber);
         d.AddHeading("Intervento");d.AddKeyValue("Titolo",t.Title);d.AddKeyValue("Priorità e tecnico",$"{t.Priority} · {t.Technician}");d.AddKeyValue("Periodo",$"{Fmt(t.OpenedAt)} - {Fmt(t.ClosedAt)}");d.AddKeyValue("Costo",$"EUR {t.Cost:N2}");
+        d.AddKeyValue("Scadenza SLA",Fmt(t.SlaDeadline));
+        d.AddKeyValue("Esito SLA",SlaResult(t));
+        d.AddKeyValue("Tempo di fermo",t.DowntimeMinutes>0?$"{t.DowntimeMinutes/60d:N1} ore":"Non registrato");
         d.AddHeading("Guasto segnalato");d.AddText(t.Description);d.AddHeading("Risoluzione");d.AddText(t.ResolutionNotes);
         if(x.ShowQrCodePlaceholder)d.AddQrCode(QrDestinationBuilder.Build(x,"maintenance",number,new[]{"Accyourate Enterprise X","Verbale manutenzione",$"Numero: {number}",$"Asset: {a.AssetCode}",$"Tecnico: {t.Technician}"}),$"QR {number}");
         if(x.ShowSignatures)d.AddSignaturePair("Tecnico","Responsabile");
         return d;
     }
     private static string Fmt(string v)=>DateTime.TryParse(v,out var d)?d.ToString("dd/MM/yyyy HH:mm"):v;
+    private static string SlaResult(MaintenanceTicket ticket)
+    {
+        if(!DateTime.TryParse(ticket.SlaDeadline,out var deadline))return "Non definito";
+        if(DateTime.TryParse(ticket.ClosedAt,out var closed))return closed<=deadline?"Rispettato":"Superato";
+        return DateTime.Now<=deadline?"In corso":"Superato";
+    }
 }

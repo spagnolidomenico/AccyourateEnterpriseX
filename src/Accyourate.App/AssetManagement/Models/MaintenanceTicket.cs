@@ -17,4 +17,12 @@ public sealed class MaintenanceTicket
     public string PdfPath { get; set; } = string.Empty;
     public string UpdatedAt { get; set; } = DateTime.Now.ToString("s");
     public string OverdueNotifiedAt { get; set; } = string.Empty;
+    public int ReminderDays { get; set; } = 7;
+    public int RecurrenceMonths { get; set; }
+    public int NextTicketId { get; set; }
+    public string ReminderNotifiedAt { get; set; } = string.Empty;
+    public string WorkStartedAt { get; set; } = string.Empty;
+    public string SlaDeadline { get; set; } = string.Empty;
+    public int DowntimeMinutes { get; set; }
+    public string SlaBreachedNotifiedAt { get; set; } = string.Empty;
 }
