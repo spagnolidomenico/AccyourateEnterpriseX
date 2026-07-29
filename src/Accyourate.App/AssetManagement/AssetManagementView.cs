@@ -4,6 +4,7 @@ using Avalonia.Media;
 using System.Diagnostics;
 using Accyourate.App.Platform.Pdf;
 using Accyourate.App.Platform.Qr;
+using Accyourate.App.Platform.Notifications;
 using Accyourate.App.Platform.Settings;
 using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
@@ -24,6 +25,9 @@ public sealed class AssetManagementView : UserControl
     private readonly DeliveryRecordRepository _deliveryRecords = new();
     private readonly DeliveryReportService _deliveryReports = new();
     private readonly ReturnReportPdfService _returnReports = new();
+    private readonly MaintenanceRepository _maintenance = new();
+    private readonly MaintenancePdfService _maintenancePdf = new();
+    private readonly NotificationService _notifications = new();
 
     private readonly TextBox _search = new();
     private readonly ComboBox _category = new();
@@ -1176,10 +1180,11 @@ public sealed class AssetManagementView : UserControl
 
         sections.Children.Add(WarrantySection(asset));
 
+        var maintenanceTickets = _maintenance.GetByAsset(asset.Id);
         sections.Children.Add(InspectorSection(
             "Manutenzioni",
-            "Interventi, verifiche e assistenza tecnica",
-            InspectorPlaceholder("Nessun intervento di manutenzione collegato a questo asset.")));
+            maintenanceTickets.Count == 0 ? "Nessun intervento registrato" : $"{maintenanceTickets.Count} interventi registrati",
+            BuildMaintenanceRows(asset, maintenanceTickets)));
 
         sections.Children.Add(InspectorSection(
             "Documenti",
@@ -1202,7 +1207,9 @@ public sealed class AssetManagementView : UserControl
         }
 
         var deliveryHistory = _deliveryRecords.GetByAsset(asset.Id);
-        var timelineRows = BuildDeliveryTimeline(asset, deliveryHistory);
+        var timelineRows = BuildDeliveryTimeline(asset, deliveryHistory)
+            .Concat(BuildMaintenanceTimeline(maintenanceTickets))
+            .ToArray();
         sections.Children.Add(InspectorSection(
             "Timeline",
             deliveryHistory.Count == 0
@@ -1229,6 +1236,102 @@ public sealed class AssetManagementView : UserControl
         content.Children.Add(footerActions);
 
         return new AxInspectorPanel(content);
+    }
+
+    private Control[] BuildMaintenanceRows(Asset asset, IReadOnlyList<MaintenanceTicket> tickets)
+    {
+        var rows = new List<Control>
+        {
+            InspectorSecondaryButton("Nuovo intervento", () => OpenMaintenance(asset))
+        };
+        foreach (var ticket in tickets)
+        {
+            var panel = new StackPanel { Spacing = 4 };
+            panel.Children.Add(new TextBlock { Text = ticket.Title, FontWeight = FontWeight.Bold, TextWrapping = TextWrapping.Wrap });
+            panel.Children.Add(new TextBlock
+            {
+                Text = $"{ticket.Status} · Priorità {ticket.Priority} · {FormatDate(ticket.OpenedAt)}",
+                FontSize = 11, Foreground = UiTokens.Brush(UiTokens.TextSecondary), TextWrapping = TextWrapping.Wrap
+            });
+            if (!string.IsNullOrWhiteSpace(ticket.Technician))
+                panel.Children.Add(new TextBlock { Text = $"Tecnico: {ticket.Technician}", FontSize = 11 });
+            var actions = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 6 };
+            if (ticket.Status != "Completato")
+                actions.Children.Add(InspectorSecondaryButton("Completa", () => CompleteMaintenance(asset, ticket)));
+            if (!string.IsNullOrWhiteSpace(ticket.PdfPath) && File.Exists(ticket.PdfPath))
+                actions.Children.Add(InspectorSecondaryButton("Apri PDF", () => Process.Start(new ProcessStartInfo { FileName = ticket.PdfPath, UseShellExecute = true })));
+            panel.Children.Add(actions);
+            rows.Add(new Border { BorderBrush = UiTokens.Brush(UiTokens.Border), BorderThickness = new Thickness(0,0,0,1), Padding = new Thickness(0,7,0,9), Child = panel });
+        }
+        return rows.ToArray();
+    }
+
+    private static IEnumerable<Control> BuildMaintenanceTimeline(IReadOnlyList<MaintenanceTicket> tickets)
+    {
+        foreach (var ticket in tickets)
+        {
+            yield return TimelineEntry(
+                ticket.Status == "Completato" ? "Manutenzione completata" : "Manutenzione aperta",
+                FormatDate(ticket.Status == "Completato" ? ticket.ClosedAt : ticket.OpenedAt),
+                $"{ticket.Title} · {ticket.Technician}",
+                ticket.Status == "Completato" ? UiTokens.Success : UiTokens.Warning,
+                ticket.PdfPath);
+        }
+    }
+
+    private async void OpenMaintenance(Asset asset)
+    {
+        try
+        {
+            var owner = TopLevel.GetTopLevel(this) as Window;
+            if (owner is null) return;
+            var ticket = await new MaintenanceDialog(asset.AssetCode).ShowDialog<MaintenanceTicket?>(owner);
+            if (ticket is null) return;
+            ticket.AssetId = asset.Id;
+            _maintenance.Create(ticket);
+            asset.Status = "In manutenzione";
+            _service.UpdateAsset(asset);
+            _notifications.Publish(
+                "Manutenzione asset aperta",
+                $"{asset.AssetCode}: {ticket.Title}",
+                NotificationCategory.Asset,
+                DateTime.TryParse(ticket.ScheduledAt, out var scheduled) && scheduled.Date < DateTime.Today
+                    ? NotificationPriority.High
+                    : NotificationPriority.Normal,
+                "Asset Management",
+                "open-asset",
+                asset.Id.ToString());
+            ShowMessage("Intervento di manutenzione aperto.");
+            Load();
+        }
+        catch (Exception ex) { ShowMessage($"Errore apertura manutenzione: {ex.Message}", true); }
+    }
+
+    private async void CompleteMaintenance(Asset asset, MaintenanceTicket ticket)
+    {
+        try
+        {
+            var owner = TopLevel.GetTopLevel(this) as Window;
+            if (owner is null) return;
+            var result = await new MaintenanceCompletionDialog(ticket.Title).ShowDialog<MaintenanceCompletionResult?>(owner);
+            if (result is null) return;
+            ticket.Status="Completato";ticket.ClosedAt=DateTime.Now.ToString("s");ticket.ResolutionNotes=result.Resolution;ticket.Cost=result.Cost;
+            var path=result.GeneratePdf?_maintenancePdf.Generate(ticket,asset,"Asset Management"):string.Empty;
+            _maintenance.Complete(ticket.Id,result.Resolution,result.Cost,path);
+            asset.Status=_assignmentEngine.GetActiveAssignmentForAsset(asset.Id) is null?"Disponibile":"Assegnato";
+            _service.UpdateAsset(asset);
+            _notifications.Publish(
+                "Manutenzione completata",
+                $"{asset.AssetCode}: {ticket.Title}",
+                NotificationCategory.Asset,
+                NotificationPriority.Info,
+                "Asset Management",
+                "open-asset",
+                asset.Id.ToString());
+            if(!string.IsNullOrWhiteSpace(path))Process.Start(new ProcessStartInfo{FileName=path,UseShellExecute=true});
+            ShowMessage("Manutenzione completata.");Load();
+        }
+        catch(Exception ex){ShowMessage($"Errore completamento manutenzione: {ex.Message}",true);}
     }
 
     private Control[] BuildDeliveryTimeline(Asset asset, IReadOnlyList<DeliveryRecord> records)
