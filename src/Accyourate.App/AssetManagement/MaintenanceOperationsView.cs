@@ -17,6 +17,7 @@ public sealed class MaintenanceOperationsView : UserControl
     private readonly AssetAssignmentEngine _assignments = new();
     private readonly MaintenancePdfService _pdf = new();
     private readonly MaintenanceAnalyticsPdfService _analyticsPdf = new();
+    private readonly MaintenancePartsRepository _parts = new();
     private readonly NotificationService _notifications = new();
     private readonly TextBox _search = new();
     private readonly ComboBox _status = new();
@@ -33,6 +34,7 @@ public sealed class MaintenanceOperationsView : UserControl
     private DateTime _calendarMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private bool _calendarMode;
     private bool _analyticsMode;
+    private IReadOnlyDictionary<int, decimal> _partTotals = new Dictionary<int, decimal>();
 
     public MaintenanceOperationsView()
     {
@@ -124,6 +126,7 @@ public sealed class MaintenanceOperationsView : UserControl
             _message.Text = string.Empty;
             var assets = _assets.GetAssets().ToDictionary(asset => asset.Id);
             var all = _repository.GetAll();
+            _partTotals = _parts.GetTotalsByTicket();
             if (publishOverdueNotifications)
             {
                 PublishOverdueNotifications(all, assets);
@@ -150,7 +153,8 @@ public sealed class MaintenanceOperationsView : UserControl
             if (visible.Count == 0)
                 _rows.Children.Add(EmptyState());
 
-            var totalCost = all.Where(ticket => ticket.Status == "Completato").Sum(ticket => ticket.Cost);
+            var totalCost = all.Where(ticket => ticket.Status == "Completato")
+                .Sum(ticket => ticket.Cost + PartCost(ticket.Id));
             _summary.Text = $"{visible.Count} interventi visualizzati · costo storico EUR {totalCost:N2}";
             _contentHost.Content = _analyticsMode
                 ? BuildAnalytics(all, assets)
@@ -337,7 +341,7 @@ public sealed class MaintenanceOperationsView : UserControl
     {
         var root = new StackPanel { Margin = new Thickness(24, 0, 24, 24), Spacing = 14 };
         var completed = tickets.Where(ticket => ticket.Status == "Completato").ToList();
-        var totalCost = completed.Sum(ticket => ticket.Cost);
+        var totalCost = completed.Sum(ticket => ticket.Cost + PartCost(ticket.Id));
         var averageHours = MaintenanceAnalyticsPdfService.AverageResolutionHours(completed);
         var recurring = tickets.Count(ticket => ticket.RecurrenceMonths > 0);
 
@@ -593,10 +597,11 @@ public sealed class MaintenanceOperationsView : UserControl
         AddHeader(grid, "Tecnico", 4);
         AddHeader(grid, "Scadenza", 5);
         AddHeader(grid, "SLA", 6, true);
-        AddHeader(grid, "Costo", 7);
+        AddHeader(grid, "Costo totale", 7);
         AddHeader(grid, "Asset", 8, true);
         AddHeader(grid, "Verbale", 9, true);
-        AddHeader(grid, "Azione", 10, true);
+        AddHeader(grid, "Ricambi", 10, true);
+        AddHeader(grid, "Azione", 11, true);
         return new Border
         {
             Background = UiTokens.Brush(UiTokens.SurfaceAlt),
@@ -617,12 +622,14 @@ public sealed class MaintenanceOperationsView : UserControl
         AddText(grid, ticket.Technician, 4);
         AddText(grid, Date(ticket.ScheduledAt), 5, false, IsOverdue(ticket));
         Add(grid, Badge(SlaLabel(ticket), SlaColor(ticket)), 6);
-        AddText(grid, ticket.Cost > 0 ? $"EUR {ticket.Cost:N2}" : "—", 7);
+        var combinedCost = ticket.Cost + PartCost(ticket.Id);
+        AddText(grid, combinedCost > 0 ? $"EUR {combinedCost:N2}" : "—", 7);
         Add(grid, ActionButton("Apri", () => AssetRequested?.Invoke(ticket.AssetId)), 8);
 
         var pdf = ActionButton("PDF", () => OpenPdf(ticket));
         pdf.IsEnabled = !string.IsNullOrWhiteSpace(ticket.PdfPath) && File.Exists(ticket.PdfPath);
         Add(grid, pdf, 9);
+        Add(grid, ActionButton("Ricambi", () => OpenParts(ticket)), 10);
 
         var action = ticket.Status switch
         {
@@ -631,7 +638,7 @@ public sealed class MaintenanceOperationsView : UserControl
             _ => ActionButton("Chiusa", () => { })
         };
         action.IsEnabled = ticket.Status != "Completato";
-        Add(grid, action, 10);
+        Add(grid, action, 11);
 
         return new Border
         {
@@ -654,6 +661,22 @@ public sealed class MaintenanceOperationsView : UserControl
         }
         catch (Exception ex) { ShowMessage($"Errore avvio intervento: {ex.Message}", true); }
     }
+
+    private async void OpenParts(MaintenanceTicket ticket)
+    {
+        try
+        {
+            var owner = TopLevel.GetTopLevel(this) as Window;
+            if (owner is null) return;
+            await new MaintenancePartsDialog(ticket).ShowDialog<bool?>(owner);
+            ShowMessage("Ricambi aggiornati.");
+            Load(false);
+        }
+        catch (Exception ex) { ShowMessage($"Errore gestione ricambi: {ex.Message}", true); }
+    }
+
+    private decimal PartCost(int ticketId) =>
+        _partTotals.TryGetValue(ticketId, out var cost) ? cost : 0;
 
     private async void PlanMaintenance()
     {
@@ -862,7 +885,7 @@ public sealed class MaintenanceOperationsView : UserControl
 
     private static Grid RowGrid() => new()
     {
-        ColumnDefinitions = new ColumnDefinitions("110,210,120,100,140,105,130,95,80,90,110")
+        ColumnDefinitions = new ColumnDefinitions("110,200,120,100,135,105,130,100,80,90,95,110")
     };
 
     private static Control Badge(string text, string color) => new Border

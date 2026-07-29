@@ -16,7 +16,8 @@ public sealed class MaintenanceAnalyticsPdfService
         var settings = _settings.Load();
         var template = settings.DocumentTemplate ?? new DocumentTemplateSettings();
         var number = $"MRA-{DateTime.Now:yyyyMMdd-HHmmss}";
-        var document = BuildDocument(tickets, assets, generatedBy, number, settings, template);
+        var partTotals = new MaintenancePartsRepository().GetTotalsByTicket();
+        var document = BuildDocument(tickets, assets, generatedBy, number, settings, template, partTotals);
         var folder = Path.Combine(
             Path.GetDirectoryName(_settings.GetDeliveryReportsFolder())!,
             "Report Manutenzioni");
@@ -29,7 +30,8 @@ public sealed class MaintenanceAnalyticsPdfService
         string generatedBy,
         string number,
         ApplicationSettings settings,
-        DocumentTemplateSettings template)
+        DocumentTemplateSettings template,
+        IReadOnlyDictionary<int,decimal>? partTotals=null)
     {
         var document = new SimplePdfDocument { Title = $"Report manutenzioni {number}" };
         document.Branding.CompanyName = string.IsNullOrWhiteSpace(settings.Company.LegalName)
@@ -59,7 +61,9 @@ public sealed class MaintenanceAnalyticsPdfService
 
         var completed = tickets.Where(ticket => ticket.Status == "Completato").ToList();
         var active = tickets.Where(ticket => ticket.Status != "Completato").ToList();
-        var totalCost = completed.Sum(ticket => ticket.Cost);
+        decimal PartCost(int ticketId) =>
+            partTotals is not null && partTotals.TryGetValue(ticketId,out var value) ? value : 0;
+        var totalCost = completed.Sum(ticket => ticket.Cost + PartCost(ticket.Id));
         var averageHours = AverageResolutionHours(completed);
         var slaEligible = completed.Where(ticket =>
             DateTime.TryParse(ticket.SlaDeadline, out _) &&
@@ -85,7 +89,7 @@ public sealed class MaintenanceAnalyticsPdfService
         document.AddHeading("Costi per asset");
         foreach (var group in completed
                      .GroupBy(ticket => ticket.AssetId)
-                     .Select(group => new { AssetId = group.Key, Cost = group.Sum(item => item.Cost), Count = group.Count() })
+                     .Select(group => new { AssetId = group.Key, Cost = group.Sum(item => item.Cost + PartCost(item.Id)), Count = group.Count() })
                      .OrderByDescending(item => item.Cost)
                      .Take(12))
         {
@@ -105,6 +109,12 @@ public sealed class MaintenanceAnalyticsPdfService
                 group.Key,
                 $"{group.Count()} interventi - {group.Count(item => item.Status != "Completato")} attivi");
         }
+
+        var partsCost = completed.Sum(ticket => PartCost(ticket.Id));
+        document.AddHeading("Ricambi e fornitori");
+        document.AddKeyValue("Costo complessivo ricambi", $"EUR {partsCost:N2}");
+        document.AddKeyValue("Incidenza sui costi",
+            totalCost > 0 ? $"{100m * partsCost / totalCost:N1}%" : "0%");
 
         document.AddHeading("Ricorrenze");
         var recurring = tickets.Where(ticket => ticket.RecurrenceMonths > 0).ToList();

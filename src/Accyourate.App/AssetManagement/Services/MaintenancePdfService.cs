@@ -12,11 +12,12 @@ public sealed class MaintenancePdfService
     {
         var settings=_settings.Load();var template=settings.DocumentTemplate??new DocumentTemplateSettings();
         var number=$"MNT-{DateTime.Now:yyyy}-{ticket.Id:D6}";
-        var d=BuildDocument(ticket,asset,generatedBy,number,settings,template);
+        var d=BuildDocument(ticket,asset,generatedBy,number,settings,template,
+            new MaintenancePartsRepository().GetByTicket(ticket.Id));
         var folder=Path.Combine(Path.GetDirectoryName(_settings.GetDeliveryReportsFolder())!,"Verbali Manutenzione");
         return new PdfExportService().Export(d,folder,$"{number}_{asset.AssetCode}");
     }
-    internal static SimplePdfDocument BuildDocument(MaintenanceTicket t,Asset a,string user,string number,ApplicationSettings s,DocumentTemplateSettings x)
+    internal static SimplePdfDocument BuildDocument(MaintenanceTicket t,Asset a,string user,string number,ApplicationSettings s,DocumentTemplateSettings x,IReadOnlyList<MaintenancePart>? parts=null)
     {
         var d=new SimplePdfDocument{Title=$"Verbale manutenzione {number}"};
         d.Branding.CompanyName=string.IsNullOrWhiteSpace(s.Company.LegalName)?s.Company.CompanyName:s.Company.LegalName;
@@ -33,6 +34,15 @@ public sealed class MaintenancePdfService
         d.AddKeyValue("Esito SLA",SlaResult(t));
         d.AddKeyValue("Tempo di fermo",t.DowntimeMinutes>0?$"{t.DowntimeMinutes/60d:N1} ore":"Non registrato");
         d.AddHeading("Guasto segnalato");d.AddText(t.Description);d.AddHeading("Risoluzione");d.AddText(t.ResolutionNotes);
+        if(parts is {Count:>0})
+        {
+            d.AddHeading("Ricambi e materiali");
+            foreach(var part in parts)
+                d.AddKeyValue(
+                    string.IsNullOrWhiteSpace(part.PartCode)?part.Description:$"{part.PartCode} - {part.Description}",
+                    $"{part.Quantity:N2} x EUR {part.UnitCost:N2} = EUR {part.TotalCost:N2} · {part.Supplier}");
+            d.AddKeyValue("Totale ricambi",$"EUR {parts.Sum(part=>part.TotalCost):N2}");
+        }
         if(x.ShowQrCodePlaceholder)d.AddQrCode(QrDestinationBuilder.Build(x,"maintenance",number,new[]{"Accyourate Enterprise X","Verbale manutenzione",$"Numero: {number}",$"Asset: {a.AssetCode}",$"Tecnico: {t.Technician}"}),$"QR {number}");
         if(x.ShowSignatures)d.AddSignaturePair("Tecnico","Responsabile");
         return d;
