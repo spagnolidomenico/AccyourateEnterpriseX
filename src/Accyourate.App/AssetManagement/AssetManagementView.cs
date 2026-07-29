@@ -23,6 +23,7 @@ public sealed class AssetManagementView : UserControl
     private readonly AssetAssignmentEngine _assignmentEngine = new();
     private readonly DeliveryRecordRepository _deliveryRecords = new();
     private readonly DeliveryReportService _deliveryReports = new();
+    private readonly ReturnReportPdfService _returnReports = new();
 
     private readonly TextBox _search = new();
     private readonly ComboBox _category = new();
@@ -1262,8 +1263,9 @@ public sealed class AssetManagementView : UserControl
                 rows.Add(TimelineEntry(
                     "Riconsegnato",
                     FormatDate(record.ReturnDate),
-                    string.IsNullOrWhiteSpace(record.Notes) ? employeeName : record.Notes,
-                    UiTokens.Success));
+                    BuildReturnTimelineDescription(record, employeeName),
+                    UiTokens.Success,
+                    record.ReturnPdfPath));
             }
             else if (!string.IsNullOrWhiteSpace(record.Notes))
             {
@@ -1281,7 +1283,8 @@ public sealed class AssetManagementView : UserControl
         string title,
         string date,
         string description,
-        string colorToken)
+        string colorToken,
+        string pdfPath = "")
     {
         var grid = new Grid
         {
@@ -1323,6 +1326,16 @@ public sealed class AssetManagementView : UserControl
             Foreground = UiTokens.Brush(UiTokens.TextSecondary),
             TextWrapping = TextWrapping.Wrap
         });
+        if (!string.IsNullOrWhiteSpace(pdfPath) && File.Exists(pdfPath))
+        {
+            content.Children.Add(InspectorSecondaryButton(
+                "Apri verbale di riconsegna",
+                () => Process.Start(new ProcessStartInfo
+                {
+                    FileName = pdfPath,
+                    UseShellExecute = true
+                })));
+        }
         Grid.SetColumn(content, 1);
         grid.Children.Add(content);
 
@@ -1333,6 +1346,16 @@ public sealed class AssetManagementView : UserControl
             Padding = new Thickness(0, 5, 0, 9),
             Child = grid
         };
+    }
+
+    private static string BuildReturnTimelineDescription(DeliveryRecord record, string employeeName)
+    {
+        var details = new List<string> { employeeName };
+        if (!string.IsNullOrWhiteSpace(record.ReturnCondition))
+            details.Add($"Condizioni: {record.ReturnCondition}");
+        if (!string.IsNullOrWhiteSpace(record.ReturnNotes))
+            details.Add(record.ReturnNotes);
+        return string.Join(" · ", details);
     }
 
     private static DateTime ParseTimelineDate(string value) =>
@@ -1763,7 +1786,7 @@ public sealed class AssetManagementView : UserControl
         }
     }
 
-    private void ReturnAsset(Asset asset)
+    private async void ReturnAsset(Asset asset)
     {
         try
         {
@@ -1775,17 +1798,60 @@ public sealed class AssetManagementView : UserControl
             }
 
             var delivery = _deliveryRecords.GetActiveByAsset(asset.Id);
-            _assignmentEngine.ReturnAssignment(assignment.AssignmentId, "Restituito da Asset Management.");
-            if (delivery is not null)
-                _deliveryRecords.MarkReturned(delivery.Id, DateTime.Now, "Restituito da Asset Management.");
+            if (delivery is null)
+            {
+                ShowMessage("Non è presente una consegna attiva nel registro.", true);
+                return;
+            }
 
-            ShowMessage("Asset restituito correttamente.");
+            var dialog = new AssetReturnDialog(asset.AssetCode, assignment.EmployeeName);
+            var result = await ShowReturnDialog(dialog);
+            if (result is null)
+                return;
+
+            delivery.ReturnDate = result.ReturnDate.ToString("s");
+            delivery.ReturnCondition = result.Condition;
+            delivery.ReturnNotes = result.Notes;
+            var pdfPath = result.GeneratePdf
+                ? _returnReports.Generate(delivery, asset, assignment.EmployeeName, "Asset Management")
+                : string.Empty;
+
+            _assignmentEngine.ReturnAssignment(assignment.AssignmentId, "Restituito da Asset Management.");
+            _deliveryRecords.MarkReturned(
+                delivery.Id,
+                result.ReturnDate,
+                "Restituito da Asset Management.",
+                result.Condition,
+                result.Notes,
+                pdfPath);
+
+            ShowMessage(string.IsNullOrWhiteSpace(pdfPath)
+                ? "Asset restituito correttamente."
+                : $"Asset restituito e verbale generato: {pdfPath}");
+            if (!string.IsNullOrWhiteSpace(pdfPath))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = pdfPath,
+                    UseShellExecute = true
+                });
+            }
             Load();
         }
         catch (Exception ex)
         {
             ShowMessage($"Errore restituzione asset: {ex.Message}", true);
         }
+    }
+
+    private async Task<AssetReturnDialogResult?> ShowReturnDialog(AssetReturnDialog dialog)
+    {
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        if (owner is not null)
+            return await dialog.ShowDialog<AssetReturnDialogResult?>(owner);
+
+        dialog.Show();
+        return null;
     }
 
     private async Task<AssetAssignmentDialogResult?> ShowAssignmentDialog(AssetAssignmentDialog dialog)

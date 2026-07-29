@@ -16,6 +16,7 @@ public sealed class DeliveryRegisterView : UserControl
     private readonly AssetAssignmentEngine _assignments = new();
     private readonly AssetService _assets = new();
     private readonly DeliveryReportService _reports = new();
+    private readonly ReturnReportPdfService _returnReports = new();
 
     private readonly TextBox _search = new();
     private readonly ComboBox _status = new();
@@ -179,10 +180,14 @@ public sealed class DeliveryRegisterView : UserControl
         });
         Add(grid, openAsset, 5);
 
-        var report = Button("PDF", () => OpenReport(record.AssetId));
+        var report = Button(
+            record.Status == DeliveryRecordStatus.Returned ? "PDF reso" : "PDF",
+            () => OpenReport(record, asset, employee));
         Add(grid, report, 6);
 
-        var returnButton = Button(record.IsActive ? "Riconsegna" : "Chiusa", () => Return(record));
+        var returnButton = Button(
+            record.IsActive ? "Riconsegna" : "Chiusa",
+            () => Return(record, asset, employee));
         returnButton.IsEnabled = record.IsActive;
         Add(grid, returnButton, 7);
 
@@ -197,17 +202,54 @@ public sealed class DeliveryRegisterView : UserControl
         };
     }
 
-    private void Return(DeliveryRecord record)
+    private async void Return(DeliveryRecord record, Asset? asset, string? employee)
     {
         try
         {
+            asset ??= _assets.GetAssetById(record.AssetId)
+                ?? throw new InvalidOperationException("Asset non trovato.");
+            employee ??= _assignments.GetEmployees()
+                .FirstOrDefault(item => item.MasterEmployeeId == record.EmployeeId)?.FullName
+                ?? $"Dipendente #{record.EmployeeId}";
+
             var assignment = _assignments.GetActiveAssignmentForAsset(record.AssetId)
                 ?? throw new InvalidOperationException("Nessuna assegnazione attiva trovata.");
 
+            var dialog = new AssetReturnDialog(asset.AssetCode, employee);
+            var owner = TopLevel.GetTopLevel(this) as Window;
+            var result = owner is null
+                ? null
+                : await dialog.ShowDialog<AssetReturnDialogResult?>(owner);
+            if (result is null)
+                return;
+
+            record.ReturnDate = result.ReturnDate.ToString("s");
+            record.ReturnCondition = result.Condition;
+            record.ReturnNotes = result.Notes;
+            var pdfPath = result.GeneratePdf
+                ? _returnReports.Generate(record, asset, employee, "Registro Consegne")
+                : string.Empty;
+
             _assignments.ReturnAssignment(assignment.AssignmentId, "Riconsegna dal Registro Consegne.");
-            _repository.MarkReturned(record.Id, DateTime.Now, "Riconsegna dal Registro Consegne.");
+            _repository.MarkReturned(
+                record.Id,
+                result.ReturnDate,
+                "Riconsegna dal Registro Consegne.",
+                result.Condition,
+                result.Notes,
+                pdfPath);
             _message.Foreground = UiTokens.Brush(UiTokens.Success);
-            _message.Text = "Riconsegna completata.";
+            _message.Text = string.IsNullOrWhiteSpace(pdfPath)
+                ? "Riconsegna completata."
+                : $"Riconsegna completata e verbale generato: {pdfPath}";
+            if (!string.IsNullOrWhiteSpace(pdfPath))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = pdfPath,
+                    UseShellExecute = true
+                });
+            }
             Load();
         }
         catch (Exception ex)
@@ -217,11 +259,23 @@ public sealed class DeliveryRegisterView : UserControl
         }
     }
 
-    private void OpenReport(int assetId)
+    private void OpenReport(DeliveryRecord record, Asset? asset, string? employee)
     {
         try
         {
-            var report = _reports.GetByAssetId(assetId).FirstOrDefault()
+            if (record.Status == DeliveryRecordStatus.Returned &&
+                !string.IsNullOrWhiteSpace(record.ReturnPdfPath) &&
+                File.Exists(record.ReturnPdfPath))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = record.ReturnPdfPath,
+                    UseShellExecute = true
+                });
+                return;
+            }
+
+            var report = _reports.GetByAssetId(record.AssetId).FirstOrDefault()
                 ?? throw new InvalidOperationException("Nessun verbale collegato a questo asset.");
 
             // Rigenera il documento per applicare sempre il modello e il branding correnti.

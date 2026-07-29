@@ -54,6 +54,9 @@ public sealed class DeliveryRecordRepository
                 WHERE status = 'Active' AND (return_date IS NULL OR return_date = '');
             """;
         command.ExecuteNonQuery();
+        EnsureColumn(connection, "asset_delivery_records", "return_condition", "TEXT");
+        EnsureColumn(connection, "asset_delivery_records", "return_notes", "TEXT");
+        EnsureColumn(connection, "asset_delivery_records", "return_pdf_path", "TEXT");
     }
 
     public int Create(DeliveryRecord record)
@@ -154,7 +157,13 @@ public sealed class DeliveryRecordRepository
         return ReadAll(command);
     }
 
-    public void MarkReturned(int id, DateTime? returnDate = null, string? notes = null)
+    public void MarkReturned(
+        int id,
+        DateTime? returnDate = null,
+        string? notes = null,
+        string? returnCondition = null,
+        string? returnNotes = null,
+        string? returnPdfPath = null)
     {
         var current = GetById(id)
             ?? throw new InvalidOperationException("Consegna non trovata.");
@@ -168,12 +177,18 @@ public sealed class DeliveryRecordRepository
             UPDATE asset_delivery_records
             SET return_date = $returnDate,
                 notes = $notes,
+                return_condition = $returnCondition,
+                return_notes = $returnNotes,
+                return_pdf_path = $returnPdfPath,
                 status = $status,
                 updated_at = $updatedAt
             WHERE id = $id;
             """;
         command.Parameters.AddWithValue("$returnDate", (returnDate ?? DateTime.Now).ToString("s"));
         command.Parameters.AddWithValue("$notes", MergeNotes(current.Notes, notes));
+        command.Parameters.AddWithValue("$returnCondition", returnCondition?.Trim() ?? string.Empty);
+        command.Parameters.AddWithValue("$returnNotes", returnNotes?.Trim() ?? string.Empty);
+        command.Parameters.AddWithValue("$returnPdfPath", returnPdfPath?.Trim() ?? string.Empty);
         command.Parameters.AddWithValue("$status", DeliveryRecordStatus.Returned);
         command.Parameters.AddWithValue("$updatedAt", DateTime.Now.ToString("s"));
         command.Parameters.AddWithValue("$id", id);
@@ -284,7 +299,10 @@ public sealed class DeliveryRecordRepository
             Notes = ReadString(reader, 5),
             Status = ReadString(reader, 6),
             CreatedAt = ReadString(reader, 7),
-            UpdatedAt = ReadString(reader, 8)
+            UpdatedAt = ReadString(reader, 8),
+            ReturnCondition = ReadString(reader, 9),
+            ReturnNotes = ReadString(reader, 10),
+            ReturnPdfPath = ReadString(reader, 11)
         };
     }
 
@@ -311,9 +329,30 @@ public sealed class DeliveryRecordRepository
         return $"{existing.Trim()}{Environment.NewLine}{additional.Trim()}";
     }
 
+    private static void EnsureColumn(
+        SqliteConnection connection,
+        string table,
+        string column,
+        string definition)
+    {
+        using var check = connection.CreateCommand();
+        check.CommandText = $"PRAGMA table_info({table});";
+        using var reader = check.ExecuteReader();
+        while (reader.Read())
+        {
+            if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase))
+                return;
+        }
+
+        using var alter = connection.CreateCommand();
+        alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
+        alter.ExecuteNonQuery();
+    }
+
     private const string SelectColumns = """
         SELECT id, asset_id, employee_id, delivery_date, return_date,
-               notes, status, created_at, updated_at
+               notes, status, created_at, updated_at,
+               return_condition, return_notes, return_pdf_path
         FROM asset_delivery_records
         """;
 }

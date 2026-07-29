@@ -18,6 +18,12 @@ public sealed class DeliveryRecord
 
     public string Notes { get; set; } = string.Empty;
 
+    public string ReturnCondition { get; set; } = string.Empty;
+
+    public string ReturnNotes { get; set; } = string.Empty;
+
+    public string ReturnPdfPath { get; set; } = string.Empty;
+
     public string Status { get; set; } = DeliveryRecordStatus.Active;
 
     public string CreatedAt { get; set; } = DateTime.Now.ToString("s");

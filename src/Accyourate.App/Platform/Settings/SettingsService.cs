@@ -71,6 +71,18 @@ public sealed class SettingsService
         return path;
     }
 
+    public string GetReturnReportsFolder()
+    {
+        var settings = Load();
+        var root = string.IsNullOrWhiteSpace(settings.Documents.DocumentRootPath)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Accyourate Enterprise X")
+            : settings.Documents.DocumentRootPath;
+
+        var path = Path.Combine(root, "Verbali Riconsegna");
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
     public string FormatDeliveryReportNumber(int sequence)
     {
         var settings = Load();
