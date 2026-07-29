@@ -16,4 +16,5 @@ public sealed class MaintenanceTicket
     public decimal Cost { get; set; }
     public string PdfPath { get; set; } = string.Empty;
     public string UpdatedAt { get; set; } = DateTime.Now.ToString("s");
+    public string OverdueNotifiedAt { get; set; } = string.Empty;
 }

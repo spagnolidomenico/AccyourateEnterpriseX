@@ -24,13 +24,15 @@ public sealed class MaintenanceRepository
                 Title TEXT NOT NULL, Description TEXT, Priority TEXT NOT NULL,
                 Status TEXT NOT NULL, OpenedAt TEXT NOT NULL, ClosedAt TEXT,
                 Technician TEXT, ResolutionNotes TEXT, ScheduledAt TEXT,
-                Cost REAL NOT NULL DEFAULT 0, PdfPath TEXT, UpdatedAt TEXT
+                Cost REAL NOT NULL DEFAULT 0, PdfPath TEXT, UpdatedAt TEXT,
+                OverdueNotifiedAt TEXT
             );
             """);
         EnsureColumn(connection, "ScheduledAt", "TEXT");
         EnsureColumn(connection, "Cost", "REAL NOT NULL DEFAULT 0");
         EnsureColumn(connection, "PdfPath", "TEXT");
         EnsureColumn(connection, "UpdatedAt", "TEXT");
+        EnsureColumn(connection, "OverdueNotifiedAt", "TEXT");
     }
 
     public int Create(MaintenanceTicket ticket)
@@ -63,6 +65,32 @@ public sealed class MaintenanceRepository
         var result = new List<MaintenanceTicket>();
         while (reader.Read()) result.Add(Read(reader));
         return result;
+    }
+
+    public IReadOnlyList<MaintenanceTicket> GetAll(int limit = 1000)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = Select + " ORDER BY OpenedAt DESC, Id DESC LIMIT $limit;";
+        command.Parameters.AddWithValue("$limit", Math.Max(1, limit));
+        using var reader = command.ExecuteReader();
+        var result = new List<MaintenanceTicket>();
+        while (reader.Read()) result.Add(Read(reader));
+        return result;
+    }
+
+    public void MarkOverdueNotified(int id)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE MaintenanceTickets
+            SET OverdueNotifiedAt=$now, UpdatedAt=$now
+            WHERE Id=$id;
+            """;
+        command.Parameters.AddWithValue("$now", DateTime.Now.ToString("s"));
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
     }
 
     public void Start(int id)
@@ -115,7 +143,8 @@ public sealed class MaintenanceRepository
         Id=r.GetInt32(0), AssetId=r.GetInt32(1), Title=S(r,2), Description=S(r,3),
         Priority=S(r,4), Status=S(r,5), OpenedAt=S(r,6), ClosedAt=S(r,7),
         Technician=S(r,8), ResolutionNotes=S(r,9), ScheduledAt=S(r,10),
-        Cost=r.IsDBNull(11)?0:Convert.ToDecimal(r.GetDouble(11)), PdfPath=S(r,12), UpdatedAt=S(r,13)
+        Cost=r.IsDBNull(11)?0:Convert.ToDecimal(r.GetDouble(11)), PdfPath=S(r,12),
+        UpdatedAt=S(r,13), OverdueNotifiedAt=S(r,14)
     };
 
     private SqliteConnection Open() { var c=new SqliteConnection(_connectionString); c.Open(); return c; }
@@ -129,7 +158,7 @@ public sealed class MaintenanceRepository
     }
     private const string Select = """
         SELECT Id,AssetId,Title,Description,Priority,Status,OpenedAt,ClosedAt,
-               Technician,ResolutionNotes,ScheduledAt,Cost,PdfPath,UpdatedAt
+               Technician,ResolutionNotes,ScheduledAt,Cost,PdfPath,UpdatedAt,OverdueNotifiedAt
         FROM MaintenanceTickets
         """;
 }
