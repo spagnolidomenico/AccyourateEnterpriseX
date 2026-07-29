@@ -3,9 +3,12 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using System.Diagnostics;
 using Accyourate.App.Platform.Pdf;
+using Accyourate.App.Platform.Qr;
 using Accyourate.App.Platform.Settings;
 using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
+using Accyourate.App.AssetManagement.Deliveries;
+using Accyourate.App.AssetManagement.DeliveryReports;
 using Accyourate.App.UIFramework.Tokens;
 using Accyourate.App.UIFramework.Controls;
 using Accyourate.App.UIFramework.Layout;
@@ -18,6 +21,8 @@ public sealed class AssetManagementView : UserControl
 {
     private readonly AssetService _service = new();
     private readonly AssetAssignmentEngine _assignmentEngine = new();
+    private readonly DeliveryRecordRepository _deliveryRecords = new();
+    private readonly DeliveryReportService _deliveryReports = new();
 
     private readonly TextBox _search = new();
     private readonly ComboBox _category = new();
@@ -55,6 +60,23 @@ public sealed class AssetManagementView : UserControl
         Content = BuildLayout();
         ApplyInitialCategoryFilter(initialCategory);
         Load();
+    }
+
+    public void OpenAssetDetails(int assetId)
+    {
+        var asset = _service.GetAssetById(assetId);
+        if (asset is null)
+        {
+            ShowMessage($"Asset #{assetId} non trovato.", true);
+            return;
+        }
+
+        _selected = asset;
+        _assetTable.SetSelectedItem(asset);
+        _detailsVisible = true;
+        _details.Content = DetailsCard(asset);
+        RefreshRows();
+        ArrangeAssetWorkspace(Bounds.Width);
     }
 
     private void ApplyInitialCategoryFilter(string? initialCategory)
@@ -1130,16 +1152,12 @@ public sealed class AssetManagementView : UserControl
 
         var sections = new StackPanel { Spacing = 10 };
         sections.Children.Add(InspectorSection(
-            "Identità",
-            "Dati anagrafici e classificazione",
+            "Informazioni generali",
+            "Anagrafica, inventario e sicurezza",
             InspectorRow("Codice", asset.AssetCode),
             InspectorRow("Categoria", asset.Category),
             InspectorRow("Produttore", asset.Manufacturer),
-            InspectorRow("Modello", asset.Model)));
-
-        sections.Children.Add(InspectorSection(
-            "Inventario e sicurezza",
-            "Identificativi tecnici e protezione",
+            InspectorRow("Modello", asset.Model),
             InspectorRow("Seriale", asset.SerialNumber),
             InspectorRow("Asset Tag", asset.AssetTag),
             InspectorRow("Sistema operativo", asset.OperatingSystem),
@@ -1147,12 +1165,25 @@ public sealed class AssetManagementView : UserControl
 
         sections.Children.Add(InspectorSection(
             "Assegnazione",
-            assignment is null ? "Asset attualmente non assegnato" : "Assegnazione attiva",
+            assignment is null ? "Asset disponibile per una nuova consegna" : "Assegnazione attiva",
             InspectorRow("Assegnato a", assignment?.EmployeeName ?? "—"),
             InspectorRow("Data assegnazione", assignment is null ? "—" : FormatDate(assignment.AssignedAt)),
-            InspectorRow("Stato", assignment?.Status ?? "Disponibile")));
+            InspectorRow("Stato", assignment?.Status ?? "Disponibile"),
+            InspectorPlaceholder(assignment is null
+                ? "Usa il comando Assegna per avviare la procedura di consegna."
+                : "Usa il comando Restituisci per chiudere l'assegnazione corrente.")));
 
         sections.Children.Add(WarrantySection(asset));
+
+        sections.Children.Add(InspectorSection(
+            "Manutenzioni",
+            "Interventi, verifiche e assistenza tecnica",
+            InspectorPlaceholder("Nessun intervento di manutenzione collegato a questo asset.")));
+
+        sections.Children.Add(InspectorSection(
+            "Documenti",
+            "Schede, verbali e allegati associati",
+            InspectorPlaceholder("La scheda asset è disponibile tramite il comando Stampa scheda. I verbali di consegna saranno collegati nel prossimo sprint.")));
 
         if (!string.IsNullOrWhiteSpace(asset.Notes))
         {
@@ -1169,12 +1200,14 @@ public sealed class AssetManagementView : UserControl
                 }));
         }
 
+        var deliveryHistory = _deliveryRecords.GetByAsset(asset.Id);
+        var timelineRows = BuildDeliveryTimeline(asset, deliveryHistory);
         sections.Children.Add(InspectorSection(
-            "Attività",
-            "Tracciamento e documentazione",
-            InspectorRow("Creato", FormatDate(asset.CreatedAt)),
-            InspectorRow("Ultimo aggiornamento", FormatDate(asset.UpdatedAt)),
-            InspectorPlaceholder("Storico e documenti saranno disponibili nei prossimi sprint.")));
+            "Timeline",
+            deliveryHistory.Count == 0
+                ? "Cronologia dell'asset"
+                : $"{deliveryHistory.Count} movimenti di consegna registrati",
+            timelineRows));
 
         var scroll = new ScrollViewer
         {
@@ -1196,6 +1229,132 @@ public sealed class AssetManagementView : UserControl
 
         return new AxInspectorPanel(content);
     }
+
+    private Control[] BuildDeliveryTimeline(Asset asset, IReadOnlyList<DeliveryRecord> records)
+    {
+        var employees = _assignmentEngine.GetEmployees()
+            .GroupBy(employee => employee.MasterEmployeeId)
+            .ToDictionary(group => group.Key, group => group.First().FullName);
+
+        var rows = new List<Control>
+        {
+            TimelineEntry(
+                "Asset creato",
+                FormatDate(asset.CreatedAt),
+                string.IsNullOrWhiteSpace(asset.AssetCode) ? "Nuovo asset" : asset.AssetCode,
+                UiTokens.BrandBlue)
+        };
+
+        foreach (var record in records.OrderByDescending(record => ParseTimelineDate(record.DeliveryDate)))
+        {
+            var employeeName = employees.TryGetValue(record.EmployeeId, out var name)
+                ? name
+                : $"Dipendente #{record.EmployeeId}";
+
+            rows.Add(TimelineEntry(
+                DeliveryStatusLabel(record.Status),
+                FormatDate(record.DeliveryDate),
+                employeeName,
+                DeliveryStatusColor(record.Status)));
+
+            if (!string.IsNullOrWhiteSpace(record.ReturnDate))
+            {
+                rows.Add(TimelineEntry(
+                    "Riconsegnato",
+                    FormatDate(record.ReturnDate),
+                    string.IsNullOrWhiteSpace(record.Notes) ? employeeName : record.Notes,
+                    UiTokens.Success));
+            }
+            else if (!string.IsNullOrWhiteSpace(record.Notes))
+            {
+                rows.Add(InspectorPlaceholder(record.Notes));
+            }
+        }
+
+        if (records.Count == 0)
+            rows.Add(InspectorPlaceholder("Nessuna consegna registrata per questo asset."));
+
+        return rows.ToArray();
+    }
+
+    private static Control TimelineEntry(
+        string title,
+        string date,
+        string description,
+        string colorToken)
+    {
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("16,*"),
+            Margin = new Thickness(0, 4)
+        };
+
+        var marker = new Border
+        {
+            Width = 9,
+            Height = 9,
+            CornerRadius = new CornerRadius(5),
+            Background = UiTokens.Brush(colorToken),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top,
+            Margin = new Thickness(0, 5, 0, 0)
+        };
+        Grid.SetColumn(marker, 0);
+        grid.Children.Add(marker);
+
+        var content = new StackPanel { Spacing = 2 };
+        content.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontSize = 12,
+            FontWeight = FontWeight.Bold,
+            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
+        });
+        content.Children.Add(new TextBlock
+        {
+            Text = date,
+            FontSize = 11,
+            Foreground = UiTokens.Brush(UiTokens.TextSecondary)
+        });
+        content.Children.Add(new TextBlock
+        {
+            Text = description,
+            FontSize = 11,
+            Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+            TextWrapping = TextWrapping.Wrap
+        });
+        Grid.SetColumn(content, 1);
+        grid.Children.Add(content);
+
+        return new Border
+        {
+            BorderBrush = UiTokens.Brush(UiTokens.Border),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            Padding = new Thickness(0, 5, 0, 9),
+            Child = grid
+        };
+    }
+
+    private static DateTime ParseTimelineDate(string value) =>
+        DateTime.TryParse(value, out var parsed) ? parsed : DateTime.MinValue;
+
+    private static string DeliveryStatusLabel(string status) => status switch
+    {
+        DeliveryRecordStatus.Active => "Consegnato",
+        DeliveryRecordStatus.Returned => "Consegna chiusa",
+        DeliveryRecordStatus.Cancelled => "Consegna annullata",
+        DeliveryRecordStatus.Planned => "Consegna pianificata",
+        _ => status
+    };
+
+    private static string DeliveryStatusColor(string status) => status switch
+    {
+        DeliveryRecordStatus.Active => UiTokens.BrandBlue,
+        DeliveryRecordStatus.Returned => UiTokens.Success,
+        DeliveryRecordStatus.Cancelled => UiTokens.Danger,
+        DeliveryRecordStatus.Planned => UiTokens.Warning,
+        _ => UiTokens.TextSecondary
+    };
 
     private static IReadOnlyList<string> BuildCompanyDetailLines(CompanySettings company, string? layout)
     {
@@ -1301,7 +1460,20 @@ public sealed class AssetManagementView : UserControl
             document.AddKeyValue("Creato", FormatDate(asset.CreatedAt));
             document.AddKeyValue("Ultimo aggiornamento", FormatDate(asset.UpdatedAt));
             if (template.ShowQrCodePlaceholder)
-                document.AddQrPlaceholder($"QR {ValueOrDash(asset.AssetCode)}");
+                document.AddQrCode(
+                    QrDestinationBuilder.Build(
+                        template,
+                        "assets",
+                        ValueOrDash(asset.AssetCode),
+                        new[]
+                        {
+                            "Accyourate Enterprise X",
+                            "Scheda asset",
+                            $"Codice: {ValueOrDash(asset.AssetCode)}",
+                            $"Seriale: {ValueOrDash(asset.SerialNumber)}",
+                            $"Modello: {ValueOrDash(asset.Manufacturer)} {ValueOrDash(asset.Model)}"
+                        }),
+                    $"QR {ValueOrDash(asset.AssetCode)}");
 
             if (template.ShowSignatures)
             {
@@ -1548,8 +1720,41 @@ public sealed class AssetManagementView : UserControl
             if (result is null)
                 return;
 
-            _assignmentEngine.AssignAsset(result.AssetId, result.MasterEmployeeId, "Asset Management", result.Notes);
-            ShowMessage("Asset assegnato correttamente.");
+            if (_deliveryRecords.HasActiveForAsset(result.AssetId))
+            {
+                ShowMessage("L'asset ha già una consegna attiva nel registro.", true);
+                return;
+            }
+
+            _assignmentEngine.AssignAsset(
+                result.AssetId,
+                result.MasterEmployeeId,
+                "Asset Management",
+                result.Notes);
+
+            _deliveryRecords.Create(new DeliveryRecord
+            {
+                AssetId = result.AssetId,
+                EmployeeId = result.MasterEmployeeId,
+                DeliveryDate = result.DeliveryDate.ToString("s"),
+                Notes = result.Notes,
+                Status = DeliveryRecordStatus.Active
+            });
+
+            var message = "Asset assegnato e consegna registrata.";
+            if (result.GenerateReport)
+            {
+                var assignment = _assignmentEngine.GetActiveAssignmentForAsset(result.AssetId)
+                    ?? throw new InvalidOperationException("Assegnazione attiva non trovata dopo il salvataggio.");
+                var reportId = _deliveryReports.CreateFromAssignment(
+                    assignment,
+                    "Asset Management",
+                    result.Notes);
+                var pdfPath = _deliveryReports.GeneratePdf(reportId, "Asset Management");
+                message = $"Consegna registrata e verbale creato: {pdfPath}";
+            }
+
+            ShowMessage(message);
             Load();
         }
         catch (Exception ex)
@@ -1569,7 +1774,11 @@ public sealed class AssetManagementView : UserControl
                 return;
             }
 
+            var delivery = _deliveryRecords.GetActiveByAsset(asset.Id);
             _assignmentEngine.ReturnAssignment(assignment.AssignmentId, "Restituito da Asset Management.");
+            if (delivery is not null)
+                _deliveryRecords.MarkReturned(delivery.Id, DateTime.Now, "Restituito da Asset Management.");
+
             ShowMessage("Asset restituito correttamente.");
             Load();
         }

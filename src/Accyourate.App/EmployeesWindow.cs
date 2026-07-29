@@ -4,6 +4,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Accyourate.App.Data;
 using Accyourate.App.Models;
+using Accyourate.App.UIFramework.EnterpriseTable;
 
 namespace Accyourate.App;
 
@@ -236,7 +237,7 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
         var header = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("90,115,115,120,140,170,75,70,80,90,90")
+            ColumnDefinitions = new ColumnDefinitions(AxTableLayout.EmployeeColumns)
         };
 
         AddHeader(header, "Matricola", 0);
@@ -245,11 +246,11 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
         AddHeader(header, "Reparto", 3);
         AddHeader(header, "Mansione", 4);
         AddHeader(header, "Email", 5);
-        AddHeader(header, "Stato", 6);
-        AddHeader(header, "Scheda", 7);
-        AddHeader(header, "Modifica", 8);
-        AddHeader(header, "Archivio", 9);
-        AddHeader(header, "Stampa", 10);
+        AddHeader(header, "Stato", 6, true);
+        AddHeader(header, "Scheda", 7, true);
+        AddHeader(header, "Modifica", 8, true);
+        AddHeader(header, "Archivio", 9, true);
+        AddHeader(header, "Stampa", 10, true);
         _rowsPanel.Children.Add(header);
 
         foreach (var employee in rows)
@@ -260,8 +261,9 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
     {
         var grid = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("90,115,115,120,140,170,75,70,80,90,90"),
-            Margin = new Thickness(0, 4)
+            ColumnDefinitions = new ColumnDefinitions(AxTableLayout.EmployeeColumns),
+            Margin = new Thickness(0, 4),
+            MinHeight = 44
         };
 
         AddText(grid, employee.EmployeeCode, 0);
@@ -270,13 +272,13 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
         AddText(grid, employee.Department, 3);
         AddText(grid, employee.JobTitle, 4);
         AddText(grid, employee.Email, 5);
-        AddText(grid, employee.IsArchived ? "Archiv." : "Attivo", 6);
+        AddText(grid, employee.IsArchived ? "Archiv." : "Attivo", 6, true);
 
-        var detail = new Button { Content = "Apri" };
+        var detail = AxTableLayout.ActionButton("Apri");
         detail.Click += (_, _) => new EmployeeDetailWindow(employee).Show();
         AddControl(grid, detail, 7, 0);
 
-        var edit = new Button { Content = "Modifica" };
+        var edit = AxTableLayout.ActionButton("Modifica");
         edit.Click += (_, _) =>
         {
             var win = new EmployeeEditWindow(_database, _user, employee);
@@ -285,7 +287,7 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
         };
         AddControl(grid, edit, 8, 0);
 
-        var archive = new Button { Content = employee.IsArchived ? "Ripristina" : "Archivia" };
+        var archive = AxTableLayout.ActionButton(employee.IsArchived ? "Ripristina" : "Archivia");
         archive.Click += (_, _) =>
         {
             _database.ArchiveEmployee(employee.Id, !employee.IsArchived, _user.Username);
@@ -293,7 +295,7 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
         };
         AddControl(grid, archive, 9, 0);
 
-        var print = new Button { Content = "Scheda" };
+        var print = AxTableLayout.ActionButton("Scheda");
         print.Click += (_, _) => CreateEmployeeSheet(employee);
         AddControl(grid, print, 10, 0);
 
@@ -331,26 +333,15 @@ Creato il: {employee.CreatedAt}
         AddControl(grid, label, column, row);
     }
 
-    private static void AddHeader(Grid grid, string text, int column)
+    private static void AddHeader(Grid grid, string text, int column, bool centered = false)
     {
-        var label = new TextBlock
-        {
-            Text = text,
-            FontWeight = FontWeight.Bold,
-            Foreground = Brush.Parse("#B5162B"),
-            Margin = new Thickness(4)
-        };
+        var label = AxTableLayout.Header(text, centered);
         AddControl(grid, label, column, 0);
     }
 
-    private static void AddText(Grid grid, string text, int column)
+    private static void AddText(Grid grid, string text, int column, bool centered = false)
     {
-        var block = new TextBlock
-        {
-            Text = text,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(4)
-        };
+        var block = AxTableLayout.CellText(text, centered);
         AddControl(grid, block, column, 0);
     }
 

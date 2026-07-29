@@ -8,6 +8,7 @@ using Avalonia.Platform.Storage;
 using Accyourate.App.Data;
 using Accyourate.App.Models;
 using Accyourate.App.Platform.Pdf;
+using Accyourate.App.Platform.Qr;
 using Accyourate.App.Platform.Settings;
 using Accyourate.App.UIFramework.Tokens;
 
@@ -55,12 +56,13 @@ public sealed class BrandingCenterWindow : Window
     private readonly TextBox _footerText = new();
     private readonly TextBox _leftSignature = new();
     private readonly TextBox _rightSignature = new();
+    private readonly TextBox _qrBaseUrl = new() { Watermark = "https://portale.azienda.it/accyourate/" };
     private readonly CheckBox _showLogo = new() { Content = "Mostra logo" };
     private readonly CheckBox _showCompanyDetails = new() { Content = "Mostra dati aziendali" };
     private readonly CheckBox _showMetadata = new() { Content = "Mostra codice e data documento" };
     private readonly CheckBox _showFooter = new() { Content = "Mostra piè di pagina" };
     private readonly CheckBox _showSignatures = new() { Content = "Mostra firme" };
-    private readonly CheckBox _showQr = new() { Content = "Riserva spazio QR Code" };
+    private readonly CheckBox _showQr = new() { Content = "Mostra QR Code reale nei documenti" };
 
     public BrandingCenterWindow(DatabaseService database, CurrentUser user)
     {
@@ -81,7 +83,7 @@ public sealed class BrandingCenterWindow : Window
 
     private void HookPreviewEvents()
     {
-        foreach (var box in new[] { _companyName, _legalName, _vatNumber, _fiscalCode, _address, _city, _province, _country, _phone, _email, _pec, _website, _primaryColor, _footerText, _leftSignature, _rightSignature })
+        foreach (var box in new[] { _companyName, _legalName, _vatNumber, _fiscalCode, _address, _city, _province, _country, _phone, _email, _pec, _website, _primaryColor, _footerText, _leftSignature, _rightSignature, _qrBaseUrl })
             box.TextChanged += (_, _) => RefreshPreview();
         _headerLayout.SelectionChanged += (_, _) => RefreshPreview();
         _logoSize.SelectionChanged += (_, _) => RefreshPreview();
@@ -280,6 +282,22 @@ public sealed class BrandingCenterWindow : Window
 
         content.Children.Add(Card(new StackPanel
         {
+            Spacing = 7,
+            Children =
+            {
+                new TextBlock { Text = "Destinazione QR Code", FontWeight = FontWeight.Bold, FontSize = 17 },
+                new TextBlock
+                {
+                    Text = "Inserisci l'indirizzo HTTPS del portale o dell'intranet raggiungibile dallo smartphone. Il gestionale aggiungerà automaticamente /assets/... oppure /delivery-reports/....",
+                    Foreground = UiTokens.Brush(UiTokens.TextSecondary),
+                    TextWrapping = TextWrapping.Wrap
+                },
+                Field("Indirizzo base portale", _qrBaseUrl)
+            }
+        }));
+
+        content.Children.Add(Card(new StackPanel
+        {
             Spacing = 6,
             Children =
             {
@@ -419,6 +437,7 @@ public sealed class BrandingCenterWindow : Window
             _showFooter.IsChecked = template.ShowFooter;
             _showSignatures.IsChecked = template.ShowSignatures;
             _showQr.IsChecked = template.ShowQrCodePlaceholder;
+            _qrBaseUrl.Text = template.QrBaseUrl;
 
             RefreshPreview();
             ShowMessage("Branding e modello caricati.");
@@ -464,6 +483,17 @@ public sealed class BrandingCenterWindow : Window
             template.ShowFooter = _showFooter.IsChecked == true;
             template.ShowSignatures = _showSignatures.IsChecked == true;
             template.ShowQrCodePlaceholder = _showQr.IsChecked == true;
+            var qrBaseUrl = Text(_qrBaseUrl);
+            if (!string.IsNullOrWhiteSpace(qrBaseUrl) &&
+                (!Uri.TryCreate(qrBaseUrl, UriKind.Absolute, out var qrUri) ||
+                 (qrUri.Scheme != Uri.UriSchemeHttps && qrUri.Scheme != Uri.UriSchemeHttp)))
+            {
+                throw new InvalidOperationException(
+                    "L'indirizzo QR deve iniziare con https:// oppure http://.");
+            }
+            template.QrBaseUrl = string.IsNullOrWhiteSpace(qrBaseUrl)
+                ? string.Empty
+                : qrBaseUrl.TrimEnd('/') + "/";
 
             _settingsService.Save(_settings);
 
@@ -519,7 +549,20 @@ public sealed class BrandingCenterWindow : Window
             document.AddKeyValue("Dipendente", "Mario Rossi");
             document.AddKeyValue("Reparto", "Ufficio tecnico");
             if (template.ShowQrCodePlaceholder)
-                document.AddQrPlaceholder("QR NB-001");
+                document.AddQrCode(
+                    QrDestinationBuilder.Build(
+                        template,
+                        "assets",
+                        "NB-001",
+                        new[]
+                        {
+                            "Accyourate Enterprise X",
+                            "Scheda asset",
+                            "Codice: NB-001",
+                            "Seriale: DEMO-0001",
+                            "Modello: Notebook demo"
+                        }),
+                    "QR NB-001");
             if (template.ShowSignatures)
             {
                 document.AddSignaturePair(

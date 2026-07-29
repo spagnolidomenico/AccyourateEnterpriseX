@@ -11,7 +11,9 @@ public sealed class AssetAssignmentDialog : Window
     private readonly AssetAssignmentEngine _engine;
     private readonly ComboBox _employees = new();
     private readonly ComboBox _assets = new();
+    private readonly TextBox _deliveryDate = new();
     private readonly TextBox _notes = new();
+    private readonly CheckBox _generateReport = new();
     private readonly TextBlock _validation = new();
 
     public AssetAssignmentDialog(AssetAssignmentEngine engine, int? assetId = null)
@@ -20,7 +22,7 @@ public sealed class AssetAssignmentDialog : Window
 
         Title = "Assegna Asset";
         Width = 720;
-        Height = 520;
+        Height = 620;
         MinWidth = 640;
         MinHeight = 440;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -80,9 +82,14 @@ public sealed class AssetAssignmentDialog : Window
         DockPanel.SetDock(footer, Dock.Bottom);
         root.Children.Add(footer);
 
+        _deliveryDate.Text = DateTime.Today.ToString("yyyy-MM-dd");
+        _deliveryDate.Watermark = "AAAA-MM-GG";
+
         _notes.AcceptsReturn = true;
         _notes.Height = 100;
         _notes.TextWrapping = TextWrapping.Wrap;
+        _generateReport.Content = "Genera automaticamente il verbale PDF";
+        _generateReport.IsChecked = true;
 
         var form = new StackPanel
         {
@@ -92,7 +99,9 @@ public sealed class AssetAssignmentDialog : Window
 
         form.Children.Add(Field("Dipendente *", _employees));
         form.Children.Add(Field("Asset disponibile *", _assets));
+        form.Children.Add(Field("Data consegna *", _deliveryDate));
         form.Children.Add(Field("Note", _notes));
+        form.Children.Add(_generateReport);
 
         root.Children.Add(form);
         return root;
@@ -133,11 +142,25 @@ public sealed class AssetAssignmentDialog : Window
             return;
         }
 
+        if (!DateTime.TryParse(_deliveryDate.Text, out var deliveryDate))
+        {
+            _validation.Text = "Inserisci una data di consegna valida.";
+            return;
+        }
+
+        if (deliveryDate.Date > DateTime.Today)
+        {
+            _validation.Text = "La data di consegna non può essere futura.";
+            return;
+        }
+
         Close(new AssetAssignmentDialogResult
         {
             AssetId = asset.AssetId,
             MasterEmployeeId = employee.MasterEmployeeId,
-            Notes = (_notes.Text ?? string.Empty).Trim()
+            DeliveryDate = deliveryDate.Date,
+            Notes = (_notes.Text ?? string.Empty).Trim(),
+            GenerateReport = _generateReport.IsChecked == true
         });
     }
 
@@ -186,5 +209,7 @@ public sealed class AssetAssignmentDialogResult
 {
     public int AssetId { get; set; }
     public int MasterEmployeeId { get; set; }
+    public DateTime DeliveryDate { get; set; } = DateTime.Today;
     public string Notes { get; set; } = string.Empty;
+    public bool GenerateReport { get; set; } = true;
 }

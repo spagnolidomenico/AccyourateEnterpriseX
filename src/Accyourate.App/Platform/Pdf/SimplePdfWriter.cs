@@ -1,10 +1,13 @@
 using System.Globalization;
 using System.Text;
+using QRCoder;
 
 namespace Accyourate.App.Platform.Pdf;
 
 public sealed class SimplePdfWriter
 {
+    private static readonly Encoding PdfEncoding = Encoding.Latin1;
+
     public void Write(SimplePdfDocument document, string outputPath)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
@@ -29,11 +32,11 @@ public sealed class SimplePdfWriter
             var contentObj = pageObj + 1;
             var xObject = logo is null ? string.Empty : $" /XObject << /Im1 {logoObject} 0 R >>";
             objects.Add($"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 {fontRegularObject} 0 R /F2 {fontBoldObject} 0 R >>{xObject} >> /Contents {contentObj} 0 R >>");
-            objects.Add($"<< /Length {Encoding.ASCII.GetByteCount(pages[i])} >>\nstream\n{pages[i]}\nendstream");
+            objects.Add($"<< /Length {PdfEncoding.GetByteCount(pages[i])} >>\nstream\n{pages[i]}\nendstream");
         }
 
-        objects.Add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-        objects.Add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
+        objects.Add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+        objects.Add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
 
         if (logo is not null)
         {
@@ -48,13 +51,13 @@ public sealed class SimplePdfWriter
         builder.AppendLine("%PDF-1.4");
         for (var i = 0; i < objects.Count; i++)
         {
-            offsets.Add(Encoding.ASCII.GetByteCount(builder.ToString()));
+            offsets.Add(PdfEncoding.GetByteCount(builder.ToString()));
             builder.AppendLine($"{i + 1} 0 obj");
             builder.AppendLine(objects[i]);
             builder.AppendLine("endobj");
         }
 
-        var xref = Encoding.ASCII.GetByteCount(builder.ToString());
+        var xref = PdfEncoding.GetByteCount(builder.ToString());
         builder.AppendLine("xref");
         builder.AppendLine($"0 {objects.Count + 1}");
         builder.AppendLine("0000000000 65535 f ");
@@ -66,7 +69,7 @@ public sealed class SimplePdfWriter
         builder.AppendLine(xref.ToString(CultureInfo.InvariantCulture));
         builder.AppendLine("%%EOF");
 
-        File.WriteAllText(outputPath, builder.ToString(), Encoding.ASCII);
+        File.WriteAllText(outputPath, builder.ToString(), PdfEncoding);
     }
 
     private static List<string> BuildPageStreams(SimplePdfDocument document, JpegData? logo)
@@ -78,13 +81,7 @@ public sealed class SimplePdfWriter
 
         foreach (var line in document.Lines)
         {
-            var requiredHeight = line.Kind switch
-            {
-                PdfLineKind.SignaturePair => 64f,
-                PdfLineKind.QrPlaceholder => 90f,
-                PdfLineKind.Section => 30f,
-                _ => 22f
-            };
+            var requiredHeight = RequiredHeight(line);
 
             if (y - requiredHeight < 78)
             {
@@ -105,21 +102,21 @@ public sealed class SimplePdfWriter
                     y -= 30;
                     break;
                 case PdfLineKind.KeyValue:
-                    DrawKeyValue(content, line.Text, line.RightText, y);
-                    y -= 22;
+                    y -= DrawKeyValue(content, line.Text, line.RightText, line.FontSize, y, line.GapAfter);
                     break;
                 case PdfLineKind.Status:
-                    DrawStatus(content, document, line.Text, line.RightText, y);
-                    y -= 28;
+                    y -= DrawStatus(content, document, line.Text, line.RightText, line.FontSize, y, line.GapAfter);
                     break;
                 case PdfLineKind.QrPlaceholder:
                     DrawQrPlaceholder(content, line.Text, y);
                     y -= Math.Max(line.GapAfter, 82);
                     break;
+                case PdfLineKind.QrCode:
+                    DrawQrCode(content, line.RightText, line.Text, y);
+                    y -= Math.Max(line.GapAfter, 96);
+                    break;
                 default:
-                    if (!string.IsNullOrWhiteSpace(line.Text))
-                        content.AppendLine($"BT /{(line.Bold ? "F2" : "F1")} {line.FontSize} Tf 54 {Y(y)} Td ({Esc(line.Text)}) Tj ET");
-                    y -= Math.Max(line.FontSize + line.GapAfter, 12);
+                    y -= DrawWrappedText(content, line, y);
                     break;
             }
         }
@@ -136,28 +133,173 @@ public sealed class SimplePdfWriter
         var (r, g, b) = ParseColor(document.Branding.PrimaryColor);
         builder.AppendLine($"{N(r)} {N(g)} {N(b)} rg");
         builder.AppendLine($"54 {N(y - 7)} 487 22 re f");
+        builder.AppendLine("1 1 1 rg");
         builder.AppendLine($"BT /F2 10.5 Tf 64 {Y(y)} Td ({Esc(text.ToUpperInvariant())}) Tj ET");
         builder.AppendLine("0 0 0 rg");
     }
 
-    private static void DrawKeyValue(StringBuilder builder, string label, string value, float y)
+    private static float DrawKeyValue(
+        StringBuilder builder,
+        string label,
+        string value,
+        int fontSize,
+        float y,
+        float gapAfter)
     {
+        var wrapped = WrapText(value, fontSize, 310);
+        var lineHeight = Math.Max(fontSize + 3, 13);
+        var height = Math.Max(28, wrapped.Count * lineHeight + gapAfter + 4);
+        var lastBaseline = y - (wrapped.Count - 1) * lineHeight;
+        var nextBaseline = y - height;
+        var separatorY = (lastBaseline + nextBaseline) / 2f;
         builder.AppendLine("0.93 0.93 0.93 RG");
-        builder.AppendLine($"54 {N(y - 8)} m 541 {N(y - 8)} l S");
+        builder.AppendLine($"54 {N(separatorY)} m 541 {N(separatorY)} l S");
         builder.AppendLine($"BT /F2 9.5 Tf 62 {Y(y)} Td ({Esc(label)}) Tj ET");
-        builder.AppendLine($"BT /F1 10 Tf 225 {Y(y)} Td ({Esc(value)}) Tj ET");
+        for (var index = 0; index < wrapped.Count; index++)
+            builder.AppendLine($"BT /F1 {fontSize} Tf 225 {Y(y - index * lineHeight)} Td ({Esc(wrapped[index])}) Tj ET");
+        return height;
     }
 
-    private static void DrawStatus(StringBuilder builder, SimplePdfDocument document, string label, string value, float y)
+    private static float DrawStatus(
+        StringBuilder builder,
+        SimplePdfDocument document,
+        string label,
+        string value,
+        int fontSize,
+        float y,
+        float gapAfter)
     {
-        var (r, g, b) = ParseColor(document.Branding.PrimaryColor);
+        var wrapped = WrapText(value, fontSize, 310);
+        var lineHeight = Math.Max(fontSize + 3, 13);
+        var height = Math.Max(28, wrapped.Count * lineHeight + gapAfter + 4);
         builder.AppendLine("0.96 0.96 0.96 rg");
-        builder.AppendLine($"54 {N(y - 10)} 487 25 re f");
+        builder.AppendLine($"54 {N(y - height + 7)} 487 {N(height)} re f");
+        var (r, g, b) = ParseColor(document.Branding.PrimaryColor);
+        builder.AppendLine($"{N(r)} {N(g)} {N(b)} rg");
+        builder.AppendLine($"54 {N(y - height + 7)} 4 {N(height)} re f");
         builder.AppendLine("0 0 0 rg");
         builder.AppendLine($"BT /F2 9.5 Tf 64 {Y(y)} Td ({Esc(label)}) Tj ET");
-        builder.AppendLine($"{N(r)} {N(g)} {N(b)} rg");
-        builder.AppendLine($"BT /F2 10 Tf 225 {Y(y)} Td ({Esc(value)}) Tj ET");
+        for (var index = 0; index < wrapped.Count; index++)
+            builder.AppendLine($"BT /F2 {fontSize} Tf 225 {Y(y - index * lineHeight)} Td ({Esc(wrapped[index])}) Tj ET");
         builder.AppendLine("0 0 0 rg");
+        return height;
+    }
+
+    private static float DrawWrappedText(StringBuilder builder, PdfTextLine line, float y)
+    {
+        if (string.IsNullOrWhiteSpace(line.Text))
+            return Math.Max(line.GapAfter, 10);
+
+        var wrapped = WrapText(line.Text, line.FontSize, 487);
+        var lineHeight = Math.Max(line.FontSize + 3, 13);
+        for (var index = 0; index < wrapped.Count; index++)
+        {
+            builder.AppendLine(
+                $"BT /{(line.Bold ? "F2" : "F1")} {line.FontSize} Tf 54 {Y(y - index * lineHeight)} Td ({Esc(wrapped[index])}) Tj ET");
+        }
+
+        return wrapped.Count * lineHeight + line.GapAfter;
+    }
+
+    private static float RequiredHeight(PdfTextLine line)
+    {
+        return line.Kind switch
+        {
+            PdfLineKind.SignaturePair => 64f,
+            PdfLineKind.QrPlaceholder => 90f,
+            PdfLineKind.QrCode => 104f,
+            PdfLineKind.Section => 30f,
+            PdfLineKind.KeyValue => WrappedHeight(line.RightText, line.FontSize, 310, line.GapAfter + 4, 28),
+            PdfLineKind.Status => WrappedHeight(line.RightText, line.FontSize, 310, line.GapAfter + 4, 28),
+            _ => WrappedHeight(line.Text, line.FontSize, 487, line.GapAfter, 12)
+        };
+    }
+
+    private static float WrappedHeight(
+        string text,
+        int fontSize,
+        double width,
+        float gapAfter,
+        float minimum)
+    {
+        var count = Math.Max(1, WrapText(text, fontSize, width).Count);
+        var lineHeight = Math.Max(fontSize + 3, 13);
+        return Math.Max(minimum, count * lineHeight + gapAfter);
+    }
+
+    private static IReadOnlyList<string> WrapText(string text, double fontSize, double maxWidth)
+    {
+        var normalized = (text ?? string.Empty)
+            .Replace("\r\n", "\n")
+            .Replace('\r', '\n');
+        var result = new List<string>();
+
+        foreach (var paragraph in normalized.Split('\n'))
+        {
+            var words = paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0)
+            {
+                result.Add(string.Empty);
+                continue;
+            }
+
+            var current = new StringBuilder();
+            foreach (var word in words)
+            {
+                var candidate = current.Length == 0 ? word : $"{current} {word}";
+                if (ApproximateWidth(candidate, fontSize) <= maxWidth)
+                {
+                    current.Clear();
+                    current.Append(candidate);
+                    continue;
+                }
+
+                if (current.Length > 0)
+                {
+                    result.Add(current.ToString());
+                    current.Clear();
+                }
+
+                if (ApproximateWidth(word, fontSize) <= maxWidth)
+                {
+                    current.Append(word);
+                    continue;
+                }
+
+                var chunk = new StringBuilder();
+                foreach (var character in word)
+                {
+                    if (chunk.Length > 0 && ApproximateWidth($"{chunk}{character}", fontSize) > maxWidth)
+                    {
+                        result.Add(chunk.ToString());
+                        chunk.Clear();
+                    }
+                    chunk.Append(character);
+                }
+                current.Append(chunk);
+            }
+
+            if (current.Length > 0)
+                result.Add(current.ToString());
+        }
+
+        return result.Count == 0 ? new[] { string.Empty } : result;
+    }
+
+    private static double ApproximateWidth(string text, double fontSize)
+    {
+        var units = 0d;
+        foreach (var character in text)
+        {
+            units += character switch
+            {
+                'i' or 'l' or 'I' or '.' or ',' or ':' or ';' or '!' or '|' => 0.28,
+                'm' or 'w' or 'M' or 'W' or '@' => 0.82,
+                ' ' => 0.3,
+                _ => 0.54
+            };
+        }
+        return units * fontSize;
     }
 
     private static void DrawQrPlaceholder(StringBuilder builder, string caption, float y)
@@ -170,6 +312,50 @@ public sealed class SimplePdfWriter
         builder.AppendLine($"{N(x)} {N(bottom)} m {N(x + size)} {N(bottom + size)} l S");
         builder.AppendLine($"{N(x + size)} {N(bottom)} m {N(x)} {N(bottom + size)} l S");
         builder.AppendLine($"BT /F2 7 Tf {N(x + 9)} {N(bottom - 11)} Td ({Esc(caption)}) Tj ET");
+    }
+
+    private static void DrawQrCode(StringBuilder builder, string payload, string caption, float y)
+    {
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            DrawQrPlaceholder(builder, caption, y);
+            return;
+        }
+
+        using var data = QRCodeGenerator.GenerateQrCode(
+            payload,
+            QRCodeGenerator.ECCLevel.M,
+            forceUtf8: true,
+            utf8BOM: false,
+            eciMode: QRCodeGenerator.EciMode.Utf8);
+
+        const double x = 447d;
+        const double size = 94d;
+        const int quietZone = 4;
+        var modules = data.ModuleMatrix;
+        var totalModules = modules.Count + quietZone * 2;
+        var moduleSize = size / totalModules;
+        var bottom = y - size + 4;
+
+        builder.AppendLine("1 1 1 rg");
+        builder.AppendLine($"{N(x)} {N(bottom)} {N(size)} {N(size)} re f");
+        builder.AppendLine("0 0 0 rg");
+
+        for (var row = 0; row < modules.Count; row++)
+        {
+            for (var column = 0; column < modules[row].Count; column++)
+            {
+                if (!modules[row][column])
+                    continue;
+
+                var moduleX = x + (column + quietZone) * moduleSize;
+                var moduleY = bottom + size - (row + quietZone + 1) * moduleSize;
+                builder.AppendLine($"{N(moduleX)} {N(moduleY)} {N(moduleSize + 0.02)} {N(moduleSize + 0.02)} re f");
+            }
+        }
+
+        builder.AppendLine("0 0 0 rg");
+        builder.AppendLine($"BT /F2 7 Tf {N(x)} {N(bottom - 12)} Td ({Esc(caption)}) Tj ET");
     }
     private static void DrawSignaturePair(StringBuilder builder, PdfTextLine line, float y)
     {
@@ -225,8 +411,10 @@ public sealed class SimplePdfWriter
         if (logo is not null)
             DrawLogo(builder, logo, 54, headerBottom + 22, 118, 66);
 
-        builder.AppendLine($"BT /F2 15 Tf {N(companyX)} {N(top)} Td ({Esc(company)}) Tj ET");
-        DrawDetailLines(builder, details, companyX, top - 18, 8.2, 12, 3);
+        var companyLines = WrapText(company, 15, 195).Take(2).ToList();
+        for (var index = 0; index < companyLines.Count; index++)
+            builder.AppendLine($"BT /F2 15 Tf {N(companyX)} {N(top - index * 17)} Td ({Esc(companyLines[index])}) Tj ET");
+        DrawDetailLines(builder, details, companyX, top - Math.Max(18, companyLines.Count * 17 + 2), 8.2, 12, 3);
         DrawDocumentBlock(builder, document, 407, top, 8.2);
     }
 

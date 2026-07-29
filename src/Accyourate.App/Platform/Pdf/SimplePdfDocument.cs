@@ -7,7 +7,8 @@ public enum PdfLineKind
     KeyValue,
     Status,
     SignaturePair,
-    QrPlaceholder
+    QrPlaceholder,
+    QrCode
 }
 
 public sealed class PdfTextLine
@@ -56,6 +57,13 @@ public sealed class SimplePdfDocument
     public void AddKeyValue(string label, string value) => Lines.Add(new PdfTextLine { Text = label, RightText = value, FontSize = 10, Kind = PdfLineKind.KeyValue, GapAfter = 7 });
     public void AddStatus(string label, string value) => Lines.Add(new PdfTextLine { Text = label, RightText = value, FontSize = 10, Kind = PdfLineKind.Status, GapAfter = 10 });
     public void AddQrPlaceholder(string caption = "QR ASSET") => Lines.Add(new PdfTextLine { Text = caption, Kind = PdfLineKind.QrPlaceholder, GapAfter = 82 });
+    public void AddQrCode(string payload, string caption = "QR ASSET") => Lines.Add(new PdfTextLine
+    {
+        Text = caption,
+        RightText = payload,
+        Kind = PdfLineKind.QrCode,
+        GapAfter = 96
+    });
     public void AddBlank(float gap = 10) => Lines.Add(new PdfTextLine { Text = string.Empty, FontSize = 11, GapAfter = gap });
 
     public void AddSignaturePair(string leftLabel, string rightLabel)

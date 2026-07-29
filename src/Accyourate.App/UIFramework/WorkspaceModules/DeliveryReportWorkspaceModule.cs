@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Accyourate.App.AssetManagement.DeliveryReports;
+using Accyourate.App.AssetManagement.Deliveries;
 
 namespace Accyourate.App.UIFramework.WorkspaceModules;
 
@@ -13,6 +14,6 @@ public sealed class DeliveryReportWorkspaceModule : IWorkspaceModule
 
     public Control CreateView()
     {
-        return new DeliveryReportView();
+        return new DeliveryRegisterView();
     }
 }

@@ -14,6 +14,7 @@ public sealed class DocumentTemplateSettings
     public bool ShowFooter { get; set; } = true;
     public bool ShowSignatures { get; set; } = true;
     public bool ShowQrCodePlaceholder { get; set; }
+    public string QrBaseUrl { get; set; } = string.Empty;
     public string FooterText { get; set; } = "Documento generato automaticamente da Accyourate Enterprise X";
     public string DocumentVersion { get; set; } = "1.0";
     public string ConfidentialityText { get; set; } = "Documento ad uso interno";

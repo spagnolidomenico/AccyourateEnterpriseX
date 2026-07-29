@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Accyourate.App.Data;
 using Accyourate.App.Models;
+using Accyourate.App.UIFramework.EnterpriseTable;
 
 namespace Accyourate.App;
 
@@ -232,7 +233,7 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
         var header = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("90,115,105,120,95,110,90,90,90,90,90,90")
+            ColumnDefinitions = new ColumnDefinitions(AxTableLayout.MedicalDeviceColumns)
         };
 
         AddHeader(header, "Codice", 0);
@@ -241,12 +242,12 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
         AddHeader(header, "Seriale", 3);
         AddHeader(header, "Lotto", 4);
         AddHeader(header, "RFID", 5);
-        AddHeader(header, "Stato", 6);
-        AddHeader(header, "Twin", 7);
-        AddHeader(header, "CU", 8);
-        AddHeader(header, "Tessile", 9);
-        AddHeader(header, "Workflow", 10);
-        AddHeader(header, "Archivio", 11);
+        AddHeader(header, "Stato", 6, true);
+        AddHeader(header, "Twin", 7, true);
+        AddHeader(header, "CU", 8, true);
+        AddHeader(header, "Tessile", 9, true);
+        AddHeader(header, "Workflow", 10, true);
+        AddHeader(header, "Archivio", 11, true);
 
         _rowsPanel.Children.Add(header);
 
@@ -258,8 +259,9 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
     {
         var grid = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("90,115,105,120,95,110,90,90,90,90,90,90"),
-            Margin = new Thickness(0, 4)
+            ColumnDefinitions = new ColumnDefinitions(AxTableLayout.MedicalDeviceColumns),
+            Margin = new Thickness(0, 4),
+            MinHeight = 44
         };
 
         AddText(grid, d.DeviceCode, 0);
@@ -268,21 +270,21 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
         AddText(grid, d.SerialNumber, 3);
         AddText(grid, d.LotNumber, 4);
         AddText(grid, d.RfidCode, 5);
-        AddText(grid, d.IsArchived ? "Archiv." : d.Status, 6);
+        AddText(grid, d.IsArchived ? "Archiv." : d.Status, 6, true);
 
-        var twin = new Button { Content = "Apri" };
+        var twin = AxTableLayout.ActionButton("Apri");
         twin.Click += (_, _) => new MedicalDeviceTwinWindow(_database, d).Show();
         AddControl(grid, twin, 7, 0);
 
-        var cu = new Button { Content = "CU" };
+        var cu = AxTableLayout.ActionButton("CU");
         cu.Click += (_, _) => new ControlUnitWindow(_database, _user, d).Show();
         AddControl(grid, cu, 8, 0);
 
-        var textile = new Button { Content = "Capo" };
+        var textile = AxTableLayout.ActionButton("Capo");
         textile.Click += (_, _) => new TextileItemWindow(_database, _user, d).Show();
         AddControl(grid, textile, 9, 0);
 
-        var wf = new Button { Content = "Collaudo" };
+        var wf = AxTableLayout.ActionButton("Collaudo");
         wf.Click += (_, _) =>
         {
             _database.ChangeMedicalDeviceStatus(d.Id, "Collaudato", "Collaudo eseguito da Medical Device Suite", _user.Username);
@@ -290,7 +292,7 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
         };
         AddControl(grid, wf, 10, 0);
 
-        var archive = new Button { Content = d.IsArchived ? "Ripristina" : "Archivia" };
+        var archive = AxTableLayout.ActionButton(d.IsArchived ? "Ripristina" : "Archivia");
         archive.Click += (_, _) =>
         {
             _database.ArchiveMedicalDevice(d.Id, !d.IsArchived, _user.Username);
@@ -316,14 +318,14 @@ WindowStartupLocation = WindowStartupLocation.CenterOwner;
         AddControl(grid, new TextBlock { Text = text, FontWeight = FontWeight.Bold, Margin = new Thickness(4) }, column, row);
     }
 
-    private static void AddHeader(Grid grid, string text, int column)
+    private static void AddHeader(Grid grid, string text, int column, bool centered = false)
     {
-        AddControl(grid, new TextBlock { Text = text, FontWeight = FontWeight.Bold, Foreground = Brush.Parse("#B5162B"), Margin = new Thickness(4) }, column, 0);
+        AddControl(grid, AxTableLayout.Header(text, centered), column, 0);
     }
 
-    private static void AddText(Grid grid, string text, int column)
+    private static void AddText(Grid grid, string text, int column, bool centered = false)
     {
-        AddControl(grid, new TextBlock { Text = string.IsNullOrWhiteSpace(text) ? "-" : text, Margin = new Thickness(4) }, column, 0);
+        AddControl(grid, AxTableLayout.CellText(text, centered), column, 0);
     }
 
     private static void AddControl(Grid grid, Control control, int column, int row)

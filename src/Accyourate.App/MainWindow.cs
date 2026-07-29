@@ -12,6 +12,7 @@ using Accyourate.App.Shared.UI;
 using Accyourate.App.Shared.Theme;
 using Accyourate.App.UIFramework.Foundation;
 using Accyourate.App.AssetManagement;
+using Accyourate.App.AssetManagement.Deliveries;
 
 namespace Accyourate.App;
 
@@ -39,6 +40,13 @@ public sealed class MainWindow : Window
 
     private const double ExpandedSidebarWidth = AxLayoutTokens.SidebarWidth;
     private const double CollapsedSidebarWidth = 72;
+    private const string SidebarTextColor = "#F8FAFC";
+    private const string SidebarMutedTextColor = "#CBD5E1";
+    private const string SidebarHoverColor = "#1E293B";
+    private const string SidebarActiveColor = "#334155";
+    private const string ContextTextColor = "#1E293B";
+    private const string ContextHoverColor = "#E2E8F0";
+    private const string ContextActiveColor = "#DBEAFE";
 
     public MainWindow(CurrentUser user, DatabaseService database)
     {
@@ -299,7 +307,7 @@ public sealed class MainWindow : Window
             stack.Children.Add(new TextBlock
             {
                 Text = "AREE",
-                Foreground = Brush.Parse("#64748B"),
+                Foreground = Brush.Parse("#94A3B8"),
                 FontSize = 11,
                 FontWeight = FontWeight.SemiBold,
                 Margin = new Thickness(10, 0, 0, 8)
@@ -322,10 +330,20 @@ public sealed class MainWindow : Window
     private void AddAreaButton(StackPanel stack, string glyph, string label, string area)
     {
         var content = _sidebarCollapsed ? glyph : $"{glyph}  {label}";
+        var labelControl = new TextBlock
+        {
+            Text = content,
+            Foreground = Brush.Parse(SidebarTextColor),
+            FontSize = 13,
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            HorizontalAlignment = _sidebarCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center
+        };
         var button = new Button
         {
-            Content = content,
-            Foreground = Brush.Parse("#E2E8F0"),
+            Content = labelControl,
+            Foreground = Brush.Parse(SidebarTextColor),
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -336,6 +354,16 @@ public sealed class MainWindow : Window
         };
         ToolTip.SetTip(button, label);
         button.Click += (_, _) => SetContextArea(area);
+        button.PointerEntered += (_, _) =>
+        {
+            if (!string.Equals(area, _activeArea, StringComparison.OrdinalIgnoreCase))
+            {
+                button.Background = Brush.Parse(SidebarHoverColor);
+                labelControl.Foreground = Brushes.White;
+            }
+        };
+        button.PointerExited += (_, _) =>
+            ApplyAreaButtonState(button, string.Equals(area, _activeArea, StringComparison.OrdinalIgnoreCase));
         _areaButtons[area] = button;
         ApplyAreaButtonState(button, string.Equals(area, _activeArea, StringComparison.OrdinalIgnoreCase));
         stack.Children.Add(button);
@@ -343,16 +371,28 @@ public sealed class MainWindow : Window
 
     private static void ApplyAreaButtonState(Button button, bool isActive)
     {
-        button.Background = isActive ? Brush.Parse("#24324A") : Brushes.Transparent;
-        button.Foreground = isActive ? Brushes.White : Brush.Parse("#E2E8F0");
+        var foreground = isActive ? Brushes.White : Brush.Parse(SidebarTextColor);
+        button.Background = isActive ? Brush.Parse(SidebarActiveColor) : Brushes.Transparent;
+        button.Foreground = foreground;
         button.FontWeight = isActive ? FontWeight.SemiBold : FontWeight.Normal;
+        if (button.Content is TextBlock label)
+        {
+            label.Foreground = foreground;
+            label.FontWeight = button.FontWeight;
+        }
     }
 
     private static void ApplyContextButtonState(Button button, bool isActive)
     {
-        button.Background = isActive ? Brush.Parse("#E8F1FF") : Brushes.Transparent;
-        button.Foreground = isActive ? Brush.Parse(AxSemanticTokens.BrandPrimary) : Brush.Parse("#334155");
+        var foreground = isActive ? Brush.Parse("#0F4C9A") : Brush.Parse(ContextTextColor);
+        button.Background = isActive ? Brush.Parse(ContextActiveColor) : Brushes.Transparent;
+        button.Foreground = foreground;
         button.FontWeight = isActive ? FontWeight.SemiBold : FontWeight.Normal;
+        if (button.Content is TextBlock label)
+        {
+            label.Foreground = foreground;
+            label.FontWeight = button.FontWeight;
+        }
     }
 
     private Control BuildContextSidebar()
@@ -413,6 +453,7 @@ public sealed class MainWindow : Window
                 break;
             case "Asset":
                 AddContextButton("📋 Tutti gli asset", () => OpenAssetWorkspace(null, "Tutti gli asset"));
+                AddContextButton("📦 Registro consegne", OpenDeliveryRegister);
                 AddContextButton("💻 Notebook", () => OpenAssetWorkspace("Notebook", "Notebook"));
                 AddContextButton("🖥 Desktop", () => OpenAssetWorkspace("Desktop PC", "Desktop"));
                 AddContextButton("🖨 Stampanti", () => OpenAssetWorkspace("Stampante", "Stampanti"));
@@ -422,7 +463,7 @@ public sealed class MainWindow : Window
                 break;
             case "Persone":
                 AddContextButton("👥 Dipendenti", () => OpenModuleInWorkspace(new EmployeesWindow(_database, _user), "Persone > Dipendenti"));
-                AddContextButton("📄 Verbali consegna", () => OpenModuleInWorkspace(new DocumentManagementWindow(_database, _user), "Documenti"));
+                AddContextButton("📄 Verbali consegna", OpenDeliveryRegister);
                 AddContextButton("🏢 Anagrafica aziendale", () => OpenModuleInWorkspace(new EmployeesWindow(_database, _user), "Persone > Dipendenti"));
                 break;
             case "Medical":
@@ -485,6 +526,34 @@ public sealed class MainWindow : Window
         SetBreadcrumb($"Workspace > Asset > {label}");
     }
 
+    private void OpenDeliveryRegister()
+    {
+        if (_workspaceContent is null)
+            return;
+
+        const string key = "asset:delivery-register";
+        if (string.Equals(_currentWorkspaceKey, key, StringComparison.Ordinal))
+            return;
+
+        var view = new DeliveryRegisterView();
+        view.AssetRequested += OpenAssetDetails;
+        _workspaceContent.Content = view;
+        _currentWorkspaceKey = key;
+        SetBreadcrumb("Workspace > Asset > Registro consegne");
+    }
+
+    private void OpenAssetDetails(int assetId)
+    {
+        if (_workspaceContent is null)
+            return;
+
+        var view = new AssetManagementView();
+        view.OpenAssetDetails(assetId);
+        _workspaceContent.Content = view;
+        _currentWorkspaceKey = $"asset:details:{assetId}";
+        SetBreadcrumb("Workspace > Asset > Dettaglio asset");
+    }
+
 
     private void OpenModuleInWorkspace(Window moduleWindow, string breadcrumb)
     {
@@ -516,13 +585,21 @@ public sealed class MainWindow : Window
         if (_contextMenu is null)
             return;
 
+        var label = new TextBlock
+        {
+            Text = text,
+            Foreground = Brush.Parse(ContextTextColor),
+            FontSize = 13,
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center
+        };
         var button = new Button
         {
-            Content = text,
+            Content = label,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,
             Background = Brushes.Transparent,
-            Foreground = Brush.Parse("#334155"),
+            Foreground = Brush.Parse(ContextTextColor),
             BorderThickness = new Thickness(0),
             FontSize = 13,
             Padding = new Thickness(12, 10),
@@ -536,6 +613,16 @@ public sealed class MainWindow : Window
                 ApplyContextButtonState(pair.Value, string.Equals(pair.Key, key, StringComparison.Ordinal));
             action();
         };
+        button.PointerEntered += (_, _) =>
+        {
+            if (!string.Equals(key, _activeContextKey, StringComparison.Ordinal))
+            {
+                button.Background = Brush.Parse(ContextHoverColor);
+                label.Foreground = Brush.Parse("#0F172A");
+            }
+        };
+        button.PointerExited += (_, _) =>
+            ApplyContextButtonState(button, string.Equals(key, _activeContextKey, StringComparison.Ordinal));
         _contextButtons[key] = button;
         ApplyContextButtonState(button, string.Equals(_activeContextKey, key, StringComparison.Ordinal));
         _contextMenu.Children.Add(button);
