@@ -455,6 +455,7 @@ public sealed class MainWindow : Window
                 AddContextButton("📋 Tutti gli asset", () => OpenAssetWorkspace(null, "Tutti gli asset"));
                 AddContextButton("📦 Registro consegne", OpenDeliveryRegister);
                 AddContextButton("🛠 Centro manutenzioni", OpenMaintenanceOperations);
+                AddContextButton("🛒 Acquisti e fornitori", OpenMaintenancePurchasing);
                 AddContextButton("💻 Notebook", () => OpenAssetWorkspace("Notebook", "Notebook"));
                 AddContextButton("🖥 Desktop", () => OpenAssetWorkspace("Desktop PC", "Desktop"));
                 AddContextButton("🖨 Stampanti", () => OpenAssetWorkspace("Stampante", "Stampanti"));
@@ -557,6 +558,20 @@ public sealed class MainWindow : Window
         _workspaceContent.Content = view;
         _currentWorkspaceKey = key;
         SetBreadcrumb("Workspace > Asset > Centro manutenzioni");
+    }
+
+    private void OpenMaintenancePurchasing()
+    {
+        if (_workspaceContent is null)
+            return;
+
+        const string key = "asset:maintenance-purchasing";
+        if (string.Equals(_currentWorkspaceKey, key, StringComparison.Ordinal))
+            return;
+
+        _workspaceContent.Content = new MaintenancePurchasingView();
+        _currentWorkspaceKey = key;
+        SetBreadcrumb("Workspace > Asset > Acquisti e fornitori");
     }
 
     private void OpenAssetDetails(int assetId)
