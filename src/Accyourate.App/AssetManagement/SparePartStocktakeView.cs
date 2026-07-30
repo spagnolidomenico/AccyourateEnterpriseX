@@ -2,7 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Input;
 using System.Text;
+using System.Diagnostics;
 using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
 using Accyourate.App.UIFramework.Tokens;
@@ -16,13 +18,17 @@ public sealed class SparePartStocktakeView : UserControl
     private readonly StackPanel _rows=new();
     private readonly TextBlock _message=new();
     private readonly Grid _kpis=new(){ColumnDefinitions=new ColumnDefinitions("*,*,*,*")};
+    private readonly SparePartLabelPdfService _labels=new();
     public SparePartStocktakeView(){Background=UiTokens.Brush(UiTokens.Background);Content=Build();Load();}
     private Control Build()
     {
         var root=new DockPanel();
         var header=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(24,20,24,12)};
         header.Children.Add(new StackPanel{Spacing=4,Children={new TextBlock{Text="Inventario Fisico Ricambi",FontSize=30,FontWeight=FontWeight.Bold},new TextBlock{Text="Conteggi, differenze, riconciliazione e valore economico.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}});
-        var create=Button("Nuova sessione",NewSession,true);Grid.SetColumn(create,1);header.Children.Add(create);
+        var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=6};
+        actions.Children.Add(Button("Etichette QR",PrintLabels));
+        actions.Children.Add(Button("Nuova sessione",NewSession,true));
+        Grid.SetColumn(actions,1);header.Children.Add(actions);
         DockPanel.SetDock(header,Dock.Top);root.Children.Add(header);
         _kpis.Margin=new Thickness(24,0,24,10);DockPanel.SetDock(_kpis,Dock.Top);root.Children.Add(_kpis);
         _message.Margin=new Thickness(24,0,24,8);DockPanel.SetDock(_message,Dock.Top);root.Children.Add(_message);
@@ -43,6 +49,16 @@ public sealed class SparePartStocktakeView : UserControl
         var description=await new NewStocktakeDialog().ShowDialog<string?>(owner);if(string.IsNullOrWhiteSpace(description))return;
         try{_repository.Create(description,Environment.UserName,_inventory.GetItems());Show("Sessione inventariale creata.");Load();}
         catch(Exception ex){Show($"Sessione non creata: {ex.Message}",true);}
+    }
+    private void PrintLabels()
+    {
+        try
+        {
+            var path=_labels.Generate(_inventory.GetItems());
+            Process.Start(new ProcessStartInfo{FileName=path,UseShellExecute=true});
+            Show($"Etichette create: {path}");
+        }
+        catch(Exception ex){Show($"Etichette non create: {ex.Message}",true);}
     }
     private async void Open(SparePartStocktake session)
     {
@@ -96,31 +112,61 @@ public sealed class StocktakeSessionWindow : Window
 {
     private readonly SparePartStocktakeRepository _repository;private readonly SparePartsInventoryRepository _inventory;private readonly int _sessionId;
     private readonly StackPanel _rows=new();private readonly TextBlock _summary=new();private readonly TextBlock _message=new();private readonly Dictionary<int,(TextBox Count,TextBox Notes)> _inputs=new();
+    private readonly TextBox _scanner=new(){Watermark="Scansiona QR/barcode oppure digita il codice ricambio e premi Invio"};
+    private readonly CheckBox _continuous=new(){Content="Conteggio continuo",IsChecked=true};
+    private readonly TextBlock _scanMessage=new();
+    private SparePartStocktake? _currentSession;
     public StocktakeSessionWindow(SparePartStocktakeRepository repository,SparePartsInventoryRepository inventory,int sessionId)
     {
-        _repository=repository;_inventory=inventory;_sessionId=sessionId;Title="Conteggio inventariale";Width=1050;Height=720;MinWidth=850;MinHeight=520;WindowStartupLocation=WindowStartupLocation.CenterOwner;Content=Build();Load();
+        _repository=repository;_inventory=inventory;_sessionId=sessionId;Title="Conteggio inventariale";Width=1050;Height=720;MinWidth=850;MinHeight=520;WindowStartupLocation=WindowStartupLocation.CenterOwner;
+        _scanner.KeyDown+=ScannerKeyDown;Content=Build();Load();Opened+=(_,_)=>_scanner.Focus();
     }
     private Control Build()
     {
         var root=new DockPanel{Margin=new Thickness(24)};
         var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=6};actions.Children.Add(Button("Salva conteggi",Save,true));actions.Children.Add(Button("Chiudi e rettifica",CloseSession));
         var header=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(0,0,0,12)};header.Children.Add(_summary);Grid.SetColumn(actions,1);header.Children.Add(actions);DockPanel.SetDock(header,Dock.Top);root.Children.Add(header);
+        var scanGrid=new Grid{ColumnDefinitions=new ColumnDefinitions("*,170"),Margin=new Thickness(0,0,0,5)};
+        scanGrid.Children.Add(_scanner);Grid.SetColumn(_continuous,1);_continuous.VerticalAlignment=VerticalAlignment.Center;_continuous.HorizontalAlignment=HorizontalAlignment.Center;scanGrid.Children.Add(_continuous);
+        DockPanel.SetDock(scanGrid,Dock.Top);root.Children.Add(scanGrid);
+        _scanMessage.Margin=new Thickness(0,0,0,8);DockPanel.SetDock(_scanMessage,Dock.Top);root.Children.Add(_scanMessage);
         _message.Margin=new Thickness(0,0,0,8);DockPanel.SetDock(_message,Dock.Top);root.Children.Add(_message);
         root.Children.Add(new ScrollViewer{Content=_rows,HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto});return root;
     }
     private void Load()
     {
-        var session=_repository.Get(_sessionId);_summary.Text=$"{session.SessionNumber} · {session.Description} · {session.Status}";_summary.FontSize=21;_summary.FontWeight=FontWeight.Bold;
+        var session=_repository.Get(_sessionId);_currentSession=session;_summary.Text=$"{session.SessionNumber} · {session.Description} · {session.Status} · contati {session.CountedLines}/{session.Lines.Count}";_summary.FontSize=21;_summary.FontWeight=FontWeight.Bold;
         _rows.Children.Clear();_inputs.Clear();_rows.MinWidth=940;_rows.Children.Add(Row("Codice","Descrizione","Registrata","Contata","Differenza","Valore","Note",true,null));
         foreach(var line in session.Lines)_rows.Children.Add(LineRow(line,session.Status==StocktakeStatus.Closed));
     }
     private Control LineRow(SparePartStocktakeLine line,bool readOnly)
     {
-        var count=new TextBox{Text=line.CountedQuantity?.ToString("N2")??"",Watermark="Da contare",IsReadOnly=readOnly,Margin=new Thickness(3)};
+        var count=new TextBox{Text=line.CountedQuantity?.ToString("N2")??"",Watermark="Da contare",IsReadOnly=readOnly,Margin=new Thickness(3),Tag=line.Id};
+        count.KeyDown+=CountKeyDown;
         var notes=new TextBox{Text=line.Notes,IsReadOnly=readOnly,Margin=new Thickness(3)};
         _inputs[line.Id]=(count,notes);
         return Row(line.PartCode,line.Description,line.ExpectedQuantity.ToString("N2"),"",line.CountedQuantity.HasValue?line.Difference.ToString("N2"):"—",line.CountedQuantity.HasValue?$"EUR {line.DifferenceValue:N2}":"—","",false,(count,notes));
     }
+    private void ScannerKeyDown(object? sender,KeyEventArgs e)
+    {
+        if(e.Key!=Key.Enter)return;e.Handled=true;
+        var raw=(_scanner.Text??"").Trim();var code=raw.StartsWith("AXPART:",StringComparison.OrdinalIgnoreCase)?raw[7..].Trim():raw;
+        if(string.IsNullOrWhiteSpace(code)||_currentSession is null)return;
+        var line=_currentSession.Lines.FirstOrDefault(x=>string.Equals(x.PartCode,code,StringComparison.OrdinalIgnoreCase));
+        if(line is null){ScanStatus($"Codice non riconosciuto: {code}",true);_scanner.SelectAll();return;}
+        if(!_inputs.TryGetValue(line.Id,out var input))return;
+        if(!string.IsNullOrWhiteSpace(input.Count.Text))ScanStatus($"{line.PartCode} è già stato contato. Verifica prima di modificare.",true);
+        else ScanStatus($"Trovato: {line.PartCode} · {line.Description}. Inserisci la quantità.",false);
+        input.Count.Focus();input.Count.SelectAll();
+    }
+    private void CountKeyDown(object? sender,KeyEventArgs e)
+    {
+        if(e.Key!=Key.Enter||sender is not TextBox box)return;e.Handled=true;
+        if(!decimal.TryParse(box.Text,out var quantity)||quantity<0){ScanStatus("Inserisci una quantità valida.",true);box.SelectAll();return;}
+        Save();
+        if(_continuous.IsChecked==true){_scanner.Text="";_scanner.Focus();}
+    }
+    private void ScanStatus(string text,bool error){_scanMessage.Text=text;_scanMessage.Foreground=UiTokens.Brush(error?UiTokens.Danger:UiTokens.Success);}
     private static Control Row(string code,string description,string expected,string counted,string difference,string value,string notes,bool header,(TextBox Count,TextBox Notes)? editors)
     {
         var grid=new Grid{ColumnDefinitions=new ColumnDefinitions("120,230,100,110,100,115,210")};
