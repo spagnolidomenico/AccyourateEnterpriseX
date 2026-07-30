@@ -43,6 +43,8 @@ public sealed class SparePartsInventoryRepository
             CREATE INDEX IF NOT EXISTS IX_SparePartsMovements_Item
             ON SparePartsInventoryMovements(InventoryItemId);
             """);
+        EnsureColumn(connection, "SparePartsInventoryMovements", "BalanceBefore", "REAL NOT NULL DEFAULT 0");
+        EnsureColumn(connection, "SparePartsInventoryMovements", "BalanceAfter", "REAL NOT NULL DEFAULT 0");
     }
 
     public int SaveItem(SparePartInventoryItem item)
@@ -104,7 +106,7 @@ public sealed class SparePartsInventoryRepository
         var average = newQuantity <= 0 ? unitCost :
             ((item.Quantity * item.AverageUnitCost) + (quantity * unitCost)) / newQuantity;
         UpdateStock(connection, transaction, item.Id, newQuantity, average);
-        InsertMovement(connection, transaction, item.Id, "Carico", quantity, unitCost, reference, "Ricezione ordine");
+        InsertMovement(connection, transaction, item.Id, "Carico - Acquisto", quantity, unitCost, reference, "Ricezione ordine", item.Quantity, newQuantity);
         transaction.Commit();
     }
 
@@ -116,7 +118,7 @@ public sealed class SparePartsInventoryRepository
         var item = GetByCode(connection, transaction, code);
         if (item is null || item.Quantity < quantity) return false;
         UpdateStock(connection, transaction, item.Id, item.Quantity - quantity, item.AverageUnitCost);
-        InsertMovement(connection, transaction, item.Id, "Scarico", -quantity, item.AverageUnitCost, reference, notes);
+        InsertMovement(connection, transaction, item.Id, "Scarico - Consumo", -quantity, item.AverageUnitCost, reference, notes, item.Quantity, item.Quantity - quantity);
         transaction.Commit();
         return true;
     }
@@ -128,7 +130,35 @@ public sealed class SparePartsInventoryRepository
         var item = GetById(connection, transaction, itemId) ?? throw new InvalidOperationException("Ricambio non trovato.");
         var delta = newQuantity - item.Quantity;
         UpdateStock(connection, transaction, item.Id, Math.Max(0, newQuantity), item.AverageUnitCost);
-        InsertMovement(connection, transaction, item.Id, "Rettifica", delta, item.AverageUnitCost, "Rettifica manuale", notes);
+        InsertMovement(connection, transaction, item.Id, "Rettifica", delta, item.AverageUnitCost, "Rettifica manuale", notes, item.Quantity, Math.Max(0, newQuantity));
+        transaction.Commit();
+    }
+
+    public void RegisterManualMovement(int itemId, bool inbound, decimal quantity, decimal unitCost, string reason, string reference, string notes)
+    {
+        if (quantity <= 0) throw new InvalidOperationException("La quantità deve essere maggiore di zero.");
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+        var item = GetById(connection, transaction, itemId) ?? throw new InvalidOperationException("Ricambio non trovato.");
+        if (!inbound && item.Quantity < quantity)
+            throw new InvalidOperationException($"Giacenza insufficiente. Disponibili: {item.Quantity:N2}.");
+
+        var before = item.Quantity;
+        var after = inbound ? before + quantity : before - quantity;
+        var cost = item.AverageUnitCost;
+        if (inbound)
+        {
+            var effectiveCost = unitCost > 0 ? unitCost : item.AverageUnitCost;
+            cost = after <= 0 ? effectiveCost :
+                ((before * item.AverageUnitCost) + (quantity * effectiveCost)) / after;
+            unitCost = effectiveCost;
+        }
+        else unitCost = item.AverageUnitCost;
+
+        UpdateStock(connection, transaction, item.Id, after, cost);
+        var direction = inbound ? "Carico" : "Scarico";
+        InsertMovement(connection, transaction, item.Id, $"{direction} - {reason}", inbound ? quantity : -quantity,
+            unitCost, reference, notes, before, after);
         transaction.Commit();
     }
 
@@ -144,15 +174,23 @@ public sealed class SparePartsInventoryRepository
     }
 
     public IReadOnlyList<SparePartInventoryMovement> GetMovements(int itemId, int limit = 100)
+        => GetMovementsCore(itemId, limit);
+
+    public IReadOnlyList<SparePartInventoryMovement> GetAllMovements(int limit = 1000)
+        => GetMovementsCore(null, limit);
+
+    private IReadOnlyList<SparePartInventoryMovement> GetMovementsCore(int? itemId, int limit)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT Id,InventoryItemId,MovementType,Quantity,UnitCost,Reference,Notes,CreatedAt
-            FROM SparePartsInventoryMovements WHERE InventoryItemId=$item
+            SELECT Id,InventoryItemId,MovementType,Quantity,UnitCost,Reference,Notes,CreatedAt,
+                   BalanceBefore,BalanceAfter
+            FROM SparePartsInventoryMovements
+            WHERE ($item IS NULL OR InventoryItemId=$item)
             ORDER BY CreatedAt DESC,Id DESC LIMIT $limit;
             """;
-        command.Parameters.AddWithValue("$item", itemId);
+        command.Parameters.AddWithValue("$item", itemId.HasValue ? itemId.Value : DBNull.Value);
         command.Parameters.AddWithValue("$limit", Math.Max(1, limit));
         using var reader = command.ExecuteReader();
         var result = new List<SparePartInventoryMovement>();
@@ -160,7 +198,8 @@ public sealed class SparePartsInventoryRepository
             result.Add(new SparePartInventoryMovement
             {
                 Id=reader.GetInt32(0),InventoryItemId=reader.GetInt32(1),MovementType=S(reader,2),
-                Quantity=D(reader,3),UnitCost=D(reader,4),Reference=S(reader,5),Notes=S(reader,6),CreatedAt=S(reader,7)
+                Quantity=D(reader,3),UnitCost=D(reader,4),Reference=S(reader,5),Notes=S(reader,6),CreatedAt=S(reader,7),
+                BalanceBefore=D(reader,8),BalanceAfter=D(reader,9)
             });
         return result;
     }
@@ -180,10 +219,10 @@ public sealed class SparePartsInventoryRepository
         using var cmd=c.CreateCommand();cmd.Transaction=t;cmd.CommandText="UPDATE SparePartsInventory SET Quantity=$quantity,AverageUnitCost=$cost,UpdatedAt=$updated WHERE Id=$id;";
         cmd.Parameters.AddWithValue("$quantity",quantity);cmd.Parameters.AddWithValue("$cost",cost);cmd.Parameters.AddWithValue("$updated",DateTime.Now.ToString("s"));cmd.Parameters.AddWithValue("$id",id);cmd.ExecuteNonQuery();
     }
-    private static void InsertMovement(SqliteConnection c,SqliteTransaction t,int item,string type,decimal quantity,decimal cost,string reference,string notes)
+    private static void InsertMovement(SqliteConnection c,SqliteTransaction t,int item,string type,decimal quantity,decimal cost,string reference,string notes,decimal before,decimal after)
     {
-        using var cmd=c.CreateCommand();cmd.Transaction=t;cmd.CommandText="INSERT INTO SparePartsInventoryMovements(InventoryItemId,MovementType,Quantity,UnitCost,Reference,Notes,CreatedAt) VALUES($item,$type,$quantity,$cost,$reference,$notes,$created);";
-        cmd.Parameters.AddWithValue("$item",item);cmd.Parameters.AddWithValue("$type",type);cmd.Parameters.AddWithValue("$quantity",quantity);cmd.Parameters.AddWithValue("$cost",cost);cmd.Parameters.AddWithValue("$reference",reference);cmd.Parameters.AddWithValue("$notes",notes);cmd.Parameters.AddWithValue("$created",DateTime.Now.ToString("s"));cmd.ExecuteNonQuery();
+        using var cmd=c.CreateCommand();cmd.Transaction=t;cmd.CommandText="INSERT INTO SparePartsInventoryMovements(InventoryItemId,MovementType,Quantity,UnitCost,Reference,Notes,CreatedAt,BalanceBefore,BalanceAfter) VALUES($item,$type,$quantity,$cost,$reference,$notes,$created,$before,$after);";
+        cmd.Parameters.AddWithValue("$item",item);cmd.Parameters.AddWithValue("$type",type);cmd.Parameters.AddWithValue("$quantity",quantity);cmd.Parameters.AddWithValue("$cost",cost);cmd.Parameters.AddWithValue("$reference",reference);cmd.Parameters.AddWithValue("$notes",notes);cmd.Parameters.AddWithValue("$created",DateTime.Now.ToString("s"));cmd.Parameters.AddWithValue("$before",before);cmd.Parameters.AddWithValue("$after",after);cmd.ExecuteNonQuery();
     }
     private static void AddItem(SqliteCommand cmd,SparePartInventoryItem item)
     {
@@ -194,5 +233,13 @@ public sealed class SparePartsInventoryRepository
     private static decimal D(SqliteDataReader r,int i)=>r.IsDBNull(i)?0:Convert.ToDecimal(r.GetDouble(i));
     private static string S(SqliteDataReader r,int i)=>r.IsDBNull(i)?"":r.GetString(i);
     private static void Execute(SqliteConnection c,string sql){using var cmd=c.CreateCommand();cmd.CommandText=sql;cmd.ExecuteNonQuery();}
+    private static void EnsureColumn(SqliteConnection connection,string table,string column,string definition)
+    {
+        using var check=connection.CreateCommand();check.CommandText=$"PRAGMA table_info({table});";
+        using var reader=check.ExecuteReader();var found=false;
+        while(reader.Read())if(string.Equals(reader.GetString(1),column,StringComparison.OrdinalIgnoreCase)){found=true;break;}
+        reader.Close();if(found)return;
+        using var alter=connection.CreateCommand();alter.CommandText=$"ALTER TABLE {table} ADD COLUMN {column} {definition};";alter.ExecuteNonQuery();
+    }
     private const string SelectItem="SELECT Id,PartCode,Description,Supplier,Location,Quantity,MinimumQuantity,AverageUnitCost,UpdatedAt FROM SparePartsInventory";
 }

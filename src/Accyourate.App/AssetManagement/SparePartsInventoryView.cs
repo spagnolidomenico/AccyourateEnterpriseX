@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using System.Text;
 using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
 using Accyourate.App.UIFramework.Tokens;
@@ -30,7 +31,11 @@ public sealed class SparePartsInventoryView : UserControl
         header.Children.Add(new StackPanel{Spacing=4,Children={
             new TextBlock{Text="Magazzino Ricambi",FontSize=30,FontWeight=FontWeight.Bold},
             new TextBlock{Text="Giacenze, valori, soglie minime e movimenti di magazzino.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}});
-        var add=Button("Nuovo ricambio",NewItem,true);Grid.SetColumn(add,1);header.Children.Add(add);
+        var headerActions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=6};
+        headerActions.Children.Add(Button("Registro movimenti",ShowAllMovements));
+        headerActions.Children.Add(Button("Esporta CSV",ExportCsv));
+        headerActions.Children.Add(Button("Nuovo ricambio",NewItem,true));
+        Grid.SetColumn(headerActions,1);header.Children.Add(headerActions);
         DockPanel.SetDock(header,Dock.Top);root.Children.Add(header);
         _kpis.Margin=new Thickness(24,0,24,10);DockPanel.SetDock(_kpis,Dock.Top);root.Children.Add(_kpis);
         var filters=new Grid{ColumnDefinitions=new ColumnDefinitions("*,180"),Margin=new Thickness(24,0,24,8)};
@@ -71,6 +76,7 @@ public sealed class SparePartsInventoryView : UserControl
         AddText(g,item.IsLowStock?$"{item.Quantity:N2} · SOTTO SCORTA":item.Quantity.ToString("N2"),4,true,item.IsLowStock);AddText(g,item.MinimumQuantity.ToString("N2"),5);AddText(g,$"EUR {item.StockValue:N2}",6);
         var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=4};
         actions.Children.Add(Button("Movimenti",()=>ShowMovements(item)));
+        actions.Children.Add(Button("Carico / Scarico",()=>ManualMovement(item)));
         actions.Children.Add(Button("Modifica",()=>EditItem(item)));
         actions.Children.Add(Button("Rettifica",()=>Adjust(item)));
         Add(g,actions,7);
@@ -80,7 +86,38 @@ public sealed class SparePartsInventoryView : UserControl
     private async void EditItem(SparePartInventoryItem item){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;var updated=await new SparePartInventoryDialog(item).ShowDialog<SparePartInventoryItem?>(owner);if(updated is null)return;_repository.SaveItem(updated);Show("Ricambio aggiornato.");Load();}
     private async void Adjust(SparePartInventoryItem item){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;var value=await new InventoryAdjustmentDialog(item).ShowDialog<decimal?>(owner);if(value is null)return;_repository.Adjust(item.Id,value.Value,"Rettifica da Magazzino Ricambi");Show("Giacenza aggiornata.");Load();}
     private async void ShowMovements(SparePartInventoryItem item){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;await new SparePartMovementsDialog(item,_repository.GetMovements(item.Id)).ShowDialog(owner);}
-    private static Grid GridRow()=>new(){ColumnDefinitions=new ColumnDefinitions("110,220,180,130,170,90,120,300")};
+    private async void ShowAllMovements(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;await new InventoryMovementsWindow(_repository).ShowDialog(owner);}
+    private async void ManualMovement(SparePartInventoryItem item)
+    {
+        var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;
+        var request=await new ManualInventoryMovementDialog(item).ShowDialog<ManualInventoryMovementRequest?>(owner);
+        if(request is null)return;
+        try
+        {
+            _repository.RegisterManualMovement(item.Id,request.Inbound,request.Quantity,request.UnitCost,request.Reason,request.Reference,request.Notes);
+            Show($"{(request.Inbound?"Carico":"Scarico")} registrato.");Load();
+        }
+        catch(Exception ex){Show($"Movimento non registrato: {ex.Message}",true);}
+    }
+    private void ExportCsv()
+    {
+        try
+        {
+            var folder=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),"Accyourate Enterprise X","exports");
+            Directory.CreateDirectory(folder);
+            var path=Path.Combine(folder,$"magazzino_ricambi_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+            var lines=new List<string>{"Codice;Descrizione;Fornitore;Ubicazione;Giacenza;Scorta minima;Costo medio;Valore;Sotto scorta"};
+            foreach(var item in _repository.GetItems())
+                lines.Add(string.Join(";",Csv(item.PartCode),Csv(item.Description),Csv(item.Supplier),Csv(item.Location),
+                    item.Quantity.ToString("0.00"),item.MinimumQuantity.ToString("0.00"),item.AverageUnitCost.ToString("0.00"),
+                    item.StockValue.ToString("0.00"),item.IsLowStock?"Sì":"No"));
+            File.WriteAllLines(path,lines,new UTF8Encoding(true));
+            Show($"Esportazione creata: {path}");
+        }
+        catch(Exception ex){Show($"Errore esportazione: {ex.Message}",true);}
+    }
+    private static string Csv(string value)=>$"\"{(value??string.Empty).Replace("\"","\"\"")}\"";
+    private static Grid GridRow()=>new(){ColumnDefinitions=new ColumnDefinitions("110,220,180,130,170,90,120,430")};
     private static Button Button(string text,Action action,bool primary=false){var b=new Button{Content=text,MinHeight=34,Margin=new Thickness(3),Background=UiTokens.Brush(primary?UiTokens.BrandBlue:UiTokens.SurfaceAlt),Foreground=primary?Brushes.White:UiTokens.Brush(UiTokens.TextPrimary)};b.Click+=(_,_)=>action();return b;}
     private static void AddText(Grid g,string text,int col,bool strong=false,bool danger=false)=>Add(g,new TextBlock{Text=string.IsNullOrWhiteSpace(text)?"—":text,FontWeight=strong?FontWeight.SemiBold:FontWeight.Normal,Foreground=UiTokens.Brush(danger?UiTokens.Danger:strong?UiTokens.TextPrimary:UiTokens.TextSecondary),TextTrimming=TextTrimming.CharacterEllipsis,VerticalAlignment=VerticalAlignment.Center,Margin=new Thickness(3)},col);
     private static void Add(Grid g,Control c,int col){Grid.SetColumn(c,col);g.Children.Add(c);}

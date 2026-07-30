@@ -25,4 +25,6 @@ public sealed class SparePartInventoryMovement
     public string Reference { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = DateTime.Now.ToString("s");
+    public decimal BalanceBefore { get; set; }
+    public decimal BalanceAfter { get; set; }
 }
