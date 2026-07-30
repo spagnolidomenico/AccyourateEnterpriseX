@@ -14,6 +14,7 @@ public sealed class MaintenancePurchasingView : UserControl
     private readonly MaintenancePurchasingRepository _repository = new();
     private readonly MaintenanceRepository _maintenance = new();
     private readonly MaintenancePartsRepository _parts = new();
+    private readonly SparePartsInventoryRepository _inventory = new();
     private readonly MaintenancePurchaseOrderPdfService _pdf = new();
     private readonly TextBox _search = new();
     private readonly ComboBox _status = new();
@@ -211,8 +212,17 @@ public sealed class MaintenancePurchasingView : UserControl
     private void Receive(MaintenancePurchaseOrder order, MaintenanceSupplier? supplier)
     {
         _repository.SetStatus(order.Id, PurchaseOrderStatus.Received);
+        foreach (var line in order.Lines)
+            _inventory.Receive(
+                string.IsNullOrWhiteSpace(line.PartCode) ? $"ART-{line.Id:D6}" : line.PartCode,
+                line.Description,
+                supplier?.Name ?? "",
+                line.Quantity,
+                line.UnitCost,
+                order.OrderNumber);
         if (order.MaintenanceTicketId > 0)
             foreach (var line in order.Lines)
+            {
                 _parts.Add(new MaintenancePart
                 {
                     MaintenanceTicketId = order.MaintenanceTicketId, PartCode = line.PartCode,
@@ -220,6 +230,12 @@ public sealed class MaintenancePurchasingView : UserControl
                     Quantity = line.Quantity, UnitCost = line.UnitCost,
                     Notes = $"Ricevuto con ordine {order.OrderNumber}"
                 });
+                _inventory.Consume(
+                    string.IsNullOrWhiteSpace(line.PartCode) ? $"ART-{line.Id:D6}" : line.PartCode,
+                    line.Quantity,
+                    $"Manutenzione #{order.MaintenanceTicketId}",
+                    $"Utilizzo diretto da ordine {order.OrderNumber}");
+            }
         Show("Ordine ricevuto e ricambi collegati all'intervento."); Load();
     }
     private void OpenPdf(MaintenancePurchaseOrder order, MaintenanceSupplier? supplier)
