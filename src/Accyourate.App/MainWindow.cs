@@ -460,6 +460,7 @@ public sealed class MainWindow : Window
                 AddContextButton("📋 Approvvigionamento", OpenSparePartReplenishment);
                 AddContextButton("🔎 Inventario fisico", OpenSparePartStocktake);
                 AddContextButton("📍 Ubicazioni magazzino", OpenSparePartLocations);
+                AddContextButton("📌 Inventario per ubicazione", OpenLocationStocktake);
                 AddContextButton("💻 Notebook", () => OpenAssetWorkspace("Notebook", "Notebook"));
                 AddContextButton("🖥 Desktop", () => OpenAssetWorkspace("Desktop PC", "Desktop"));
                 AddContextButton("🖨 Stampanti", () => OpenAssetWorkspace("Stampante", "Stampanti"));
@@ -624,6 +625,18 @@ public sealed class MainWindow : Window
         _workspaceContent.Content = new SparePartLocationsView();
         _currentWorkspaceKey = key;
         SetBreadcrumb("Workspace > Asset > Ubicazioni magazzino");
+    }
+
+    private void OpenLocationStocktake()
+    {
+        if (_workspaceContent is null)
+            return;
+        const string key = "asset:location-stocktake";
+        if (string.Equals(_currentWorkspaceKey, key, StringComparison.Ordinal))
+            return;
+        _workspaceContent.Content = new LocationStocktakeView();
+        _currentWorkspaceKey = key;
+        SetBreadcrumb("Workspace > Asset > Inventario per ubicazione");
     }
 
     private void OpenAssetDetails(int assetId)

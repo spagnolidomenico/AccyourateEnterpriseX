@@ -81,6 +81,12 @@ public sealed class SparePartLocationsRepository
         return result;
     }
 
+    public void SetStocktakeBalance(int itemId,int locationId,decimal quantity)
+    {
+        using var connection=Open();using var transaction=connection.BeginTransaction();
+        SetBalance(connection,transaction,itemId,locationId,Math.Max(0,quantity));transaction.Commit();
+    }
+
     public void EnsureInitialAllocations(IReadOnlyList<SparePartInventoryItem> items)
     {
         using var connection=Open();using var transaction=connection.BeginTransaction();
