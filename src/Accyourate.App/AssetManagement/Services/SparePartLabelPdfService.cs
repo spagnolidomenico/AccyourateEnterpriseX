@@ -24,4 +24,23 @@ public sealed class SparePartLabelPdfService
         var folder=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),"Accyourate Enterprise X","Etichette Ricambi");
         return _export.Export(document,folder,$"etichette-ricambi-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
     }
+
+    public string GenerateLocations(IReadOnlyList<SparePartWarehouseLocation> locations)
+    {
+        if(locations.Count==0)throw new InvalidOperationException("Non sono presenti ubicazioni da etichettare.");
+        var document=new SimplePdfDocument{Title="Etichette QR ubicazioni"};
+        document.Branding.DocumentLabel="ETICHETTE UBICAZIONI MAGAZZINO";
+        document.Branding.DocumentCode=$"LOC-{DateTime.Today:yyyyMMdd}";
+        document.AddTitle("Etichette QR ubicazioni");
+        foreach(var location in locations)
+        {
+            document.AddHeading($"{location.Code} - {location.Name}");
+            document.AddKeyValue("Magazzino",location.Warehouse);
+            document.AddKeyValue("Posizione",$"{location.Aisle} {location.Shelf}".Trim());
+            document.AddQrCode($"AXLOC:{location.Code}","SCANSIONA UBICAZIONE");
+            document.AddBlank(40);
+        }
+        var folder=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),"Accyourate Enterprise X","Etichette Ubicazioni");
+        return _export.Export(document,folder,$"etichette-ubicazioni-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
+    }
 }
