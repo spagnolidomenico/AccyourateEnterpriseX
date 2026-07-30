@@ -15,6 +15,7 @@ public sealed class MaintenancePurchasingView : UserControl
     private readonly MaintenanceRepository _maintenance = new();
     private readonly MaintenancePartsRepository _parts = new();
     private readonly SparePartsInventoryRepository _inventory = new();
+    private readonly SparePartReplenishmentRepository _replenishment = new();
     private readonly MaintenancePurchaseOrderPdfService _pdf = new();
     private readonly TextBox _search = new();
     private readonly ComboBox _status = new();
@@ -236,6 +237,7 @@ public sealed class MaintenancePurchasingView : UserControl
                     $"Manutenzione #{order.MaintenanceTicketId}",
                     $"Utilizzo diretto da ordine {order.OrderNumber}");
             }
+        _replenishment.CompleteByOrderId(order.Id);
         Show("Ordine ricevuto e ricambi collegati all'intervento."); Load();
     }
     private void OpenPdf(MaintenancePurchaseOrder order, MaintenanceSupplier? supplier)
