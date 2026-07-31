@@ -19,9 +19,12 @@ public sealed class SparePartLocationsView : UserControl
     public SparePartLocationsView(){Background=UiTokens.Brush(UiTokens.Background);_repository.EnsureInitialAllocations(_inventory.GetItems());Content=Build();Load();}
     private Control Build()
     {
-        var root=new DockPanel();var header=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(24,20,24,12)};
-        header.Children.Add(new StackPanel{Spacing=4,Children={new TextBlock{Text="Ubicazioni Magazzino",FontSize=30,FontWeight=FontWeight.Bold},new TextBlock{Text="Magazzini, scaffali, giacenze distribuite e trasferimenti.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}});
-        var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=6};actions.Children.Add(Button("Richieste prelievo",PickRequests));actions.Children.Add(Button("Verifica coerenza",CheckConsistency));actions.Children.Add(Button("Registro prelievi",PickHistory));actions.Children.Add(Button("Storico trasferimenti",History));actions.Children.Add(Button("Etichette QR",Labels));actions.Children.Add(Button("Trasferisci",Transfer));actions.Children.Add(Button("Nuova ubicazione",NewLocation,true));Grid.SetColumn(actions,1);header.Children.Add(actions);
+        var root=new DockPanel();var header=new Grid{RowDefinitions=new RowDefinitions("Auto,Auto"),Margin=new Thickness(24,20,24,12)};
+        var heading=new StackPanel{Spacing=4,Children={new TextBlock{Text="Ubicazioni Magazzino",FontSize=30,FontWeight=FontWeight.Bold},new TextBlock{Text="Magazzini, scaffali, giacenze distribuite e trasferimenti.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}};
+        header.Children.Add(heading);
+        var actions=new WrapPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Left,Margin=new Thickness(0,12,0,0)};
+        actions.Children.Add(Button("Richieste prelievo",PickRequests));actions.Children.Add(Button("Verifica coerenza",CheckConsistency));actions.Children.Add(Button("Registro prelievi",PickHistory));actions.Children.Add(Button("Storico trasferimenti",History));actions.Children.Add(Button("Etichette QR",Labels));actions.Children.Add(Button("Trasferisci",Transfer));actions.Children.Add(Button("Nuova ubicazione",NewLocation,true));
+        Grid.SetRow(actions,1);header.Children.Add(actions);
         DockPanel.SetDock(header,Dock.Top);root.Children.Add(header);
         _search.Watermark="Cerca ubicazione, magazzino o ricambio...";_search.Margin=new Thickness(24,0,24,8);_search.TextChanged+=(_,_)=>Load();DockPanel.SetDock(_search,Dock.Top);root.Children.Add(_search);
         _message.Margin=new Thickness(24,0,24,8);DockPanel.SetDock(_message,Dock.Top);root.Children.Add(_message);
