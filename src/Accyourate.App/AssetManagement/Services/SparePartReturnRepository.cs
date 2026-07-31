@@ -25,6 +25,22 @@ public sealed class SparePartReturnRepository
                 CreatedAt TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS IX_SparePartReturns_Request ON SparePartReturns(PickRequestId);
+            CREATE TABLE IF NOT EXISTS SparePartQuarantine(
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                CaseNumber TEXT NOT NULL UNIQUE,
+                ReturnId INTEGER NOT NULL,
+                InventoryItemId INTEGER NOT NULL,
+                LocationId INTEGER NOT NULL,
+                Quantity REAL NOT NULL,
+                InitialCondition TEXT NOT NULL,
+                Status TEXT NOT NULL,
+                EstimatedCost REAL NOT NULL DEFAULT 0,
+                EvaluationNotes TEXT,
+                AuthorizedBy TEXT,
+                CreatedAt TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL,
+                ClosedAt TEXT
+            );
             """;
         command.ExecuteNonQuery();
     }
@@ -54,7 +70,7 @@ public sealed class SparePartReturnRepository
         returnedCommand.Parameters.AddWithValue("$request",requestId);var returned=Convert.ToDecimal(returnedCommand.ExecuteScalar());
         if(returned+quantity>delivered)throw new InvalidOperationException($"Quantità restituibile: {Math.Max(0,delivered-returned):N2}.");
         var reusable=condition==SparePartReturnCondition.Reusable;
-        if(reusable&&locationId<=0)throw new InvalidOperationException("Seleziona l'ubicazione di reintegro.");
+        if(locationId<=0)throw new InvalidOperationException(reusable?"Seleziona l'ubicazione di reintegro.":"Seleziona l'ubicazione di quarantena.");
         decimal before=0,cost=0;
         using(var item=connection.CreateCommand())
         {
@@ -79,10 +95,18 @@ public sealed class SparePartReturnRepository
             SELECT last_insert_rowid();
             """;
         insert.Parameters.AddWithValue("$number",number);insert.Parameters.AddWithValue("$request",requestId);insert.Parameters.AddWithValue("$item",itemId);
-        insert.Parameters.AddWithValue("$location",reusable?locationId:0);insert.Parameters.AddWithValue("$quantity",quantity);
+        insert.Parameters.AddWithValue("$location",locationId);insert.Parameters.AddWithValue("$quantity",quantity);
         insert.Parameters.AddWithValue("$condition",condition);insert.Parameters.AddWithValue("$reason",reason);insert.Parameters.AddWithValue("$notes",notes);
         insert.Parameters.AddWithValue("$operator",operatorName);insert.Parameters.AddWithValue("$created",DateTime.Now.ToString("s"));
-        var id=Convert.ToInt32(insert.ExecuteScalar());transaction.Commit();return id;
+        var id=Convert.ToInt32(insert.ExecuteScalar());
+        if(!reusable)
+        {
+            var now=DateTime.Now.ToString("s");var caseNumber=$"QTN-{DateTime.Today:yyyy}-{NextQuarantineId(connection,transaction):D6}";
+            Execute(connection,transaction,"INSERT INTO SparePartQuarantine(CaseNumber,ReturnId,InventoryItemId,LocationId,Quantity,InitialCondition,Status,EstimatedCost,EvaluationNotes,AuthorizedBy,CreatedAt,UpdatedAt,ClosedAt) VALUES($number,$return,$item,$location,$quantity,$condition,$status,0,$notes,'',$created,$updated,'');",
+                ("$number",caseNumber),("$return",id),("$item",itemId),("$location",locationId),("$quantity",quantity),
+                ("$condition",condition),("$status",SparePartQuarantineStatus.Pending),("$notes",notes),("$created",now),("$updated",now));
+        }
+        transaction.Commit();return id;
     }
 
     public IReadOnlyList<SparePartReturn> GetAll()
@@ -99,6 +123,7 @@ public sealed class SparePartReturnRepository
     }
 
     private static int NextId(SqliteConnection c,SqliteTransaction t){using var command=c.CreateCommand();command.Transaction=t;command.CommandText="SELECT COALESCE(MAX(Id),0)+1 FROM SparePartReturns;";return Convert.ToInt32(command.ExecuteScalar());}
+    private static int NextQuarantineId(SqliteConnection c,SqliteTransaction t){using var command=c.CreateCommand();command.Transaction=t;command.CommandText="SELECT COALESCE(MAX(Id),0)+1 FROM SparePartQuarantine;";return Convert.ToInt32(command.ExecuteScalar());}
     private static void Execute(SqliteConnection c,SqliteTransaction t,string sql,params (string Name,object Value)[] values){using var command=c.CreateCommand();command.Transaction=t;command.CommandText=sql;foreach(var value in values)command.Parameters.AddWithValue(value.Name,value.Value);command.ExecuteNonQuery();}
     private SqliteConnection Open(){var c=new SqliteConnection(_connectionString);c.Open();return c;}
     private static decimal D(SqliteDataReader r,int i)=>r.IsDBNull(i)?0:Convert.ToDecimal(r.GetDouble(i));
