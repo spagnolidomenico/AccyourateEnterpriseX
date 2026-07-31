@@ -7,6 +7,20 @@ using Accyourate.App.UIFramework.Tokens;
 
 namespace Accyourate.App.AssetManagement;
 
+public sealed class ReceiptLocationDialog : Window
+{
+    private readonly IReadOnlyList<SparePartWarehouseLocation> _locations;
+    private readonly ComboBox _location=new();
+    public ReceiptLocationDialog(IReadOnlyList<SparePartWarehouseLocation> locations)
+    {
+        _locations=locations;Title="Ubicazione di ricezione";Width=480;Height=250;WindowStartupLocation=WindowStartupLocation.CenterOwner;
+        _location.ItemsSource=locations.Select(x=>x.DisplayName).ToList();_location.SelectedIndex=0;
+        var confirm=new Button{Content="Ricevi in questa ubicazione",Height=40};
+        confirm.Click+=(_,_)=>{if(_location.SelectedIndex>=0)Close(_locations[_location.SelectedIndex]);};
+        Content=new StackPanel{Margin=new Thickness(24),Spacing=12,Children={new TextBlock{Text="Destinazione ricambi",FontSize=24,FontWeight=FontWeight.Bold},new TextBlock{Text="Scegli dove collocare i ricambi ricevuti."},_location,confirm}};
+    }
+}
+
 public sealed class MaintenanceSupplierDialog : Window
 {
     private readonly TextBox _name = new();

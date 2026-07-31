@@ -15,6 +15,7 @@ public sealed class MaintenancePurchasingView : UserControl
     private readonly MaintenanceRepository _maintenance = new();
     private readonly MaintenancePartsRepository _parts = new();
     private readonly SparePartsInventoryRepository _inventory = new();
+    private readonly SparePartLocationsRepository _locations = new();
     private readonly SparePartReplenishmentRepository _replenishment = new();
     private readonly MaintenancePurchaseOrderPdfService _pdf = new();
     private readonly TextBox _search = new();
@@ -210,17 +211,27 @@ public sealed class MaintenancePurchasingView : UserControl
         var status = order.Status == PurchaseOrderStatus.Draft ? PurchaseOrderStatus.Sent : PurchaseOrderStatus.Confirmed;
         _repository.SetStatus(order.Id, status); Show($"Ordine {status.ToLowerInvariant()}."); Load();
     }
-    private void Receive(MaintenancePurchaseOrder order, MaintenanceSupplier? supplier)
+    private async void Receive(MaintenancePurchaseOrder order, MaintenanceSupplier? supplier)
     {
+        var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;
+        var availableLocations=_locations.GetLocations().Where(x=>x.IsActive).ToList();
+        if(availableLocations.Count==0){Show("Crea prima un'ubicazione in Ubicazioni magazzino.",true);return;}
+        var destination=await new ReceiptLocationDialog(availableLocations).ShowDialog<SparePartWarehouseLocation?>(owner);
+        if(destination is null)return;
         _repository.SetStatus(order.Id, PurchaseOrderStatus.Received);
         foreach (var line in order.Lines)
+        {
+            var code=string.IsNullOrWhiteSpace(line.PartCode) ? $"ART-{line.Id:D6}" : line.PartCode;
             _inventory.Receive(
-                string.IsNullOrWhiteSpace(line.PartCode) ? $"ART-{line.Id:D6}" : line.PartCode,
+                code,
                 line.Description,
                 supplier?.Name ?? "",
                 line.Quantity,
                 line.UnitCost,
                 order.OrderNumber);
+            var item=_inventory.GetItems().First(x=>string.Equals(x.PartCode,code,StringComparison.OrdinalIgnoreCase));
+            _locations.ReceiveIntoLocation(item.Id,destination.Id,line.Quantity,item.Quantity);
+        }
         if (order.MaintenanceTicketId > 0)
             foreach (var line in order.Lines)
             {

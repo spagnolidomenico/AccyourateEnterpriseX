@@ -31,3 +31,13 @@ public sealed class SparePartLocationTransfer
     public string OperatorName { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = DateTime.Now.ToString("s");
 }
+
+public sealed class SparePartLocationDiscrepancy
+{
+    public int InventoryItemId { get; set; }
+    public string PartCode { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public decimal TotalQuantity { get; set; }
+    public decimal AllocatedQuantity { get; set; }
+    public decimal Difference => TotalQuantity - AllocatedQuantity;
+}

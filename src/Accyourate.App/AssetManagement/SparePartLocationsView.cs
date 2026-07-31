@@ -21,7 +21,7 @@ public sealed class SparePartLocationsView : UserControl
     {
         var root=new DockPanel();var header=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(24,20,24,12)};
         header.Children.Add(new StackPanel{Spacing=4,Children={new TextBlock{Text="Ubicazioni Magazzino",FontSize=30,FontWeight=FontWeight.Bold},new TextBlock{Text="Magazzini, scaffali, giacenze distribuite e trasferimenti.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}});
-        var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=6};actions.Children.Add(Button("Storico trasferimenti",History));actions.Children.Add(Button("Etichette QR",Labels));actions.Children.Add(Button("Trasferisci",Transfer));actions.Children.Add(Button("Nuova ubicazione",NewLocation,true));Grid.SetColumn(actions,1);header.Children.Add(actions);
+        var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=6};actions.Children.Add(Button("Verifica coerenza",CheckConsistency));actions.Children.Add(Button("Storico trasferimenti",History));actions.Children.Add(Button("Etichette QR",Labels));actions.Children.Add(Button("Trasferisci",Transfer));actions.Children.Add(Button("Nuova ubicazione",NewLocation,true));Grid.SetColumn(actions,1);header.Children.Add(actions);
         DockPanel.SetDock(header,Dock.Top);root.Children.Add(header);
         _search.Watermark="Cerca ubicazione, magazzino o ricambio...";_search.Margin=new Thickness(24,0,24,8);_search.TextChanged+=(_,_)=>Load();DockPanel.SetDock(_search,Dock.Top);root.Children.Add(_search);
         _message.Margin=new Thickness(24,0,24,8);DockPanel.SetDock(_message,Dock.Top);root.Children.Add(_message);
@@ -48,6 +48,15 @@ public sealed class SparePartLocationsView : UserControl
     private async void Transfer(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;var items=_inventory.GetItems();var locations=_repository.GetLocations().Where(x=>x.IsActive).ToList();var balances=_repository.GetBalances();if(locations.Count<2){Show("Crea almeno due ubicazioni.",true);return;}var request=await new LocationTransferDialog(items,locations,balances).ShowDialog<LocationTransferRequest?>(owner);if(request is null)return;try{_repository.Transfer(request.ItemId,request.FromId,request.ToId,request.Quantity,request.Reference,request.Notes,Environment.UserName);Show("Trasferimento registrato.");Load();}catch(Exception ex){Show($"Trasferimento non eseguito: {ex.Message}",true);}}
     private async void History(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;await new LocationTransfersWindow(_repository,_inventory.GetItems()).ShowDialog(owner);}
     private void Labels(){try{var path=_labels.GenerateLocations(_repository.GetLocations());Process.Start(new ProcessStartInfo{FileName=path,UseShellExecute=true});Show($"Etichette create: {path}");}catch(Exception ex){Show($"Etichette non create: {ex.Message}",true);}}
+    private async void CheckConsistency()
+    {
+        var differences=_repository.GetDiscrepancies(_inventory.GetItems());
+        if(differences.Count==0){Show("Giacenze totali e locali perfettamente allineate.");return;}
+        var locations=_repository.GetLocations().Where(x=>x.IsActive).ToList();var owner=TopLevel.GetTopLevel(this) as Window;
+        if(owner is null||locations.Count==0){Show("Nessuna ubicazione disponibile per il riallineamento.",true);return;}
+        var destination=await new LocationReconciliationDialog(differences,locations).ShowDialog<SparePartWarehouseLocation?>(owner);
+        if(destination is null)return;_repository.ReconcileToLocation(differences,destination.Id);Show($"Riallineate {differences.Count} giacenze su {destination.Code}.");Load();
+    }
     private static Grid GridRow()=>new(){ColumnDefinitions=new ColumnDefinitions("120,210,180,110,110,90,100,100")};
     private static Button Button(string text,Action action,bool primary=false){var b=new Button{Content=text,MinHeight=34,Margin=new Thickness(3),Background=UiTokens.Brush(primary?UiTokens.BrandBlue:UiTokens.SurfaceAlt),Foreground=primary?Brushes.White:UiTokens.Brush(UiTokens.TextPrimary)};b.Click+=(_,_)=>action();return b;}
     private static void AddText(Grid g,string text,int col,bool strong=false,bool danger=false){var t=new TextBlock{Text=string.IsNullOrWhiteSpace(text)?"—":text,FontWeight=strong?FontWeight.SemiBold:FontWeight.Normal,Foreground=UiTokens.Brush(danger?UiTokens.Danger:strong?UiTokens.TextPrimary:UiTokens.TextSecondary),VerticalAlignment=VerticalAlignment.Center,TextTrimming=TextTrimming.CharacterEllipsis,Margin=new Thickness(3)};Grid.SetColumn(t,col);g.Children.Add(t);}
@@ -92,4 +101,17 @@ public sealed class LocationTransfersWindow : Window
         Content=new ScrollViewer{Content=rows,HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto};
     }
     private static string Date(string value)=>DateTime.TryParse(value,out var d)?d.ToString("dd/MM/yyyy HH:mm"):value;
+}
+
+public sealed class LocationReconciliationDialog : Window
+{
+    private readonly IReadOnlyList<SparePartWarehouseLocation> _locations;private readonly ComboBox _destination=new();
+    public LocationReconciliationDialog(IReadOnlyList<SparePartLocationDiscrepancy> differences,IReadOnlyList<SparePartWarehouseLocation> locations)
+    {
+        _locations=locations;Title="Riallineamento giacenze";Width=620;Height=430;WindowStartupLocation=WindowStartupLocation.CenterOwner;
+        _destination.ItemsSource=locations.Select(x=>x.DisplayName).ToList();_destination.SelectedIndex=0;
+        var details=new StackPanel();foreach(var item in differences.Take(12))details.Children.Add(new TextBlock{Text=$"{item.PartCode} · totale {item.TotalQuantity:N2} · ubicato {item.AllocatedQuantity:N2} · differenza {item.Difference:N2}"});
+        var apply=new Button{Content="Assegna differenze all'ubicazione",Height=40};apply.Click+=(_,_)=>{if(_destination.SelectedIndex>=0)Close(_locations[_destination.SelectedIndex]);};
+        Content=new ScrollViewer{Content=new StackPanel{Margin=new Thickness(24),Spacing=10,Children={new TextBlock{Text="Giacenze non allineate",FontSize=24,FontWeight=FontWeight.Bold},new TextBlock{Text="Le differenze verranno assegnate alla posizione selezionata."},details,new TextBlock{Text="Ubicazione di riallineamento",FontWeight=FontWeight.SemiBold},_destination,apply}}};
+    }
 }

@@ -87,6 +87,49 @@ public sealed class SparePartLocationsRepository
         SetBalance(connection,transaction,itemId,locationId,Math.Max(0,quantity));transaction.Commit();
     }
 
+    public void ReceiveIntoLocation(int itemId,int locationId,decimal receivedQuantity,decimal currentTotal)
+    {
+        using var connection=Open();using var transaction=connection.BeginTransaction();
+        using var count=connection.CreateCommand();count.Transaction=transaction;
+        count.CommandText="SELECT COUNT(*) FROM SparePartLocationBalances WHERE InventoryItemId=$item;";
+        count.Parameters.AddWithValue("$item",itemId);
+        if(Convert.ToInt32(count.ExecuteScalar())==0)SetBalance(connection,transaction,itemId,locationId,currentTotal);
+        else SetBalance(connection,transaction,itemId,locationId,Balance(connection,transaction,itemId,locationId)+receivedQuantity);
+        transaction.Commit();
+    }
+
+    public IReadOnlyList<SparePartLocationDiscrepancy> GetDiscrepancies(IReadOnlyList<SparePartInventoryItem> items)
+    {
+        var allocated=GetBalances().GroupBy(x=>x.InventoryItemId).ToDictionary(x=>x.Key,x=>x.Sum(y=>y.Quantity));
+        return items.Select(item=>new SparePartLocationDiscrepancy
+        {
+            InventoryItemId=item.Id,PartCode=item.PartCode,Description=item.Description,
+            TotalQuantity=item.Quantity,AllocatedQuantity=allocated.GetValueOrDefault(item.Id)
+        }).Where(x=>x.Difference!=0).ToList();
+    }
+
+    public void ReconcileToLocation(IEnumerable<SparePartLocationDiscrepancy> differences,int locationId)
+    {
+        using var connection=Open();using var transaction=connection.BeginTransaction();
+        foreach(var item in differences)
+        {
+            if(item.Difference>=0)
+                SetBalance(connection,transaction,item.InventoryItemId,locationId,
+                    Balance(connection,transaction,item.InventoryItemId,locationId)+item.Difference);
+            else
+            {
+                var remaining=-item.Difference;
+                using var command=connection.CreateCommand();command.Transaction=transaction;
+                command.CommandText="SELECT LocationId,Quantity FROM SparePartLocationBalances WHERE InventoryItemId=$item AND Quantity>0 ORDER BY CASE WHEN LocationId=$preferred THEN 0 ELSE 1 END,Quantity DESC;";
+                command.Parameters.AddWithValue("$item",item.InventoryItemId);command.Parameters.AddWithValue("$preferred",locationId);
+                using var reader=command.ExecuteReader();var balances=new List<(int Id,decimal Quantity)>();
+                while(reader.Read())balances.Add((reader.GetInt32(0),Convert.ToDecimal(reader.GetDouble(1))));reader.Close();
+                foreach(var balance in balances){var reduction=Math.Min(balance.Quantity,remaining);SetBalance(connection,transaction,item.InventoryItemId,balance.Id,balance.Quantity-reduction);remaining-=reduction;if(remaining<=0)break;}
+            }
+        }
+        transaction.Commit();
+    }
+
     public void EnsureInitialAllocations(IReadOnlyList<SparePartInventoryItem> items)
     {
         using var connection=Open();using var transaction=connection.BeginTransaction();
