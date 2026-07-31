@@ -21,7 +21,7 @@ public sealed class SparePartLocationsView : UserControl
     {
         var root=new DockPanel();var header=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(24,20,24,12)};
         header.Children.Add(new StackPanel{Spacing=4,Children={new TextBlock{Text="Ubicazioni Magazzino",FontSize=30,FontWeight=FontWeight.Bold},new TextBlock{Text="Magazzini, scaffali, giacenze distribuite e trasferimenti.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}});
-        var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=6};actions.Children.Add(Button("Verifica coerenza",CheckConsistency));actions.Children.Add(Button("Storico trasferimenti",History));actions.Children.Add(Button("Etichette QR",Labels));actions.Children.Add(Button("Trasferisci",Transfer));actions.Children.Add(Button("Nuova ubicazione",NewLocation,true));Grid.SetColumn(actions,1);header.Children.Add(actions);
+        var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=6};actions.Children.Add(Button("Verifica coerenza",CheckConsistency));actions.Children.Add(Button("Registro prelievi",PickHistory));actions.Children.Add(Button("Storico trasferimenti",History));actions.Children.Add(Button("Etichette QR",Labels));actions.Children.Add(Button("Trasferisci",Transfer));actions.Children.Add(Button("Nuova ubicazione",NewLocation,true));Grid.SetColumn(actions,1);header.Children.Add(actions);
         DockPanel.SetDock(header,Dock.Top);root.Children.Add(header);
         _search.Watermark="Cerca ubicazione, magazzino o ricambio...";_search.Margin=new Thickness(24,0,24,8);_search.TextChanged+=(_,_)=>Load();DockPanel.SetDock(_search,Dock.Top);root.Children.Add(_search);
         _message.Margin=new Thickness(24,0,24,8);DockPanel.SetDock(_message,Dock.Top);root.Children.Add(_message);
@@ -47,6 +47,7 @@ public sealed class SparePartLocationsView : UserControl
     private async void NewLocation(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;var location=await new WarehouseLocationDialog().ShowDialog<SparePartWarehouseLocation?>(owner);if(location is null)return;try{_repository.SaveLocation(location);Show("Ubicazione salvata.");Load();}catch(Exception ex){Show($"Ubicazione non salvata: {ex.Message}",true);}}
     private async void Transfer(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;var items=_inventory.GetItems();var locations=_repository.GetLocations().Where(x=>x.IsActive).ToList();var balances=_repository.GetBalances();if(locations.Count<2){Show("Crea almeno due ubicazioni.",true);return;}var request=await new LocationTransferDialog(items,locations,balances).ShowDialog<LocationTransferRequest?>(owner);if(request is null)return;try{_repository.Transfer(request.ItemId,request.FromId,request.ToId,request.Quantity,request.Reference,request.Notes,Environment.UserName);Show("Trasferimento registrato.");Load();}catch(Exception ex){Show($"Trasferimento non eseguito: {ex.Message}",true);}}
     private async void History(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;await new LocationTransfersWindow(_repository,_inventory.GetItems()).ShowDialog(owner);}
+    private async void PickHistory(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;await new LocationPicksWindow(_repository,_inventory.GetItems()).ShowDialog(owner);}
     private void Labels(){try{var path=_labels.GenerateLocations(_repository.GetLocations());Process.Start(new ProcessStartInfo{FileName=path,UseShellExecute=true});Show($"Etichette create: {path}");}catch(Exception ex){Show($"Etichette non create: {ex.Message}",true);}}
     private async void CheckConsistency()
     {
@@ -101,6 +102,87 @@ public sealed class LocationTransfersWindow : Window
         Content=new ScrollViewer{Content=rows,HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto};
     }
     private static string Date(string value)=>DateTime.TryParse(value,out var d)?d.ToString("dd/MM/yyyy HH:mm"):value;
+}
+
+public sealed class LocationPicksWindow : Window
+{
+    private readonly SparePartLocationsRepository _repository;
+    private readonly IReadOnlyDictionary<int,SparePartInventoryItem> _items;
+    private readonly IReadOnlyDictionary<int,SparePartWarehouseLocation> _locations;
+    private readonly TextBox _search=new(){Watermark="Cerca ricambio, ubicazione, riferimento o operatore..."};
+    private readonly DatePicker _from=new(),_to=new();
+    private readonly ContentControl _host=new();
+    private readonly TextBlock _summary=new(),_message=new();
+    private IReadOnlyList<SparePartLocationPick> _visible=Array.Empty<SparePartLocationPick>();
+
+    public LocationPicksWindow(SparePartLocationsRepository repository,IReadOnlyList<SparePartInventoryItem> items)
+    {
+        _repository=repository;_items=items.ToDictionary(x=>x.Id);_locations=repository.GetLocations().ToDictionary(x=>x.Id);
+        Title="Registro prelievi per ubicazione";Width=1180;Height=720;MinWidth=900;MinHeight=520;
+        WindowStartupLocation=WindowStartupLocation.CenterOwner;
+        _search.TextChanged+=(_,_)=>Load();_from.SelectedDateChanged+=(_,_)=>Load();_to.SelectedDateChanged+=(_,_)=>Load();
+        Content=Build();Load();
+    }
+
+    private Control Build()
+    {
+        var root=new DockPanel{Margin=new Thickness(24)};
+        var title=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(0,0,0,14)};
+        title.Children.Add(new StackPanel{Spacing=3,Children={new TextBlock{Text="Registro prelievi",FontSize=27,FontWeight=FontWeight.Bold},new TextBlock{Text="Consumi suddivisi per ricambio, ubicazione, riferimento e operatore.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}});
+        var pdf=Button("Genera picking list PDF",GeneratePdf,true);Grid.SetColumn(pdf,1);title.Children.Add(pdf);
+        DockPanel.SetDock(title,Dock.Top);root.Children.Add(title);
+        var filters=new Grid{ColumnDefinitions=new ColumnDefinitions("*,160,160"),Margin=new Thickness(0,0,0,8)};
+        Add(filters,_search,0);Add(filters,_from,1);Add(filters,_to,2);DockPanel.SetDock(filters,Dock.Top);root.Children.Add(filters);
+        _message.Margin=new Thickness(0,0,0,5);DockPanel.SetDock(_message,Dock.Top);root.Children.Add(_message);
+        _summary.Foreground=UiTokens.Brush(UiTokens.TextSecondary);_summary.Margin=new Thickness(0,0,0,8);DockPanel.SetDock(_summary,Dock.Top);root.Children.Add(_summary);
+        root.Children.Add(_host);return root;
+    }
+
+    private void Load()
+    {
+        var query=(_search.Text??string.Empty).Trim();
+        _visible=_repository.GetPicks().Where(x=>!_from.SelectedDate.HasValue||Parse(x.CreatedAt)>=_from.SelectedDate.Value.Date)
+            .Where(x=>!_to.SelectedDate.HasValue||Parse(x.CreatedAt)<_to.SelectedDate.Value.Date.AddDays(1))
+            .Where(x=>
+            {
+                _items.TryGetValue(x.InventoryItemId,out var item);_locations.TryGetValue(x.LocationId,out var location);
+                return query.Length==0||$"{item?.PartCode} {item?.Description} {location?.Code} {location?.Name} {x.Reference} {x.Notes} {x.OperatorName}".Contains(query,StringComparison.OrdinalIgnoreCase);
+            }).ToList();
+        _summary.Text=$"{_visible.Count} righe di prelievo · quantità totale {_visible.Sum(x=>x.Quantity):N2}";
+        var rows=new StackPanel{MinWidth=1040};rows.Children.Add(PickRow("Data","Ricambio","Ubicazione","Quantità","Riferimento","Operatore","Note",true));
+        foreach(var pick in _visible)
+        {
+            _items.TryGetValue(pick.InventoryItemId,out var item);_locations.TryGetValue(pick.LocationId,out var location);
+            rows.Children.Add(PickRow(Parse(pick.CreatedAt).ToString("dd/MM/yyyy HH:mm"),
+                item is null?$"ID {pick.InventoryItemId}":$"{item.PartCode} · {item.Description}",
+                location?.DisplayName??$"ID {pick.LocationId}",pick.Quantity.ToString("N2"),
+                pick.Reference,pick.OperatorName,pick.Notes,false));
+        }
+        _host.Content=new ScrollViewer{Content=rows,HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto};
+    }
+
+    private void GeneratePdf()
+    {
+        try
+        {
+            if(_visible.Count==0){Status("Non ci sono prelievi da esportare.",true);return;}
+            var path=new SparePartPickingPdfService().Generate(_visible,_items,_locations,_from.SelectedDate?.Date,_to.SelectedDate?.Date);
+            Process.Start(new ProcessStartInfo{FileName=path,UseShellExecute=true});Status($"Picking list creata: {path}",false);
+        }
+        catch(Exception ex){Status($"PDF non creato: {ex.Message}",true);}
+    }
+
+    private static Control PickRow(string date,string item,string location,string quantity,string reference,string user,string notes,bool header)
+    {
+        var grid=new Grid{ColumnDefinitions=new ColumnDefinitions("135,230,190,90,150,130,190")};
+        var values=new[]{date,item,location,quantity,reference,user,notes};
+        for(var i=0;i<values.Length;i++){var text=new TextBlock{Text=string.IsNullOrWhiteSpace(values[i])?"—":values[i],FontWeight=header?FontWeight.SemiBold:FontWeight.Normal,TextTrimming=TextTrimming.CharacterEllipsis,VerticalAlignment=VerticalAlignment.Center,Margin=new Thickness(3)};Grid.SetColumn(text,i);grid.Children.Add(text);}
+        return new Border{Background=header?UiTokens.Brush(UiTokens.SurfaceAlt):UiTokens.Brush(UiTokens.Surface),BorderBrush=UiTokens.Brush(UiTokens.Border),BorderThickness=new Thickness(0,0,0,1),Padding=new Thickness(7,9),Child=grid};
+    }
+    private static DateTimeOffset Parse(string value)=>DateTimeOffset.TryParse(value,out var result)?result:DateTimeOffset.MinValue;
+    private static void Add(Grid grid,Control control,int column){control.Margin=new Thickness(0,0,8,0);Grid.SetColumn(control,column);grid.Children.Add(control);}
+    private static Button Button(string text,Action action,bool primary=false){var button=new Button{Content=text,MinHeight=36,Background=UiTokens.Brush(primary?UiTokens.BrandBlue:UiTokens.SurfaceAlt),Foreground=primary?Brushes.White:UiTokens.Brush(UiTokens.TextPrimary)};button.Click+=(_,_)=>action();return button;}
+    private void Status(string text,bool error){_message.Text=text;_message.Foreground=UiTokens.Brush(error?UiTokens.Danger:UiTokens.Success);}
 }
 
 public sealed class LocationReconciliationDialog : Window
