@@ -247,6 +247,11 @@ public sealed class MaintenancePurchasingView : UserControl
                     line.Quantity,
                     $"Manutenzione #{order.MaintenanceTicketId}",
                     $"Utilizzo diretto da ordine {order.OrderNumber}");
+                var code=string.IsNullOrWhiteSpace(line.PartCode) ? $"ART-{line.Id:D6}" : line.PartCode;
+                var item=_inventory.GetItems().First(x=>string.Equals(x.PartCode,code,StringComparison.OrdinalIgnoreCase));
+                _locations.PickFromLocations(item.Id,line.Quantity,destination.Id,
+                    $"Manutenzione #{order.MaintenanceTicketId}",
+                    $"Utilizzo diretto da ordine {order.OrderNumber}","Amministratore");
             }
         _replenishment.CompleteByOrderId(order.Id);
         Show("Ordine ricevuto e ricambi collegati all'intervento."); Load();

@@ -41,3 +41,21 @@ public sealed class SparePartLocationDiscrepancy
     public decimal AllocatedQuantity { get; set; }
     public decimal Difference => TotalQuantity - AllocatedQuantity;
 }
+
+public sealed class SparePartLocationPick
+{
+    public int Id { get; set; }
+    public int InventoryItemId { get; set; }
+    public int LocationId { get; set; }
+    public decimal Quantity { get; set; }
+    public string Reference { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
+    public string OperatorName { get; set; } = string.Empty;
+    public string CreatedAt { get; set; } = DateTime.Now.ToString("s");
+}
+
+public sealed class SparePartPickAllocation
+{
+    public int LocationId { get; set; }
+    public decimal Quantity { get; set; }
+}

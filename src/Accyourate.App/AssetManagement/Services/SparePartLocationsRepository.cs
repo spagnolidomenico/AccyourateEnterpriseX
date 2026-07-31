@@ -37,6 +37,16 @@ public sealed class SparePartLocationsRepository
                 OperatorName TEXT,
                 CreatedAt TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS SparePartLocationPicks(
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                InventoryItemId INTEGER NOT NULL,
+                LocationId INTEGER NOT NULL,
+                Quantity REAL NOT NULL,
+                Reference TEXT,
+                Notes TEXT,
+                OperatorName TEXT,
+                CreatedAt TEXT NOT NULL
+            );
             """;
         command.ExecuteNonQuery();
     }
@@ -96,6 +106,65 @@ public sealed class SparePartLocationsRepository
         if(Convert.ToInt32(count.ExecuteScalar())==0)SetBalance(connection,transaction,itemId,locationId,currentTotal);
         else SetBalance(connection,transaction,itemId,locationId,Balance(connection,transaction,itemId,locationId)+receivedQuantity);
         transaction.Commit();
+    }
+
+    public decimal GetAvailableQuantity(int itemId)
+    {
+        using var connection=Open();using var command=connection.CreateCommand();
+        command.CommandText="SELECT COALESCE(SUM(Quantity),0) FROM SparePartLocationBalances WHERE InventoryItemId=$item;";
+        command.Parameters.AddWithValue("$item",itemId);
+        return Convert.ToDecimal(command.ExecuteScalar());
+    }
+
+    public IReadOnlyList<SparePartPickAllocation> PickFromLocations(
+        int itemId,decimal quantity,int? preferredLocationId,string reference,string notes,string operatorName)
+    {
+        if(quantity<=0)throw new InvalidOperationException("La quantità da prelevare deve essere maggiore di zero.");
+        using var connection=Open();using var transaction=connection.BeginTransaction();
+        using var command=connection.CreateCommand();command.Transaction=transaction;
+        command.CommandText="""
+            SELECT LocationId,Quantity FROM SparePartLocationBalances
+            WHERE InventoryItemId=$item AND Quantity>0
+            ORDER BY CASE WHEN LocationId=$preferred THEN 0 ELSE 1 END,LocationId;
+            """;
+        command.Parameters.AddWithValue("$item",itemId);command.Parameters.AddWithValue("$preferred",preferredLocationId??-1);
+        using var reader=command.ExecuteReader();var balances=new List<(int LocationId,decimal Quantity)>();
+        while(reader.Read())balances.Add((reader.GetInt32(0),Convert.ToDecimal(reader.GetDouble(1))));
+        reader.Close();
+        var available=balances.Sum(x=>x.Quantity);
+        if(available<quantity)throw new InvalidOperationException($"Disponibilità insufficiente nelle ubicazioni: {available:N2} unità.");
+        var remaining=quantity;var allocations=new List<SparePartPickAllocation>();
+        foreach(var balance in balances)
+        {
+            var picked=Math.Min(balance.Quantity,remaining);if(picked<=0)continue;
+            SetBalance(connection,transaction,itemId,balance.LocationId,balance.Quantity-picked);
+            using var insert=connection.CreateCommand();insert.Transaction=transaction;insert.CommandText="""
+                INSERT INTO SparePartLocationPicks
+                (InventoryItemId,LocationId,Quantity,Reference,Notes,OperatorName,CreatedAt)
+                VALUES($item,$location,$quantity,$reference,$notes,$operator,$created);
+                """;
+            insert.Parameters.AddWithValue("$item",itemId);insert.Parameters.AddWithValue("$location",balance.LocationId);
+            insert.Parameters.AddWithValue("$quantity",picked);insert.Parameters.AddWithValue("$reference",reference);
+            insert.Parameters.AddWithValue("$notes",notes);insert.Parameters.AddWithValue("$operator",operatorName);
+            insert.Parameters.AddWithValue("$created",DateTime.Now.ToString("s"));insert.ExecuteNonQuery();
+            allocations.Add(new SparePartPickAllocation{LocationId=balance.LocationId,Quantity=picked});
+            remaining-=picked;if(remaining<=0)break;
+        }
+        transaction.Commit();return allocations;
+    }
+
+    public IReadOnlyList<SparePartLocationPick> GetPicks(int limit=500)
+    {
+        using var connection=Open();using var command=connection.CreateCommand();command.CommandText="""
+            SELECT Id,InventoryItemId,LocationId,Quantity,Reference,Notes,OperatorName,CreatedAt
+            FROM SparePartLocationPicks ORDER BY CreatedAt DESC,Id DESC LIMIT $limit;
+            """;
+        command.Parameters.AddWithValue("$limit",Math.Max(1,limit));using var reader=command.ExecuteReader();
+        var result=new List<SparePartLocationPick>();
+        while(reader.Read())result.Add(new SparePartLocationPick{Id=reader.GetInt32(0),InventoryItemId=reader.GetInt32(1),
+            LocationId=reader.GetInt32(2),Quantity=D(reader,3),Reference=S(reader,4),Notes=S(reader,5),
+            OperatorName=S(reader,6),CreatedAt=S(reader,7)});
+        return result;
     }
 
     public IReadOnlyList<SparePartLocationDiscrepancy> GetDiscrepancies(IReadOnlyList<SparePartInventoryItem> items)

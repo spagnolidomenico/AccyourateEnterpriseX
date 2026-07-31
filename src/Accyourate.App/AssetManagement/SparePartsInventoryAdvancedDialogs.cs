@@ -16,6 +16,7 @@ public sealed class ManualInventoryMovementRequest
     public string Reason { get; init; } = string.Empty;
     public string Reference { get; init; } = string.Empty;
     public string Notes { get; init; } = string.Empty;
+    public int? LocationId { get; init; }
 }
 
 public sealed class ManualInventoryMovementDialog : Window
@@ -27,14 +28,19 @@ public sealed class ManualInventoryMovementDialog : Window
     private readonly TextBox _reference = new();
     private readonly TextBox _notes = new() { AcceptsReturn = true, MinHeight = 75 };
     private readonly TextBlock _message = new();
+    private readonly ComboBox _location = new();
+    private readonly IReadOnlyList<SparePartWarehouseLocation> _locations;
 
-    public ManualInventoryMovementDialog(SparePartInventoryItem item)
+    public ManualInventoryMovementDialog(SparePartInventoryItem item,IReadOnlyList<SparePartWarehouseLocation> locations)
     {
+        _locations=locations;
         Title = "Carico / Scarico ricambio";
         Width = 520;
-        Height = 590;
+        Height = 650;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         _cost.Text = item.AverageUnitCost.ToString("N2");
+        _direction.SelectionChanged+=(_,_)=>RefreshLocations();
+        RefreshLocations();
         var save = Button("Registra movimento", () => Confirm(item));
         Content = new ScrollViewer
         {
@@ -48,6 +54,7 @@ public sealed class ManualInventoryMovementDialog : Window
                     new TextBlock{Text=$"{item.PartCode} · {item.Description}",Foreground=UiTokens.Brush(UiTokens.TextSecondary)},
                     new TextBlock{Text=$"Giacenza disponibile: {item.Quantity:N2}",FontWeight=FontWeight.SemiBold},
                     Field("Operazione",_direction),Field("Causale",_reason),Field("Quantità",_quantity),
+                    Field("Ubicazione (per lo scarico: preferita, poi prelievo automatico)",_location),
                     Field("Costo unitario (utilizzato per i carichi)",_cost),Field("Riferimento",_reference),
                     Field("Note",_notes),_message,save
                 }
@@ -61,12 +68,24 @@ public sealed class ManualInventoryMovementDialog : Window
         decimal.TryParse(_cost.Text,out var cost);
         var inbound=_direction.SelectedIndex==0;
         if(!inbound&&quantity>item.Quantity){Error($"Giacenza insufficiente: disponibili {item.Quantity:N2}.");return;}
+        var locationIndex=_location.SelectedIndex-(inbound?0:1);
+        int? locationId=locationIndex>=0&&locationIndex<_locations.Count?_locations[locationIndex].Id:null;
+        if(inbound&&locationId is null){Error("Seleziona l'ubicazione di destinazione.");return;}
         Close(new ManualInventoryMovementRequest
         {
             Inbound=inbound,Quantity=quantity,UnitCost=Math.Max(0,cost),
             Reason=_reason.SelectedItem?.ToString()??"Movimento",
-            Reference=_reference.Text?.Trim()??string.Empty,Notes=_notes.Text?.Trim()??string.Empty
+            Reference=_reference.Text?.Trim()??string.Empty,Notes=_notes.Text?.Trim()??string.Empty,
+            LocationId=locationId
         });
+    }
+
+    private void RefreshLocations()
+    {
+        var inbound=_direction.SelectedIndex==0;
+        var labels=_locations.Select(x=>x.DisplayName).ToList();
+        if(!inbound)labels.Insert(0,"Automatico (prelievo da più ubicazioni)");
+        _location.ItemsSource=labels;_location.SelectedIndex=labels.Count>0?0:-1;
     }
 
     private void Error(string text){_message.Text=text;_message.Foreground=UiTokens.Brush(UiTokens.Danger);}

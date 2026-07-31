@@ -12,6 +12,7 @@ namespace Accyourate.App.AssetManagement;
 public sealed class SparePartsInventoryView : UserControl
 {
     private readonly SparePartsInventoryRepository _repository = new();
+    private readonly SparePartLocationsRepository _locations = new();
     private readonly TextBox _search = new();
     private readonly CheckBox _lowOnly = new() { Content = "Solo sotto scorta" };
     private readonly Grid _kpis = new() { ColumnDefinitions = new ColumnDefinitions("*,*,*,*") };
@@ -90,12 +91,29 @@ public sealed class SparePartsInventoryView : UserControl
     private async void ManualMovement(SparePartInventoryItem item)
     {
         var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;
-        var request=await new ManualInventoryMovementDialog(item).ShowDialog<ManualInventoryMovementRequest?>(owner);
+        var items=_repository.GetItems();_locations.EnsureInitialAllocations(items);
+        var locations=_locations.GetLocations().Where(x=>x.IsActive).ToList();
+        if(locations.Count==0){Show("Crea prima almeno un'ubicazione di magazzino.",true);return;}
+        var request=await new ManualInventoryMovementDialog(item,locations).ShowDialog<ManualInventoryMovementRequest?>(owner);
         if(request is null)return;
         try
         {
+            if(!request.Inbound&&_locations.GetAvailableQuantity(item.Id)<request.Quantity)
+                throw new InvalidOperationException("La quantità totale nelle ubicazioni non è sufficiente.");
             _repository.RegisterManualMovement(item.Id,request.Inbound,request.Quantity,request.UnitCost,request.Reason,request.Reference,request.Notes);
-            Show($"{(request.Inbound?"Carico":"Scarico")} registrato.");Load();
+            if(request.Inbound)
+            {
+                var updated=_repository.GetItems().First(x=>x.Id==item.Id);
+                _locations.ReceiveIntoLocation(item.Id,request.LocationId!.Value,request.Quantity,updated.Quantity);
+                Show("Carico registrato nell'ubicazione selezionata.");
+            }
+            else
+            {
+                var allocations=_locations.PickFromLocations(item.Id,request.Quantity,request.LocationId,
+                    request.Reference,request.Notes,"Amministratore");
+                Show($"Scarico registrato da {allocations.Count} ubicazion{(allocations.Count==1?"e":"i")}.");
+            }
+            Load();
         }
         catch(Exception ex){Show($"Movimento non registrato: {ex.Message}",true);}
     }
