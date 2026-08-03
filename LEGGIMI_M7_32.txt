@@ -1,0 +1,30 @@
+ACCYOURATE ENTERPRISE X - M7.32 DASHBOARD FORNITORI E SLA RMA
+
+INSTALLAZIONE
+1. Chiudere completamente il gestionale.
+2. Copiare la cartella AccyourateEnterpriseX dentro C:\Progetti.
+3. Confermare la sostituzione/unione dei file.
+4. Aprire PowerShell in C:\Progetti\AccyourateEnterpriseX.
+5. Eseguire:
+   dotnet clean
+   dotnet build
+   dotnet run --project src\Accyourate.App\Accyourate.App.csproj
+
+COLLAUDO
+1. Aprire Asset > SLA fornitori RMA.
+2. Verificare gli indicatori: fornitori monitorati, pratiche RMA, SLA complessivo e costi.
+3. Controllare la tabella con pratiche, aperte, scadute, SLA, tempo medio, esiti, costi e affidabilità.
+4. Cercare un fornitore tramite la casella di ricerca.
+5. Provare i filtri Affidabili, Da monitorare e Critici.
+6. Confrontare almeno un totale con Asset > RMA fornitori.
+
+COME VENGONO CALCOLATI I DATI
+- SLA: pratiche chiuse entro la data prevista rispetto alle pratiche chiuse con scadenza valorizzata.
+- Tempo medio: giorni tra apertura e chiusura delle pratiche concluse.
+- Costi: spedizione più costo di risoluzione.
+- Affidabilità: combinazione del rispetto SLA e della percentuale di pratiche concluse.
+- Se non esistono ancora pratiche chiuse valutabili, SLA e tempo medio mostrano un trattino.
+
+VERIFICHE ESEGUITE
+- dotnet build: 0 errori, 0 avvisi.
+- Test isolato: conteggi, SLA, ritardi, costi, esiti e tempo medio superati.
