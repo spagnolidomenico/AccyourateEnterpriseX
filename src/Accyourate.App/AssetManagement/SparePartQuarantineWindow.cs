@@ -25,15 +25,9 @@ public sealed class SparePartQuarantineWindow : Window
     private Control Build()
     {
         var root=new DockPanel{Margin=new Thickness(24)};
-        var title=new StackPanel
-        {
-            Spacing=3,Margin=new Thickness(0,0,0,12),
-            Children=
-            {
-                new TextBlock{Text="Quarantena ricambi",FontSize=28,FontWeight=FontWeight.Bold},
-                new TextBlock{Text="Valutazione, riparazione, reso al fornitore e smaltimento controllato.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}
-            }
-        };
+        var title=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(0,0,0,12)};
+        Add(title,new StackPanel{Spacing=3,Children={new TextBlock{Text="Quarantena ricambi",FontSize=28,FontWeight=FontWeight.Bold},new TextBlock{Text="Valutazione, riparazione, reso al fornitore e smaltimento controllato.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}},0);
+        Add(title,Button("Pratiche RMA",()=>new SparePartRmaWindow().Show(),true),1);
         DockPanel.SetDock(title,Dock.Top);root.Children.Add(title);
         var filters=new Grid{ColumnDefinitions=new ColumnDefinitions("*,220"),Margin=new Thickness(0,0,0,8)};
         Add(filters,_search,0);Add(filters,_status,1);DockPanel.SetDock(filters,Dock.Top);root.Children.Add(filters);
@@ -62,7 +56,7 @@ public sealed class SparePartQuarantineWindow : Window
         var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=3};
         if(value.Status==SparePartQuarantineStatus.Pending)actions.Children.Add(Button("Valuta",()=>Evaluate(value)));
         if(value.Status==SparePartQuarantineStatus.Repairable)actions.Children.Add(Button("Reintegra",()=>Reintegrate(value),true));
-        if(value.Status==SparePartQuarantineStatus.SupplierReturn)actions.Children.Add(Button("Conferma reso",()=>Run(()=>_repository.CloseSupplierReturn(value.Id,"Restituito al fornitore",Environment.UserName),"Reso al fornitore registrato.")));
+        if(value.Status==SparePartQuarantineStatus.SupplierReturn)actions.Children.Add(Button("Apri RMA",()=>new SparePartRmaWindow().Show(),true));
         if(value.Status==SparePartQuarantineStatus.DisposalApproved)actions.Children.Add(Button("Smaltisci",()=>Run(()=>_repository.Dispose(value.Id,"Smaltimento completato",Environment.UserName),"Smaltimento registrato.")));
         actions.Children.Add(Button("PDF",()=>Pdf(value,item,location,source)));Add(g,actions,7);
         return new Border{Background=UiTokens.Brush(index%2==0?UiTokens.Surface:UiTokens.SurfaceAlt),BorderBrush=UiTokens.Brush(UiTokens.Border),BorderThickness=new Thickness(0,0,0,1),Padding=new Thickness(8,6),Child=g};

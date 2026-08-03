@@ -1,0 +1,18 @@
+M7.30.1 - MENU QUARANTENA RICAMBI E RMA FORNITORI
+
+Applicare questa correzione dopo la patch M7.30.
+
+1. Chiudere completamente Accyourate Enterprise X.
+2. Copiare la cartella AccyourateEnterpriseX dentro C:\Progetti.
+3. Confermare la sostituzione del file.
+4. Aprire PowerShell in C:\Progetti\AccyourateEnterpriseX.
+5. Eseguire:
+   dotnet clean
+   dotnet build
+   dotnet run --project src\Accyourate.App\Accyourate.App.csproj
+
+Nel menu Asset saranno visibili direttamente:
+- Quarantena ricambi
+- RMA fornitori
+
+Build già verificata: 0 errori e 0 avvisi.
