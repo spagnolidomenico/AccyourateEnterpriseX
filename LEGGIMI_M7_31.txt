@@ -1,0 +1,30 @@
+ACCYOURATE ENTERPRISE X - M7.31 SCADENZE RMA E SIDEBAR STABILE
+
+INSTALLAZIONE
+1. Chiudere completamente il gestionale.
+2. Copiare la cartella AccyourateEnterpriseX dentro C:\Progetti.
+3. Confermare la sostituzione/unione dei file.
+4. Aprire PowerShell in C:\Progetti\AccyourateEnterpriseX.
+5. Eseguire:
+   dotnet clean
+   dotnet build
+   dotnet run --project src\Accyourate.App\Accyourate.App.csproj
+
+TEST MENU LATERALE
+1. Verificare che icone e testi siano visibili.
+2. Premere il pulsante con le tre linee: il menu deve diventare compatto.
+3. Premere nuovamente: tutti i testi devono ricomparire immediatamente.
+4. Ripetere cinque volte e cambiare area tra Home, Asset, Persone e Amministrazione.
+5. Lasciare il menu esteso, chiudere e riaprire il gestionale: deve restare esteso e leggibile.
+
+TEST M7.31 RMA
+1. Aprire Asset > RMA fornitori.
+2. Verificare i quattro indicatori: pratiche aperte, in scadenza, scadute, spedite senza esito.
+3. Provare il filtro scadenze selezionando In scadenza, Scadute e Spedite senza esito.
+4. Aprire la campanella in alto: ora deve mostrare il Notification Center reale.
+5. Una pratica con scadenza entro 7 giorni deve generare un avviso; una pratica scaduta genera un avviso critico.
+6. Riavviando il programma la stessa scadenza non deve creare notifiche duplicate.
+
+VERIFICHE ESEGUITE
+- dotnet build: 0 errori, 0 avvisi.
+- Test notifiche: generazione, visibilità e deduplicazione superate.

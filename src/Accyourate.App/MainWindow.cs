@@ -25,6 +25,8 @@ public sealed class MainWindow : Window
     private Grid? _rootGrid;
     private Border? _menuBorder;
     private Border? _contextBorder;
+    private StackPanel? _brandText;
+    private TextBlock? _areasCaption;
     private StackPanel? _contextMenu;
     private TextBlock? _contextTitle;
     private bool _sidebarCollapsed;
@@ -61,6 +63,14 @@ public sealed class MainWindow : Window
         Background = Brush.Parse(AxSemanticTokens.Background);
 
         _sidebarCollapsed = LoadSidebarState();
+        try
+        {
+            new AssetManagement.Services.SparePartRmaReminderService().PublishDueNotifications();
+        }
+        catch
+        {
+            // Un controllo scadenze non deve mai impedire l'avvio dell'applicazione.
+        }
         Content = BuildLayout();
         KeyDown += OnWindowKeyDown;
     }
@@ -287,32 +297,30 @@ public sealed class MainWindow : Window
                 VerticalAlignment = VerticalAlignment.Center
             }
         });
-        if (!_sidebarCollapsed)
+        _brandText = new StackPanel
         {
-            brand.Children.Add(new StackPanel
+            Spacing = 0,
+            VerticalAlignment = VerticalAlignment.Center,
+            IsVisible = !_sidebarCollapsed,
+            Children =
             {
-                Spacing = 0,
-                VerticalAlignment = VerticalAlignment.Center,
-                Children =
-                {
-                    new TextBlock { Text = "Accyourate", Foreground = Brushes.White, FontSize = 15, FontWeight = FontWeight.SemiBold },
-                    new TextBlock { Text = "Enterprise X", Foreground = Brush.Parse("#CBD5E1"), FontSize = 12 }
-                }
-            });
-        }
+                new TextBlock { Text = "Accyourate", Foreground = Brushes.White, FontSize = 15, FontWeight = FontWeight.SemiBold },
+                new TextBlock { Text = "Enterprise X", Foreground = Brush.Parse("#CBD5E1"), FontSize = 12 }
+            }
+        };
+        brand.Children.Add(_brandText);
         stack.Children.Add(brand);
 
-        if (!_sidebarCollapsed)
+        _areasCaption = new TextBlock
         {
-            stack.Children.Add(new TextBlock
-            {
-                Text = "AREE",
-                Foreground = Brush.Parse("#94A3B8"),
-                FontSize = 11,
-                FontWeight = FontWeight.SemiBold,
-                Margin = new Thickness(10, 0, 0, 8)
-            });
-        }
+            Text = "AREE",
+            Foreground = Brush.Parse("#94A3B8"),
+            FontSize = 11,
+            FontWeight = FontWeight.SemiBold,
+            Margin = new Thickness(10, 0, 0, 8),
+            IsVisible = !_sidebarCollapsed
+        };
+        stack.Children.Add(_areasCaption);
 
         AddAreaButton(stack, "🏠", "Home", "Home");
         AddAreaButton(stack, "💻", "Asset", "Asset");
@@ -352,6 +360,7 @@ public sealed class MainWindow : Window
             Padding = new Thickness(12, 10),
             CornerRadius = new CornerRadius(AxLayoutTokens.RadiusSmall)
         };
+        button.Tag = new SidebarButtonMetadata(glyph, label);
         ToolTip.SetTip(button, label);
         button.Click += (_, _) => SetContextArea(area);
         button.PointerEntered += (_, _) =>
@@ -1275,6 +1284,21 @@ public sealed class MainWindow : Window
         if (_menuBorder is not null)
             _menuBorder.Padding = _sidebarCollapsed ? new Thickness(8, 18) : new Thickness(14, 18);
 
+        if (_brandText is not null)
+            _brandText.IsVisible = !_sidebarCollapsed;
+        if (_areasCaption is not null)
+            _areasCaption.IsVisible = !_sidebarCollapsed;
+
+        foreach (var button in _areaButtons.Values)
+        {
+            if (button.Tag is not SidebarButtonMetadata metadata || button.Content is not TextBlock label)
+                continue;
+
+            label.Text = _sidebarCollapsed ? metadata.Glyph : $"{metadata.Glyph}  {metadata.Label}";
+            label.HorizontalAlignment = _sidebarCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+            button.HorizontalContentAlignment = _sidebarCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+        }
+
         SaveSidebarState();
     }
 
@@ -1312,6 +1336,8 @@ public sealed class MainWindow : Window
         }
     }
 }
+
+internal sealed record SidebarButtonMetadata(string Glyph, string Label);
 
 internal static class MainWindowGridExtensions
 {
