@@ -473,6 +473,7 @@ public sealed class MainWindow : Window
                 AddContextButton("📦 RMA fornitori", OpenSparePartRma);
                 AddContextButton("📊 SLA fornitori RMA", OpenSupplierRmaPerformance);
                 AddContextButton("🔔 Solleciti fornitori", OpenSupplierFollowUpDashboard);
+                AddContextButton("✉ Registro comunicazioni", OpenSupplierCommunicationRegister);
                 AddContextButton("📋 Approvvigionamento", OpenSparePartReplenishment);
                 AddContextButton("🔎 Inventario fisico", OpenSparePartStocktake);
                 AddContextButton("📍 Ubicazioni magazzino", OpenSparePartLocations);
@@ -633,6 +634,13 @@ public sealed class MainWindow : Window
         var window = new SupplierFollowUpDashboardWindow();
         window.Show(this);
         SetBreadcrumb("Workspace > Asset > Solleciti fornitori");
+    }
+
+    private void OpenSupplierCommunicationRegister()
+    {
+        var window = new SupplierCommunicationRegisterWindow();
+        window.Show(this);
+        SetBreadcrumb("Workspace > Asset > Registro comunicazioni");
     }
 
     private void OpenSparePartReplenishment()

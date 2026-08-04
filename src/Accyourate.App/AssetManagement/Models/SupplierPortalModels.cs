@@ -12,6 +12,7 @@ public sealed class SupplierPortalInteraction
     public string FollowUpDate{get;set;}=""; public string CreatedAt{get;set;}=""; public string CreatedBy{get;set;}="";
     public string UpdatedAt{get;set;}=""; public string CompletedAt{get;set;}=""; public string CancelledAt{get;set;}=""; public string ResolutionNotes{get;set;}="";
     public string Priority{get;set;}="Normale"; public string Owner{get;set;}=""; public string SupplierName{get;set;}="";
+    public string CommunicationStatus{get;set;}="Registrata"; public int ParentInteractionId{get;set;} public string SentAt{get;set;}=""; public string ResponseReceivedAt{get;set;}="";
 }
 public sealed class SupplierFollowUpAudit
 {
