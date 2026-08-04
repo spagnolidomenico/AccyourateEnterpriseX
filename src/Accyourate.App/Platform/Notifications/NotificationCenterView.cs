@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Accyourate.App.UIFramework.Tokens;
+using Accyourate.App.AssetManagement;
 
 namespace Accyourate.App.Platform.Notifications;
 
@@ -162,6 +163,25 @@ public sealed class NotificationCenterView : UserControl
         });
         Add(grid, text, 1, 0);
 
+        var actions = new StackPanel { Spacing = 5 };
+        if (item.Action == "open-supplier-portal" && int.TryParse(item.Payload, out var supplierId))
+        {
+            var open = new Button
+            {
+                Content = "Apri portale",
+                Background = UiTokens.Brush(UiTokens.BrandBlue),
+                Foreground = Brushes.White,
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(8, 6)
+            };
+            open.Click += (_, _) =>
+            {
+                _service.MarkAsRead(item.Id);
+                new SupplierRmaPortalWindow(supplierId).Show();
+                Load();
+            };
+            actions.Children.Add(open);
+        }
         var button = new Button
         {
             Content = item.IsRead ? "Letta" : "Segna letta",
@@ -174,7 +194,8 @@ public sealed class NotificationCenterView : UserControl
             _service.MarkAsRead(item.Id);
             Load();
         };
-        Add(grid, button, 2, 0);
+        actions.Children.Add(button);
+        Add(grid, actions, 2, 0);
 
         return new Border
         {
