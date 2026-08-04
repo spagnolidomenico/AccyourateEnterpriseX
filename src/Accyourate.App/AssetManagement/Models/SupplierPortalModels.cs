@@ -33,6 +33,7 @@ public sealed class SupplierPortalAttachment
 {
     public int Id{get;set;} public int SupplierId{get;set;} public int RmaId{get;set;} public string Category{get;set;}="Documento";
     public string FileName{get;set;}=""; public string StoredPath{get;set;}=""; public string Notes{get;set;}=""; public string CreatedAt{get;set;}="";
+    public int InteractionId{get;set;} public bool IsAvailable=>File.Exists(StoredPath);
 }
 public sealed class SupplierEmailTemplate
 {
