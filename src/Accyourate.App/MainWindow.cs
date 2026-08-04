@@ -470,6 +470,7 @@ public sealed class MainWindow : Window
                 AddContextButton("⚠ Quarantena ricambi", OpenSparePartQuarantine);
                 AddContextButton("📦 RMA fornitori", OpenSparePartRma);
                 AddContextButton("📊 SLA fornitori RMA", OpenSupplierRmaPerformance);
+                AddContextButton("🔔 Solleciti fornitori", OpenSupplierFollowUpDashboard);
                 AddContextButton("📋 Approvvigionamento", OpenSparePartReplenishment);
                 AddContextButton("🔎 Inventario fisico", OpenSparePartStocktake);
                 AddContextButton("📍 Ubicazioni magazzino", OpenSparePartLocations);
@@ -623,6 +624,13 @@ public sealed class MainWindow : Window
         var window = new SupplierRmaPerformanceWindow();
         window.Show(this);
         SetBreadcrumb("Workspace > Asset > SLA fornitori RMA");
+    }
+
+    private void OpenSupplierFollowUpDashboard()
+    {
+        var window = new SupplierFollowUpDashboardWindow();
+        window.Show(this);
+        SetBreadcrumb("Workspace > Asset > Solleciti fornitori");
     }
 
     private void OpenSparePartReplenishment()

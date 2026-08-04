@@ -11,6 +11,7 @@ public sealed class SupplierPortalInteraction
     public string Direction{get;set;}="In uscita"; public string Subject{get;set;}=""; public string Message{get;set;}=""; public string Status{get;set;}="Aperta";
     public string FollowUpDate{get;set;}=""; public string CreatedAt{get;set;}=""; public string CreatedBy{get;set;}="";
     public string UpdatedAt{get;set;}=""; public string CompletedAt{get;set;}=""; public string CancelledAt{get;set;}=""; public string ResolutionNotes{get;set;}="";
+    public string Priority{get;set;}="Normale"; public string Owner{get;set;}=""; public string SupplierName{get;set;}="";
 }
 public sealed class SupplierFollowUpAudit
 {
