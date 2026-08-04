@@ -42,7 +42,13 @@ public sealed class SupplierFollowUpDashboardWindow : Window
         // vanno sganciati esplicitamente dal vecchio Grid per evitare il doppio parent Avalonia.
         _filterHost?.Children.Clear();
         _root.Children.Clear(); _root.Margin = new Thickness(24); _root.Spacing = 14;
-        _root.Children.Add(new TextBlock { Text = "Cruscotto solleciti fornitori", FontSize = 30, FontWeight = FontWeight.Bold });
+        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        header.Children.Add(new TextBlock { Text = "Cruscotto solleciti fornitori", FontSize = 30, FontWeight = FontWeight.Bold });
+        var automation = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        automation.Children.Add(Button("Esegui automazione", RunAutomation, true));
+        automation.Children.Add(Button("Regole", () => new SupplierFollowUpAutomationRulesWindow().Show(this)));
+        automation.Children.Add(Button("Registro", () => new SupplierFollowUpAutomationLogWindow().Show(this)));
+        Grid.SetColumn(automation, 1); header.Children.Add(automation); _root.Children.Add(header);
         _root.Children.Add(new TextBlock { Text = "Attività aperte, scadenze, responsabilità e tempi di risposta dei fornitori.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) });
         var kpis = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
         kpis.Children.Add(Kpi("Totali", all.Count.ToString(), UiTokens.BrandBlue));
@@ -90,6 +96,7 @@ public sealed class SupplierFollowUpDashboardWindow : Window
         if (result is null) return;
         _repository.UpdateFollowUpAssignment(item.Id, result.Value.Priority, result.Value.Owner); Load();
     }
+    private void RunAutomation(){_repository.RunFollowUpAutomation();Load();}
 
     private bool MatchesStatus(SupplierPortalInteraction x) => (_status.SelectedItem?.ToString() ?? "Tutti gli stati") switch
     {
@@ -113,4 +120,19 @@ internal sealed class SupplierFollowUpAssignmentDialog : Window
 {
     private readonly ComboBox _priority=new(){ItemsSource=new[]{"Bassa","Normale","Alta","Urgente"}};private readonly TextBox _owner=new();
     public SupplierFollowUpAssignmentDialog(SupplierPortalInteraction item){Title="Responsabilità sollecito";Width=480;Height=330;WindowStartupLocation=WindowStartupLocation.CenterOwner;_priority.SelectedItem=item.Priority;_owner.Text=item.Owner;var p=SupplierContactDialog.Panel("Priorità e responsabile");p.Children.Add(new TextBlock{Text=item.Subject,FontWeight=FontWeight.SemiBold,TextWrapping=TextWrapping.Wrap});SupplierContactDialog.Field(p,"Priorità",_priority);SupplierContactDialog.Field(p,"Responsabile",_owner);p.Children.Add(SupplierContactDialog.SaveButton("Salva",()=>Close((_priority.SelectedItem?.ToString()??"Normale",_owner.Text??""))));Content=p;}
+}
+
+internal sealed class SupplierFollowUpAutomationRulesWindow : Window
+{
+    private readonly SupplierRmaPortalRepository _repository=new();private readonly StackPanel _rows=new();
+    public SupplierFollowUpAutomationRulesWindow(){Title="Regole automazione solleciti";Width=900;Height=680;WindowStartupLocation=WindowStartupLocation.CenterOwner;var root=new StackPanel{Margin=new Thickness(24),Spacing=12};root.Children.Add(new TextBlock{Text="Regole automazione",FontSize=27,FontWeight=FontWeight.Bold});root.Children.Add(new TextBlock{Text="Configura promemoria ed escalation per tutti i fornitori o per un singolo fornitore.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)});root.Children.Add(_rows);Content=new ScrollViewer{Content=root};Load();}
+    private void Load(){_rows.Children.Clear();var suppliers=new MaintenancePurchasingRepository().GetSuppliers();_rows.Children.Add(RuleRow(0,"Regola predefinita"));foreach(var supplier in suppliers)_rows.Children.Add(RuleRow(supplier.Id,supplier.Name));}
+    private Control RuleRow(int supplierId,string name){var rule=_repository.GetAutomationRule(supplierId);if(rule.SupplierId!=supplierId)rule=new(){SupplierId=supplierId,ReminderDaysBefore=rule.ReminderDaysBefore,EscalateAfterDays=rule.EscalateAfterDays,IsEnabled=rule.IsEnabled};var reminder=new NumericUpDown{Minimum=0,Maximum=30,Value=rule.ReminderDaysBefore,Width=100};var escalation=new NumericUpDown{Minimum=0,Maximum=30,Value=rule.EscalateAfterDays,Width=100};var enabled=new CheckBox{Content="Attiva",IsChecked=rule.IsEnabled};var g=new Grid{ColumnDefinitions=new ColumnDefinitions("*,180,180,110,100")};Add(g,new TextBlock{Text=name,FontWeight=FontWeight.SemiBold,VerticalAlignment=VerticalAlignment.Center},0);Add(g,new StackPanel{Spacing=2,Children={new TextBlock{Text="Promemoria (giorni prima)",FontSize=11},reminder}},1);Add(g,new StackPanel{Spacing=2,Children={new TextBlock{Text="Escalation (giorni dopo)",FontSize=11},escalation}},2);Add(g,enabled,3);var save=new Button{Content="Salva",Padding=new Thickness(9,6)};save.Click+=(_,_)=>_repository.SaveAutomationRule(new(){SupplierId=supplierId,ReminderDaysBefore=(int)(reminder.Value??0),EscalateAfterDays=(int)(escalation.Value??0),IsEnabled=enabled.IsChecked==true});Add(g,save,4);return new Border{Padding=new Thickness(10),BorderBrush=UiTokens.Brush(UiTokens.Border),BorderThickness=new Thickness(0,0,0,1),Child=g};}
+    private static void Add(Grid g,Control c,int col){c.Margin=new Thickness(0,0,8,0);Grid.SetColumn(c,col);g.Children.Add(c);}
+}
+
+internal sealed class SupplierFollowUpAutomationLogWindow : Window
+{
+    public SupplierFollowUpAutomationLogWindow(){Title="Registro automazione solleciti";Width=1050;Height=680;WindowStartupLocation=WindowStartupLocation.CenterOwner;var root=new StackPanel{Margin=new Thickness(24),Spacing=8};root.Children.Add(new TextBlock{Text="Registro escalation e promemoria",FontSize=27,FontWeight=FontWeight.Bold});var values=new SupplierRmaPortalRepository().GetAutomationLog();if(values.Count==0)root.Children.Add(new TextBlock{Text="Nessuna automazione ancora eseguita.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)});foreach(var x in values){var g=new Grid{ColumnDefinitions=new ColumnDefinitions("150,180,130,*,150")};Text(g,x.SupplierName,0,true);Text(g,x.EventType,1,true);Text(g,$"Sollecito #{x.InteractionId}",2);Text(g,x.Description,3);Text(g,DateTime.TryParse(x.CreatedAt,out var d)?d.ToString("dd/MM/yyyy HH:mm"):x.CreatedAt,4);root.Children.Add(new Border{Padding=new Thickness(9),BorderBrush=UiTokens.Brush(UiTokens.Border),BorderThickness=new Thickness(0,0,0,1),Child=g});}Content=new ScrollViewer{Content=root};}
+    private static void Text(Grid g,string value,int col,bool strong=false){var t=new TextBlock{Text=value,FontWeight=strong?FontWeight.SemiBold:FontWeight.Normal,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,0,8,0)};Grid.SetColumn(t,col);g.Children.Add(t);}
 }

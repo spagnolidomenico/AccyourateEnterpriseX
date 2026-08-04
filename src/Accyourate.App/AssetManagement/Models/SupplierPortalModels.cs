@@ -18,6 +18,16 @@ public sealed class SupplierFollowUpAudit
     public int Id{get;set;} public int InteractionId{get;set;} public string Action{get;set;}=""; public string OldValue{get;set;}="";
     public string NewValue{get;set;}=""; public string Notes{get;set;}=""; public string CreatedAt{get;set;}=""; public string CreatedBy{get;set;}="";
 }
+public sealed class SupplierFollowUpAutomationRule
+{
+    public int SupplierId{get;set;} public string SupplierName{get;set;}=""; public int ReminderDaysBefore{get;set;}=2;
+    public int EscalateAfterDays{get;set;}=1; public bool IsEnabled{get;set;}=true; public string UpdatedAt{get;set;}="";
+}
+public sealed class SupplierFollowUpAutomationLog
+{
+    public int Id{get;set;} public int InteractionId{get;set;} public int SupplierId{get;set;} public string SupplierName{get;set;}="";
+    public string EventType{get;set;}=""; public string Description{get;set;}=""; public string CreatedAt{get;set;}="";
+}
 public sealed class SupplierPortalAttachment
 {
     public int Id{get;set;} public int SupplierId{get;set;} public int RmaId{get;set;} public string Category{get;set;}="Documento";

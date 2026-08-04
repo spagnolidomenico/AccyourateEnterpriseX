@@ -182,6 +182,24 @@ public sealed class NotificationCenterView : UserControl
             };
             actions.Children.Add(open);
         }
+        if (item.Action == "open-supplier-followups")
+        {
+            var openDashboard = new Button
+            {
+                Content = "Apri cruscotto",
+                Background = UiTokens.Brush(UiTokens.BrandBlue),
+                Foreground = Brushes.White,
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(8, 6)
+            };
+            openDashboard.Click += (_, _) =>
+            {
+                _service.MarkAsRead(item.Id);
+                new SupplierFollowUpDashboardWindow().Show();
+                Load();
+            };
+            actions.Children.Add(openDashboard);
+        }
         var button = new Button
         {
             Content = item.IsRead ? "Letta" : "Segna letta",

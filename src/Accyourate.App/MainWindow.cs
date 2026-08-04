@@ -66,7 +66,9 @@ public sealed class MainWindow : Window
         try
         {
             new AssetManagement.Services.SparePartRmaReminderService().PublishDueNotifications();
-            new AssetManagement.Services.SupplierRmaPortalRepository().PublishFollowUpReminders();
+            var followUps = new AssetManagement.Services.SupplierRmaPortalRepository();
+            followUps.PublishFollowUpReminders();
+            followUps.RunFollowUpAutomation();
         }
         catch
         {
