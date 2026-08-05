@@ -13,6 +13,7 @@ public sealed class SupplierRmaAuditDashboardWindow : Window
 {
     private readonly SparePartRmaRepository _rma = new();
     private readonly SupplierRmaValidationService _validation = new();
+    private readonly SupplierRmaAuditScheduleService _schedules = new();
     private readonly StackPanel _kpis = new() { Orientation = Orientation.Horizontal, Spacing = 10 };
     private readonly StackPanel _attention = new();
     private readonly StackPanel _recent = new();
@@ -21,7 +22,7 @@ public sealed class SupplierRmaAuditDashboardWindow : Window
     public SupplierRmaAuditDashboardWindow()
     {
         Title = "Dashboard audit RMA"; Width = 1260; Height = 780; MinWidth = 980; MinHeight = 620;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner; Content = Build(); LoadData();
+        WindowStartupLocation = WindowStartupLocation.CenterOwner; Content = Build(); _schedules.PublishDueNotifications(); LoadData();
     }
 
     private Control Build()
@@ -29,6 +30,7 @@ public sealed class SupplierRmaAuditDashboardWindow : Window
         var root = new DockPanel { Margin = new Thickness(24) };
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         actions.Children.Add(Button("Registro validazioni", () => new SupplierRmaValidationRegisterWindow().Show(this)));
+        actions.Children.Add(Button("Pianificazioni", () => new SupplierRmaAuditScheduleWindow().Show(this)));
         actions.Children.Add(Button("Report PDF", ExportPdf));
         actions.Children.Add(Button("Aggiorna", LoadData, true));
         var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 0, 0, 14) };
