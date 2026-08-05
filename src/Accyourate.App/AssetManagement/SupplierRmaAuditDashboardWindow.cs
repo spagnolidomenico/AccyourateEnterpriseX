@@ -29,6 +29,7 @@ public sealed class SupplierRmaAuditDashboardWindow : Window
     {
         var root = new DockPanel { Margin = new Thickness(24) };
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        actions.Children.Add(Button("Registro audit", () => new SupplierRmaCentralAuditRegisterWindow().Show(this)));
         actions.Children.Add(Button("Registro validazioni", () => new SupplierRmaValidationRegisterWindow().Show(this)));
         actions.Children.Add(Button("Pianificazioni", () => new SupplierRmaAuditScheduleWindow().Show(this)));
         actions.Children.Add(Button("Report PDF", ExportPdf));
