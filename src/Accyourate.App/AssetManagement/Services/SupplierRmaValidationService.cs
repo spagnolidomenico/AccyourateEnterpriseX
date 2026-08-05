@@ -18,6 +18,17 @@ public sealed class SupplierRmaValidationResult
     public string Status => CanClose ? "Completo" : Items.Any(x => x.IsValid) ? "Da verificare" : "Incompleto";
 }
 
+public sealed class SupplierRmaDossierClosure
+{
+    public int Id { get; init; }
+    public int RmaId { get; init; }
+    public string CaseNumber { get; init; } = "";
+    public string ValidationStatus { get; init; } = "";
+    public string Notes { get; init; } = "";
+    public string ClosedAt { get; init; } = "";
+    public string ClosedBy { get; init; } = "";
+}
+
 public sealed class SupplierRmaValidationService
 {
     private readonly string _connectionString;
@@ -79,7 +90,26 @@ public sealed class SupplierRmaValidationService
         command.ExecuteNonQuery();
     }
 
+    public IReadOnlyList<SupplierRmaDossierClosure> GetClosures()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Id,RmaId,CaseNumber,ValidationStatus,Notes,ClosedAt,ClosedBy FROM SupplierRmaDossierClosures ORDER BY ClosedAt DESC,Id DESC;";
+        using var reader = command.ExecuteReader();
+        var values = new List<SupplierRmaDossierClosure>();
+        while (reader.Read()) values.Add(new SupplierRmaDossierClosure
+        {
+            Id = reader.GetInt32(0), RmaId = reader.GetInt32(1), CaseNumber = Text(reader, 2),
+            ValidationStatus = Text(reader, 3), Notes = Text(reader, 4), ClosedAt = Text(reader, 5), ClosedBy = Text(reader, 6)
+        });
+        return values;
+    }
+
+    public static string DossierPath(string caseNumber) => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Accyourate Enterprise X", "Fascicoli RMA", $"Fascicolo-{caseNumber}.zip");
+
     private static SupplierRmaValidationItem Check(string label, bool valid, bool required, string detail) => new() { Label = label, IsValid = valid, IsRequired = required, Detail = detail };
     private static string Dash(string value) => string.IsNullOrWhiteSpace(value) ? "Non presente" : value;
+    private static string Text(SqliteDataReader reader, int index) => reader.IsDBNull(index) ? "" : reader.GetString(index);
     private SqliteConnection Open() { var connection = new SqliteConnection(_connectionString); connection.Open(); return connection; }
 }
