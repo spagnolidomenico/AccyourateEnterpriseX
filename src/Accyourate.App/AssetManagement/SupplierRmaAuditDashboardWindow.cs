@@ -29,6 +29,7 @@ public sealed class SupplierRmaAuditDashboardWindow : Window
         var root = new DockPanel { Margin = new Thickness(24) };
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         actions.Children.Add(Button("Registro validazioni", () => new SupplierRmaValidationRegisterWindow().Show(this)));
+        actions.Children.Add(Button("Report PDF", ExportPdf));
         actions.Children.Add(Button("Aggiorna", LoadData, true));
         var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 0, 0, 14) };
         Add(head, new StackPanel { Spacing = 3, Children = { new TextBlock { Text = "Dashboard audit RMA", FontSize = 28, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Completezza dei fascicoli, scadenze e tempi di chiusura.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } }, 0); Add(head, actions, 1);
@@ -85,6 +86,16 @@ public sealed class SupplierRmaAuditDashboardWindow : Window
             var path = SupplierRmaValidationService.DossierPath(item.CaseNumber);
             _recent.Children.Add(Line(item.CaseNumber, $"{Date(item.ClosedAt)} · {item.ClosedBy} · {item.ValidationStatus}", UiTokens.Success, File.Exists(path) ? () => Open(path) : null));
         }
+    }
+
+    private void ExportPdf()
+    {
+        try
+        {
+            var path = new SupplierRmaAuditPdfService().Generate(_rma.GetAll(), _validation.GetClosures());
+            Open(path); _message.Text = $"Report creato: {path}"; _message.Foreground = UiTokens.Brush(UiTokens.Success);
+        }
+        catch (Exception ex) { _message.Text = $"Report non creato: {ex.Message}"; _message.Foreground = UiTokens.Brush(UiTokens.Danger); }
     }
 
     private static Control Panel(string title, Control child) => new Border { Margin = new Thickness(0, 0, 10, 0), Padding = new Thickness(14), Background = UiTokens.Brush(UiTokens.Surface), BorderBrush = UiTokens.Brush(UiTokens.Border), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Child = new StackPanel { Spacing = 10, Children = { new TextBlock { Text = title, FontSize = 18, FontWeight = FontWeight.Bold }, new ScrollViewer { Content = child, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto } } } };
