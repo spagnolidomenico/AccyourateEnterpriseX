@@ -1,5 +1,6 @@
 using Accyourate.App.Platform.Notifications;
 using Microsoft.Data.Sqlite;
+using System.Security.Cryptography;
 
 namespace Accyourate.App.AssetManagement.Services;
 
@@ -39,6 +40,21 @@ public sealed class SupplierRmaCorrectiveActionEvent
     public string CreatedBy { get; set; } = "";
 }
 
+public sealed class SupplierRmaCorrectiveActionAttachment
+{
+    public int Id { get; set; }
+    public int ActionId { get; set; }
+    public string Category { get; set; } = "";
+    public string FileName { get; set; } = "";
+    public string StoredPath { get; set; } = "";
+    public long FileSize { get; set; }
+    public string Sha256 { get; set; } = "";
+    public string Notes { get; set; } = "";
+    public string CreatedAt { get; set; } = "";
+    public string CreatedBy { get; set; } = "";
+    public bool IsAvailable => File.Exists(StoredPath);
+}
+
 public sealed class SupplierRmaCorrectiveActionService
 {
     private readonly string _connectionString;
@@ -61,6 +77,8 @@ public sealed class SupplierRmaCorrectiveActionService
             CREATE TABLE IF NOT EXISTS SupplierRmaCorrectiveActionNotifications(NotificationKey TEXT PRIMARY KEY,ActionId INTEGER NOT NULL,CreatedAt TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS SupplierRmaCorrectiveActionEvents(Id INTEGER PRIMARY KEY AUTOINCREMENT,ActionId INTEGER NOT NULL,EventType TEXT NOT NULL,OldValue TEXT,NewValue TEXT,Notes TEXT,CreatedAt TEXT NOT NULL,CreatedBy TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS IX_SupplierRmaCorrectiveActionEvents_Action ON SupplierRmaCorrectiveActionEvents(ActionId,CreatedAt);
+            CREATE TABLE IF NOT EXISTS SupplierRmaCorrectiveActionAttachments(Id INTEGER PRIMARY KEY AUTOINCREMENT,ActionId INTEGER NOT NULL,Category TEXT NOT NULL,FileName TEXT NOT NULL,StoredPath TEXT NOT NULL,FileSize INTEGER NOT NULL,Sha256 TEXT NOT NULL,Notes TEXT,CreatedAt TEXT NOT NULL,CreatedBy TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS IX_SupplierRmaCorrectiveActionAttachments_Action ON SupplierRmaCorrectiveActionAttachments(ActionId,CreatedAt);
             """;
         command.ExecuteNonQuery();
         EnsureColumn(connection,"EffectivenessStatus","TEXT NOT NULL DEFAULT 'Da verificare'");
@@ -151,6 +169,22 @@ public sealed class SupplierRmaCorrectiveActionService
         using var connection=Open();using var command=connection.CreateCommand();command.CommandText="SELECT Id,ActionId,EventType,OldValue,NewValue,Notes,CreatedAt,CreatedBy FROM SupplierRmaCorrectiveActionEvents WHERE ActionId=$id ORDER BY CreatedAt DESC,Id DESC;";command.Parameters.AddWithValue("$id",actionId);using var reader=command.ExecuteReader();var values=new List<SupplierRmaCorrectiveActionEvent>();while(reader.Read())values.Add(new(){Id=reader.GetInt32(0),ActionId=reader.GetInt32(1),EventType=S(reader,2),OldValue=S(reader,3),NewValue=S(reader,4),Notes=S(reader,5),CreatedAt=S(reader,6),CreatedBy=S(reader,7)});return values;
     }
 
+    public int AttachFile(SupplierRmaCorrectiveAction action,string sourcePath,string category,string notes,string user)
+    {
+        if(!File.Exists(sourcePath))throw new FileNotFoundException("Il file selezionato non e disponibile.",sourcePath);
+        var root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),"Accyourate Enterprise X","Evidenze CAPA RMA",Safe(action.CaseNumber),$"Azione-{action.Id}");Directory.CreateDirectory(root);
+        var original=Path.GetFileName(sourcePath);var stored=$"{DateTime.Now:yyyyMMdd-HHmmssfff}-{Safe(original)}";var destination=Path.Combine(root,stored);File.Copy(sourcePath,destination,false);
+        var info=new FileInfo(destination);var hash=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(destination)));
+        using var connection=Open();using var command=connection.CreateCommand();command.CommandText="INSERT INTO SupplierRmaCorrectiveActionAttachments(ActionId,Category,FileName,StoredPath,FileSize,Sha256,Notes,CreatedAt,CreatedBy) VALUES($action,$category,$name,$path,$size,$hash,$notes,$date,$user);SELECT last_insert_rowid();";
+        command.Parameters.AddWithValue("$action",action.Id);command.Parameters.AddWithValue("$category",string.IsNullOrWhiteSpace(category)?"Evidenza":category.Trim());command.Parameters.AddWithValue("$name",original);command.Parameters.AddWithValue("$path",destination);command.Parameters.AddWithValue("$size",info.Length);command.Parameters.AddWithValue("$hash",hash);command.Parameters.AddWithValue("$notes",notes.Trim());command.Parameters.AddWithValue("$date",DateTime.Now.ToString("s"));command.Parameters.AddWithValue("$user",string.IsNullOrWhiteSpace(user)?"Sistema":user);var id=Convert.ToInt32(command.ExecuteScalar());
+        AddEvent(connection,action.Id,"Evidenza allegata","",original,$"{category} - {notes}".Trim(' ','-'),user);return id;
+    }
+
+    public IReadOnlyList<SupplierRmaCorrectiveActionAttachment> GetAttachments(int actionId)
+    {
+        using var connection=Open();using var command=connection.CreateCommand();command.CommandText="SELECT Id,ActionId,Category,FileName,StoredPath,FileSize,Sha256,Notes,CreatedAt,CreatedBy FROM SupplierRmaCorrectiveActionAttachments WHERE ActionId=$id ORDER BY CreatedAt DESC,Id DESC;";command.Parameters.AddWithValue("$id",actionId);using var reader=command.ExecuteReader();var values=new List<SupplierRmaCorrectiveActionAttachment>();while(reader.Read())values.Add(new(){Id=reader.GetInt32(0),ActionId=reader.GetInt32(1),Category=S(reader,2),FileName=S(reader,3),StoredPath=S(reader,4),FileSize=reader.GetInt64(5),Sha256=S(reader,6),Notes=S(reader,7),CreatedAt=S(reader,8),CreatedBy=S(reader,9)});return values;
+    }
+
     private SqliteConnection Open(){var connection=new SqliteConnection(_connectionString);connection.Open();return connection;}
     private static void AddEvent(SqliteConnection connection,int actionId,string type,string oldValue,string newValue,string notes,string user){using var command=connection.CreateCommand();command.CommandText="INSERT INTO SupplierRmaCorrectiveActionEvents(ActionId,EventType,OldValue,NewValue,Notes,CreatedAt,CreatedBy) VALUES($action,$type,$old,$new,$notes,$date,$user);";command.Parameters.AddWithValue("$action",actionId);command.Parameters.AddWithValue("$type",type);command.Parameters.AddWithValue("$old",oldValue);command.Parameters.AddWithValue("$new",newValue);command.Parameters.AddWithValue("$notes",notes.Trim());command.Parameters.AddWithValue("$date",DateTime.Now.ToString("s"));command.Parameters.AddWithValue("$user",string.IsNullOrWhiteSpace(user)?"Sistema":user);command.ExecuteNonQuery();}
     private static string ReadValue(SqliteConnection connection,int id,string column){using var command=connection.CreateCommand();command.CommandText=$"SELECT {column} FROM SupplierRmaCorrectiveActions WHERE Id=$id;";command.Parameters.AddWithValue("$id",id);return command.ExecuteScalar()?.ToString()??"";}
@@ -159,6 +193,7 @@ public sealed class SupplierRmaCorrectiveActionService
         SELECT a.Id,'Importazione storico','',a.Status,'Azione esistente acquisita nel registro audit',a.CreatedAt,a.CreatedBy
         FROM SupplierRmaCorrectiveActions a WHERE NOT EXISTS(SELECT 1 FROM SupplierRmaCorrectiveActionEvents e WHERE e.ActionId=a.Id);
         """;command.ExecuteNonQuery();}
+    private static string Safe(string value){var invalid=Path.GetInvalidFileNameChars();var cleaned=new string(value.Select(x=>invalid.Contains(x)?'_':x).ToArray()).Trim();return string.IsNullOrWhiteSpace(cleaned)?"evidenza":cleaned;}
     private static void EnsureColumn(SqliteConnection connection,string name,string definition){using var check=connection.CreateCommand();check.CommandText="PRAGMA table_info(SupplierRmaCorrectiveActions);";using var reader=check.ExecuteReader();var exists=false;while(reader.Read())if(string.Equals(reader.GetString(1),name,StringComparison.OrdinalIgnoreCase)){exists=true;break;}reader.Close();if(exists)return;using var alter=connection.CreateCommand();alter.CommandText=$"ALTER TABLE SupplierRmaCorrectiveActions ADD COLUMN {name} {definition};";alter.ExecuteNonQuery();}
     private static string S(SqliteDataReader reader,int index)=>reader.IsDBNull(index)?"":reader.GetString(index);
 }
