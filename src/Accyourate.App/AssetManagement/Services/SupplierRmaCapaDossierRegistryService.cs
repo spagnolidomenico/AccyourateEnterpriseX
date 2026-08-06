@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Accyourate.App.Platform.Notifications;
 
 namespace Accyourate.App.AssetManagement.Services;
 
@@ -16,8 +17,23 @@ public sealed class SupplierRmaCapaDossierRegistryRecord
     public string ReportPath { get; init; } = "";
     public string CreatedAt { get; init; } = "";
     public string CreatedBy { get; init; } = "";
+    public string DocumentStatus { get; init; } = "Attivo";
+    public string Custodian { get; init; } = "";
+    public string Revision { get; init; } = "1";
+    public string RetentionUntil { get; init; } = "";
+    public string ControlNotes { get; init; } = "";
+    public string UpdatedAt { get; init; } = "";
+    public string UpdatedBy { get; init; } = "";
     public bool ArchiveAvailable => File.Exists(ArchivePath);
     public bool ReportAvailable => File.Exists(ReportPath);
+    public bool MissingDocuments => !ArchiveAvailable || (Operation=="Verifica"&&!ReportAvailable);
+    public bool IsExpired => DateTime.TryParse(RetentionUntil,out var date)&&date.Date<DateTime.Today;
+    public bool IsDueSoon => DateTime.TryParse(RetentionUntil,out var date)&&date.Date>=DateTime.Today&&date.Date<=DateTime.Today.AddDays(30);
+}
+
+public sealed class SupplierRmaCapaDossierRegistryEvent
+{
+    public int Id { get; init; } public int RegistryId { get; init; } public string EventType { get; init; }=""; public string OldValue { get; init; }=""; public string NewValue { get; init; }=""; public string Notes { get; init; }=""; public string CreatedAt { get; init; }=""; public string CreatedBy { get; init; }="";
 }
 
 public sealed class SupplierRmaCapaDossierRegistryService
@@ -33,7 +49,12 @@ public sealed class SupplierRmaCapaDossierRegistryService
               Operation TEXT NOT NULL,Outcome TEXT NOT NULL,FileCount INTEGER NOT NULL DEFAULT 0,AnomalyCount INTEGER NOT NULL DEFAULT 0,
               ArchivePath TEXT NOT NULL,ReportPath TEXT NOT NULL,CreatedAt TEXT NOT NULL,CreatedBy TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS IX_SupplierRmaCapaDossierRegistry_CaseDate ON SupplierRmaCapaDossierRegistry(CaseNumber,CreatedAt DESC);
+            CREATE TABLE IF NOT EXISTS SupplierRmaCapaDossierRegistryEvents(Id INTEGER PRIMARY KEY AUTOINCREMENT,RegistryId INTEGER NOT NULL,EventType TEXT NOT NULL,OldValue TEXT,NewValue TEXT,Notes TEXT,CreatedAt TEXT NOT NULL,CreatedBy TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS IX_SupplierRmaCapaDossierRegistryEvents_Record ON SupplierRmaCapaDossierRegistryEvents(RegistryId,CreatedAt DESC);
+            CREATE TABLE IF NOT EXISTS SupplierRmaCapaDossierRegistryNotifications(NotificationKey TEXT PRIMARY KEY,RegistryId INTEGER NOT NULL,CreatedAt TEXT NOT NULL);
             """;command.ExecuteNonQuery();
+        EnsureColumn(connection,"DocumentStatus","TEXT NOT NULL DEFAULT 'Attivo'");EnsureColumn(connection,"Custodian","TEXT NOT NULL DEFAULT ''");EnsureColumn(connection,"Revision","TEXT NOT NULL DEFAULT '1'");EnsureColumn(connection,"RetentionUntil","TEXT NOT NULL DEFAULT ''");EnsureColumn(connection,"ControlNotes","TEXT NOT NULL DEFAULT ''");EnsureColumn(connection,"UpdatedAt","TEXT NOT NULL DEFAULT ''");EnsureColumn(connection,"UpdatedBy","TEXT NOT NULL DEFAULT ''");
+        using var migrate=connection.CreateCommand();migrate.CommandText="UPDATE SupplierRmaCapaDossierRegistry SET RetentionUntil=date(CreatedAt,'+10 years') WHERE RetentionUntil='';";migrate.ExecuteNonQuery();
     }
 
     public void RecordExport(SupplierRmaCorrectiveAction action,string archivePath,int fileCount,string user)=>Insert(action,"Esportazione","Creato",fileCount,0,archivePath,"",user);
@@ -41,15 +62,39 @@ public sealed class SupplierRmaCapaDossierRegistryService
 
     public IReadOnlyList<SupplierRmaCapaDossierRegistryRecord> GetAll()
     {
-        using var connection=Open();using var command=connection.CreateCommand();command.CommandText="SELECT Id,ActionId,CaseNumber,ActionTitle,Operation,Outcome,FileCount,AnomalyCount,ArchivePath,ReportPath,CreatedAt,CreatedBy FROM SupplierRmaCapaDossierRegistry ORDER BY CreatedAt DESC,Id DESC;";
-        using var reader=command.ExecuteReader();var values=new List<SupplierRmaCapaDossierRegistryRecord>();while(reader.Read())values.Add(new(){Id=reader.GetInt32(0),ActionId=reader.GetInt32(1),CaseNumber=S(reader,2),ActionTitle=S(reader,3),Operation=S(reader,4),Outcome=S(reader,5),FileCount=reader.GetInt32(6),AnomalyCount=reader.GetInt32(7),ArchivePath=S(reader,8),ReportPath=S(reader,9),CreatedAt=S(reader,10),CreatedBy=S(reader,11)});return values;
+        using var connection=Open();using var command=connection.CreateCommand();command.CommandText="SELECT Id,ActionId,CaseNumber,ActionTitle,Operation,Outcome,FileCount,AnomalyCount,ArchivePath,ReportPath,CreatedAt,CreatedBy,DocumentStatus,Custodian,Revision,RetentionUntil,ControlNotes,UpdatedAt,UpdatedBy FROM SupplierRmaCapaDossierRegistry ORDER BY CreatedAt DESC,Id DESC;";
+        using var reader=command.ExecuteReader();var values=new List<SupplierRmaCapaDossierRegistryRecord>();while(reader.Read())values.Add(new(){Id=reader.GetInt32(0),ActionId=reader.GetInt32(1),CaseNumber=S(reader,2),ActionTitle=S(reader,3),Operation=S(reader,4),Outcome=S(reader,5),FileCount=reader.GetInt32(6),AnomalyCount=reader.GetInt32(7),ArchivePath=S(reader,8),ReportPath=S(reader,9),CreatedAt=S(reader,10),CreatedBy=S(reader,11),DocumentStatus=S(reader,12),Custodian=S(reader,13),Revision=S(reader,14),RetentionUntil=S(reader,15),ControlNotes=S(reader,16),UpdatedAt=S(reader,17),UpdatedBy=S(reader,18)});return values;
+    }
+
+    public void UpdateControl(int id,string status,string custodian,string revision,string retentionUntil,string notes,string user)
+    {
+        if(status is not ("Attivo" or "Archiviato" or "Sospeso" or "Da revisionare"))throw new InvalidOperationException("Stato documentale non valido.");if(string.IsNullOrWhiteSpace(custodian))throw new InvalidOperationException("Indica il responsabile della conservazione.");if(string.IsNullOrWhiteSpace(revision))throw new InvalidOperationException("Indica il numero di revisione.");if(!DateTime.TryParse(retentionUntil,out var retention))throw new InvalidOperationException("Inserisci una scadenza di conservazione valida.");
+        using var connection=Open();var old=ReadRecord(connection,id);using var command=connection.CreateCommand();command.CommandText="UPDATE SupplierRmaCapaDossierRegistry SET DocumentStatus=$status,Custodian=$custodian,Revision=$revision,RetentionUntil=$retention,ControlNotes=$notes,UpdatedAt=$date,UpdatedBy=$user WHERE Id=$id;";command.Parameters.AddWithValue("$id",id);command.Parameters.AddWithValue("$status",status);command.Parameters.AddWithValue("$custodian",custodian.Trim());command.Parameters.AddWithValue("$revision",revision.Trim());command.Parameters.AddWithValue("$retention",retention.ToString("yyyy-MM-dd"));command.Parameters.AddWithValue("$notes",notes.Trim());command.Parameters.AddWithValue("$date",DateTime.Now.ToString("s"));command.Parameters.AddWithValue("$user",string.IsNullOrWhiteSpace(user)?"Sistema":user);if(command.ExecuteNonQuery()==0)throw new InvalidOperationException("Registrazione non trovata.");AddEvent(connection,id,"Controllo documentale",$"{old.DocumentStatus};{old.Custodian};{old.Revision};{old.RetentionUntil}",$"{status};{custodian.Trim()};{revision.Trim()};{retention:yyyy-MM-dd}",notes,user);
+    }
+
+    public IReadOnlyList<SupplierRmaCapaDossierRegistryEvent> GetHistory(int registryId)
+    {
+        using var connection=Open();using var command=connection.CreateCommand();command.CommandText="SELECT Id,RegistryId,EventType,OldValue,NewValue,Notes,CreatedAt,CreatedBy FROM SupplierRmaCapaDossierRegistryEvents WHERE RegistryId=$id ORDER BY CreatedAt DESC,Id DESC;";command.Parameters.AddWithValue("$id",registryId);using var reader=command.ExecuteReader();var values=new List<SupplierRmaCapaDossierRegistryEvent>();while(reader.Read())values.Add(new(){Id=reader.GetInt32(0),RegistryId=reader.GetInt32(1),EventType=S(reader,2),OldValue=S(reader,3),NewValue=S(reader,4),Notes=S(reader,5),CreatedAt=S(reader,6),CreatedBy=S(reader,7)});return values;
+    }
+
+    public int PublishAlerts(NotificationService? notifications=null)
+    {
+        notifications??=new NotificationService();var count=0;foreach(var item in GetAll())
+        {
+            string? type=null,title=null,message=null,priority=null;if(item.MissingDocuments){type="missing";title="Fascicolo CAPA incompleto";message=$"{item.CaseNumber}: archivio o verbale non disponibile.";priority=NotificationPriority.Critical;}else if(item.IsExpired){type="expired";title="Conservazione fascicolo CAPA scaduta";message=$"{item.CaseNumber}: conservazione scaduta il {FormatDate(item.RetentionUntil)}.";priority=NotificationPriority.High;}else if(item.IsDueSoon){type="due";title="Conservazione fascicolo CAPA in scadenza";message=$"{item.CaseNumber}: scadenza conservazione {FormatDate(item.RetentionUntil)}.";priority=NotificationPriority.High;}if(type is null)continue;
+            var key=$"capa-dossier:{type}:{item.Id}:{DateTime.Today:yyyyMMdd}";using var connection=Open();using var check=connection.CreateCommand();check.CommandText="SELECT COUNT(*) FROM SupplierRmaCapaDossierRegistryNotifications WHERE NotificationKey=$key;";check.Parameters.AddWithValue("$key",key);if(Convert.ToInt32(check.ExecuteScalar())>0)continue;notifications.Publish(title!,message!,NotificationCategory.Asset,priority!,"Controllo documentale CAPA","open-rma-corrective-actions",item.ActionId.ToString());using var insert=connection.CreateCommand();insert.CommandText="INSERT INTO SupplierRmaCapaDossierRegistryNotifications(NotificationKey,RegistryId,CreatedAt) VALUES($key,$id,$date);";insert.Parameters.AddWithValue("$key",key);insert.Parameters.AddWithValue("$id",item.Id);insert.Parameters.AddWithValue("$date",DateTime.Now.ToString("s"));insert.ExecuteNonQuery();count++;
+        }return count;
     }
 
     private void Insert(SupplierRmaCorrectiveAction action,string operation,string outcome,int fileCount,int anomalies,string archive,string report,string user)
     {
-        using var connection=Open();using var command=connection.CreateCommand();command.CommandText="INSERT INTO SupplierRmaCapaDossierRegistry(ActionId,CaseNumber,ActionTitle,Operation,Outcome,FileCount,AnomalyCount,ArchivePath,ReportPath,CreatedAt,CreatedBy) VALUES($action,$case,$title,$operation,$outcome,$files,$anomalies,$archive,$report,$date,$user);";
-        command.Parameters.AddWithValue("$action",action.Id);command.Parameters.AddWithValue("$case",action.CaseNumber);command.Parameters.AddWithValue("$title",action.Title);command.Parameters.AddWithValue("$operation",operation);command.Parameters.AddWithValue("$outcome",outcome);command.Parameters.AddWithValue("$files",fileCount);command.Parameters.AddWithValue("$anomalies",anomalies);command.Parameters.AddWithValue("$archive",archive);command.Parameters.AddWithValue("$report",report);command.Parameters.AddWithValue("$date",DateTime.Now.ToString("s"));command.Parameters.AddWithValue("$user",string.IsNullOrWhiteSpace(user)?"Sistema":user);command.ExecuteNonQuery();
+        using var connection=Open();using var command=connection.CreateCommand();command.CommandText="INSERT INTO SupplierRmaCapaDossierRegistry(ActionId,CaseNumber,ActionTitle,Operation,Outcome,FileCount,AnomalyCount,ArchivePath,ReportPath,CreatedAt,CreatedBy) VALUES($action,$case,$title,$operation,$outcome,$files,$anomalies,$archive,$report,$date,$user);SELECT last_insert_rowid();";
+        command.Parameters.AddWithValue("$action",action.Id);command.Parameters.AddWithValue("$case",action.CaseNumber);command.Parameters.AddWithValue("$title",action.Title);command.Parameters.AddWithValue("$operation",operation);command.Parameters.AddWithValue("$outcome",outcome);command.Parameters.AddWithValue("$files",fileCount);command.Parameters.AddWithValue("$anomalies",anomalies);command.Parameters.AddWithValue("$archive",archive);command.Parameters.AddWithValue("$report",report);command.Parameters.AddWithValue("$date",DateTime.Now.ToString("s"));command.Parameters.AddWithValue("$user",string.IsNullOrWhiteSpace(user)?"Sistema":user);var id=Convert.ToInt32(command.ExecuteScalar());using var defaults=connection.CreateCommand();defaults.CommandText="UPDATE SupplierRmaCapaDossierRegistry SET Custodian=$user,RetentionUntil=$retention WHERE Id=$id;";defaults.Parameters.AddWithValue("$id",id);defaults.Parameters.AddWithValue("$user",string.IsNullOrWhiteSpace(user)?"Sistema":user);defaults.Parameters.AddWithValue("$retention",DateTime.Today.AddYears(10).ToString("yyyy-MM-dd"));defaults.ExecuteNonQuery();AddEvent(connection,id,"Registrazione fascicolo","",outcome,$"{operation}: {Path.GetFileName(archive)}",user);
     }
     private SqliteConnection Open(){var connection=new SqliteConnection(_connectionString);connection.Open();return connection;}
+    private static SupplierRmaCapaDossierRegistryRecord ReadRecord(SqliteConnection connection,int id){using var command=connection.CreateCommand();command.CommandText="SELECT DocumentStatus,Custodian,Revision,RetentionUntil FROM SupplierRmaCapaDossierRegistry WHERE Id=$id;";command.Parameters.AddWithValue("$id",id);using var reader=command.ExecuteReader();if(!reader.Read())throw new InvalidOperationException("Registrazione non trovata.");return new(){DocumentStatus=S(reader,0),Custodian=S(reader,1),Revision=S(reader,2),RetentionUntil=S(reader,3)};}
+    private static void AddEvent(SqliteConnection connection,int id,string type,string oldValue,string newValue,string notes,string user){using var command=connection.CreateCommand();command.CommandText="INSERT INTO SupplierRmaCapaDossierRegistryEvents(RegistryId,EventType,OldValue,NewValue,Notes,CreatedAt,CreatedBy) VALUES($id,$type,$old,$new,$notes,$date,$user);";command.Parameters.AddWithValue("$id",id);command.Parameters.AddWithValue("$type",type);command.Parameters.AddWithValue("$old",oldValue);command.Parameters.AddWithValue("$new",newValue);command.Parameters.AddWithValue("$notes",notes??"");command.Parameters.AddWithValue("$date",DateTime.Now.ToString("s"));command.Parameters.AddWithValue("$user",string.IsNullOrWhiteSpace(user)?"Sistema":user);command.ExecuteNonQuery();}
+    private static void EnsureColumn(SqliteConnection connection,string name,string definition){using var check=connection.CreateCommand();check.CommandText="PRAGMA table_info(SupplierRmaCapaDossierRegistry);";using var reader=check.ExecuteReader();var exists=false;while(reader.Read())if(string.Equals(reader.GetString(1),name,StringComparison.OrdinalIgnoreCase)){exists=true;break;}reader.Close();if(exists)return;using var alter=connection.CreateCommand();alter.CommandText=$"ALTER TABLE SupplierRmaCapaDossierRegistry ADD COLUMN {name} {definition};";alter.ExecuteNonQuery();}
+    private static string FormatDate(string value)=>DateTime.TryParse(value,out var date)?date.ToString("dd/MM/yyyy"):value;
     private static string S(SqliteDataReader reader,int index)=>reader.IsDBNull(index)?"":reader.GetString(index);
 }
