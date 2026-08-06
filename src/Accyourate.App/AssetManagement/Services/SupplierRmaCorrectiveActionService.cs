@@ -130,6 +130,7 @@ public sealed class SupplierRmaCorrectiveActionService
     public void VerifyEffectiveness(int id,bool effective,string notes,string user)
     {
         if(string.IsNullOrWhiteSpace(notes))throw new InvalidOperationException("Inserisci l'esito della verifica di efficacia.");
+        if(effective&&!GetAttachments(id).Any(x=>x.IsAvailable))throw new InvalidOperationException("Per dichiarare l'azione efficace devi prima archiviare almeno un'evidenza documentale.");
         using var connection=Open();var oldValue=ReadValue(connection,id,"EffectivenessStatus");using var command=connection.CreateCommand();
         command.CommandText="UPDATE SupplierRmaCorrectiveActions SET EffectivenessStatus=$effectiveness,EffectivenessNotes=$notes,EffectivenessVerifiedAt=$date,EffectivenessVerifiedBy=$user,Status=CASE WHEN $effective=1 THEN Status ELSE 'In corso' END,CompletedAt=CASE WHEN $effective=1 THEN CompletedAt ELSE '' END WHERE Id=$id AND Status='Completata';";
         command.Parameters.AddWithValue("$id",id);command.Parameters.AddWithValue("$effectiveness",effective?"Efficace":"Non efficace");command.Parameters.AddWithValue("$notes",notes.Trim());command.Parameters.AddWithValue("$date",DateTime.Now.ToString("s"));command.Parameters.AddWithValue("$user",user);command.Parameters.AddWithValue("$effective",effective?1:0);
