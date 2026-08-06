@@ -186,6 +186,13 @@ public sealed class SupplierRmaCorrectiveActionService
         using var connection=Open();using var command=connection.CreateCommand();command.CommandText="SELECT Id,ActionId,Category,FileName,StoredPath,FileSize,Sha256,Notes,CreatedAt,CreatedBy FROM SupplierRmaCorrectiveActionAttachments WHERE ActionId=$id ORDER BY CreatedAt DESC,Id DESC;";command.Parameters.AddWithValue("$id",actionId);using var reader=command.ExecuteReader();var values=new List<SupplierRmaCorrectiveActionAttachment>();while(reader.Read())values.Add(new(){Id=reader.GetInt32(0),ActionId=reader.GetInt32(1),Category=S(reader,2),FileName=S(reader,3),StoredPath=S(reader,4),FileSize=reader.GetInt64(5),Sha256=S(reader,6),Notes=S(reader,7),CreatedAt=S(reader,8),CreatedBy=S(reader,9)});return values;
     }
 
+    public void RecordDossierVerification(int actionId,bool valid,string archiveName,string reportPath,string user)
+    {
+        using var connection=Open();
+        if(string.IsNullOrWhiteSpace(ReadValue(connection,actionId,"CaseNumber")))throw new InvalidOperationException("Azione correttiva non trovata.");
+        AddEvent(connection,actionId,"Verifica integrita fascicolo","",valid?"Integro":"Non conforme",$"Archivio: {archiveName}. Verbale: {reportPath}",user);
+    }
+
     private SqliteConnection Open(){var connection=new SqliteConnection(_connectionString);connection.Open();return connection;}
     private static void AddEvent(SqliteConnection connection,int actionId,string type,string oldValue,string newValue,string notes,string user){using var command=connection.CreateCommand();command.CommandText="INSERT INTO SupplierRmaCorrectiveActionEvents(ActionId,EventType,OldValue,NewValue,Notes,CreatedAt,CreatedBy) VALUES($action,$type,$old,$new,$notes,$date,$user);";command.Parameters.AddWithValue("$action",actionId);command.Parameters.AddWithValue("$type",type);command.Parameters.AddWithValue("$old",oldValue);command.Parameters.AddWithValue("$new",newValue);command.Parameters.AddWithValue("$notes",notes.Trim());command.Parameters.AddWithValue("$date",DateTime.Now.ToString("s"));command.Parameters.AddWithValue("$user",string.IsNullOrWhiteSpace(user)?"Sistema":user);command.ExecuteNonQuery();}
     private static string ReadValue(SqliteConnection connection,int id,string column){using var command=connection.CreateCommand();command.CommandText=$"SELECT {column} FROM SupplierRmaCorrectiveActions WHERE Id=$id;";command.Parameters.AddWithValue("$id",id);return command.ExecuteScalar()?.ToString()??"";}

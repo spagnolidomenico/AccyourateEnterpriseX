@@ -84,7 +84,7 @@ internal sealed class SupplierRmaCorrectiveActionAttachmentsWindow:Window
     }
     private Control Build()
     {
-        var root=new DockPanel{Margin=new Thickness(24)};var head=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(0,0,0,12)};var title=new StackPanel{Spacing=3,Children={new TextBlock{Text="Evidenze documentali CAPA",FontSize=26,FontWeight=FontWeight.Bold},new TextBlock{Text=$"{_action.CaseNumber} · {_action.Title}",TextWrapping=TextWrapping.Wrap,Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}};Grid.SetColumn(title,0);head.Children.Add(title);var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=8};actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Esporta fascicolo",ExportDossier));actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Allega evidenza",AddFile,true));Grid.SetColumn(actions,1);head.Children.Add(actions);DockPanel.SetDock(head,Dock.Top);root.Children.Add(head);DockPanel.SetDock(_message,Dock.Top);root.Children.Add(_message);root.Children.Add(new ScrollViewer{Content=_rows,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto});return root;
+        var root=new DockPanel{Margin=new Thickness(24)};var head=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(0,0,0,12)};var title=new StackPanel{Spacing=3,Children={new TextBlock{Text="Evidenze documentali CAPA",FontSize=26,FontWeight=FontWeight.Bold},new TextBlock{Text=$"{_action.CaseNumber} · {_action.Title}",TextWrapping=TextWrapping.Wrap,Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}};Grid.SetColumn(title,0);head.Children.Add(title);var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=8};actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Verifica fascicolo",VerifyDossier));actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Esporta fascicolo",ExportDossier));actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Allega evidenza",AddFile,true));Grid.SetColumn(actions,1);head.Children.Add(actions);DockPanel.SetDock(head,Dock.Top);root.Children.Add(head);DockPanel.SetDock(_message,Dock.Top);root.Children.Add(_message);root.Children.Add(new ScrollViewer{Content=_rows,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto});return root;
     }
     private void Load()
     {
@@ -103,8 +103,42 @@ internal sealed class SupplierRmaCorrectiveActionAttachmentsWindow:Window
         catch(Exception ex){_message.Text=$"Evidenza non archiviata: {ex.Message}";_message.Foreground=UiTokens.Brush(UiTokens.Danger);}
     }
     private void ExportDossier(){try{var path=new SupplierRmaCapaDossierService().Generate(_action,_service.GetHistory(_action.Id),_service.GetAttachments(_action.Id));Process.Start(new ProcessStartInfo{FileName=path,UseShellExecute=true});_message.Text=$"Fascicolo CAPA creato: {path}";_message.Foreground=UiTokens.Brush(UiTokens.Success);}catch(Exception ex){_message.Text=$"Fascicolo non creato: {ex.Message}";_message.Foreground=UiTokens.Brush(UiTokens.Danger);}}
+    private async void VerifyDossier()
+    {
+        try
+        {
+            var files=await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions{Title="Seleziona fascicolo CAPA da verificare",AllowMultiple=false,FileTypeFilter=new[]{new FilePickerFileType("Fascicolo ZIP"){Patterns=new[]{"*.zip"}}}});if(files.Count==0)return;
+            var path=files[0].TryGetLocalPath();if(string.IsNullOrWhiteSpace(path))return;
+            var result=new SupplierRmaCapaDossierVerificationService().Verify(path);
+            _service.RecordDossierVerification(_action.Id,result.IsValid,Path.GetFileName(path),result.ReportPath,Environment.UserName);
+            _message.Text=result.IsValid?"Fascicolo integro: impronte e dimensioni corrispondono.":"Fascicolo non conforme: sono state rilevate anomalie.";_message.Foreground=UiTokens.Brush(result.IsValid?UiTokens.Success:UiTokens.Danger);
+            new SupplierRmaCapaDossierVerificationWindow(result).Show(this);
+        }
+        catch(Exception ex){_message.Text=$"Fascicolo non verificato: {ex.Message}";_message.Foreground=UiTokens.Brush(UiTokens.Danger);}
+    }
     private static void Open(string path){if(File.Exists(path))Process.Start(new ProcessStartInfo{FileName=path,UseShellExecute=true});}
     private static void Cell(Grid grid,string text,int column,bool strong=false){var value=new TextBlock{Text=text,TextWrapping=TextWrapping.Wrap,VerticalAlignment=VerticalAlignment.Center,FontWeight=strong?FontWeight.SemiBold:FontWeight.Normal,Margin=new Thickness(0,0,8,0)};Grid.SetColumn(value,column);grid.Children.Add(value);}private static string FormatDate(string value)=>DateTime.TryParse(value,out var date)?date.ToString("dd/MM/yyyy HH:mm"):"—";private static string Size(long value)=>value>=1024*1024?$"{value/(1024d*1024d):N1} MB":$"{value/1024d:N1} KB";
+}
+
+internal sealed class SupplierRmaCapaDossierVerificationWindow:Window
+{
+    public SupplierRmaCapaDossierVerificationWindow(SupplierRmaCapaDossierVerificationResult result)
+    {
+        Title="Verifica integrita fascicolo CAPA";Width=980;Height=680;MinWidth=760;MinHeight=500;WindowStartupLocation=WindowStartupLocation.CenterOwner;
+        var root=new DockPanel{Margin=new Thickness(24)};
+        var head=new StackPanel{Spacing=5,Margin=new Thickness(0,0,0,14),Children={new TextBlock{Text=result.IsValid?"Fascicolo integro":"Fascicolo non conforme",FontSize=27,FontWeight=FontWeight.Bold,Foreground=UiTokens.Brush(result.IsValid?UiTokens.Success:UiTokens.Danger)},new TextBlock{Text=Path.GetFileName(result.ArchivePath),TextWrapping=TextWrapping.Wrap},new TextBlock{Text=$"{result.Items.Count(x=>x.IsValid)} file conformi · {result.Items.Count(x=>!x.IsValid)} anomalie",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}};
+        head.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Apri verbale",()=>{if(File.Exists(result.ReportPath))Process.Start(new ProcessStartInfo{FileName=result.ReportPath,UseShellExecute=true});}));DockPanel.SetDock(head,Dock.Top);root.Children.Add(head);
+        var rows=new StackPanel();
+        foreach(var item in result.Items)
+        {
+            var grid=new Grid{ColumnDefinitions=new ColumnDefinitions("90,220,*"),Margin=new Thickness(0,0,0,3)};
+            var status=new TextBlock{Text=item.IsValid?"OK":"ANOMALIA",FontWeight=FontWeight.Bold,Foreground=UiTokens.Brush(item.IsValid?UiTokens.Success:UiTokens.Danger)};Grid.SetColumn(status,0);grid.Children.Add(status);
+            var name=new TextBlock{Text=item.FileName,TextWrapping=TextWrapping.Wrap,FontWeight=FontWeight.SemiBold};Grid.SetColumn(name,1);grid.Children.Add(name);
+            var detail=new TextBlock{Text=$"{item.Status} - {item.Detail}",TextWrapping=TextWrapping.Wrap};Grid.SetColumn(detail,2);grid.Children.Add(detail);
+            rows.Children.Add(new Border{Padding=new Thickness(9),BorderBrush=UiTokens.Brush(UiTokens.Border),BorderThickness=new Thickness(0,0,0,1),Child=grid});
+        }
+        root.Children.Add(new ScrollViewer{Content=rows,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto});Content=root;
+    }
 }
 
 internal sealed class SupplierRmaAttachmentInfoDialog:Window
