@@ -29,7 +29,7 @@ public sealed class SupplierRmaCapaAttestationExportHistoryWindow : Window
         Grid.SetColumn(title, 0); header.Children.Add(title);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
         actions.Children.Add(new TextBlock { Text = "Conservazione (giorni)", VerticalAlignment = VerticalAlignment.Center }); actions.Children.Add(_retentionDays);
-        actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Salva periodo", SaveRetention)); actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Verifica e notifica", Verify, true));
+        actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Audit conservazione",()=>new SupplierRmaCapaAttestationRetentionAuditWindow().Show(this))); actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Salva periodo", SaveRetention)); actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Verifica e notifica", Verify, true));
         Grid.SetColumn(actions, 1); header.Children.Add(actions); DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
         DockPanel.SetDock(_summary, Dock.Top); root.Children.Add(_summary);
         root.Children.Add(new ScrollViewer { Content = _rows, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto }); return root;

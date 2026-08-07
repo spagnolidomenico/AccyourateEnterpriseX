@@ -31,6 +31,17 @@ public sealed class SupplierRmaCapaAttestationExportRecord
     private string CurrentHash() => FileAvailable ? Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(FilePath))) : "";
 }
 
+public sealed class SupplierRmaCapaAttestationRetentionAuditRecord
+{
+    public int Id { get; init; }
+    public int ExportId { get; init; }
+    public string Format { get; init; } = "";
+    public string Action { get; init; } = "";
+    public string Detail { get; init; } = "";
+    public string PerformedBy { get; init; } = "";
+    public string PerformedAt { get; init; } = "";
+}
+
 public sealed class SupplierRmaCapaAttestationExportService
 {
     private readonly string _connectionString;
@@ -120,6 +131,14 @@ public sealed class SupplierRmaCapaAttestationExportService
     public int PublishRetentionNotifications(NotificationService? notifications=null)
     {
         notifications??=new NotificationService();var count=0;foreach(var x in GetExports().Where(x=>string.IsNullOrWhiteSpace(x.ArchivedAt)&&x.DaysRemaining<=30)){var key=$"capa-export-retention:{x.Id}:{DateTime.Today:yyyyMMdd}";using var c=Open();using var check=c.CreateCommand();check.CommandText="SELECT COUNT(*) FROM SupplierRmaCapaAttestationRetentionNotifications WHERE NotificationKey=$k;";check.Parameters.AddWithValue("$k",key);if(Convert.ToInt32(check.ExecuteScalar())>0)continue;var title=x.DaysRemaining<0?"Conservazione esportazione CAPA scaduta":"Conservazione esportazione CAPA in scadenza";notifications.Publish(title,$"Esportazione {x.Format} del {Date(x.ExportedAt)}: {x.RetentionStatus}.",NotificationCategory.Asset,x.DaysRemaining<0?NotificationPriority.Critical:NotificationPriority.High,"Conservazione attestazioni CAPA","open-rma-corrective-actions",x.Id.ToString());using var add=c.CreateCommand();add.CommandText="INSERT INTO SupplierRmaCapaAttestationRetentionNotifications(NotificationKey,ExportId,CreatedAt) VALUES($k,$id,$d);";add.Parameters.AddWithValue("$k",key);add.Parameters.AddWithValue("$id",x.Id);add.Parameters.AddWithValue("$d",DateTime.Now.ToString("s"));add.ExecuteNonQuery();count++;}return count;
+    }
+    public IReadOnlyList<SupplierRmaCapaAttestationRetentionAuditRecord> GetRetentionAudit()
+    {
+        using var c=Open();using var q=c.CreateCommand();q.CommandText="SELECT a.Id,a.ExportId,COALESCE(e.Format,''),a.Action,a.Detail,a.PerformedBy,a.PerformedAt FROM SupplierRmaCapaAttestationRetentionAudit a LEFT JOIN SupplierRmaCapaAttestationExports e ON e.Id=a.ExportId ORDER BY a.Id DESC;";using var r=q.ExecuteReader();var values=new List<SupplierRmaCapaAttestationRetentionAuditRecord>();while(r.Read())values.Add(new(){Id=r.GetInt32(0),ExportId=r.GetInt32(1),Format=r.GetString(2),Action=r.GetString(3),Detail=r.GetString(4),PerformedBy=r.GetString(5),PerformedAt=r.GetString(6)});return values;
+    }
+    public string ExportRetentionAuditPdf(IReadOnlyList<SupplierRmaCapaAttestationRetentionAuditRecord> rows,string filters)
+    {
+        var settings=_settings.Load();var template=settings.DocumentTemplate??new DocumentTemplateSettings();var document=new SimplePdfDocument{Title="Audit conservazione esportazioni CAPA"};ApplyBranding(document,settings,template,$"CAPA-AUD-{DateTime.Now:yyyyMMdd-HHmm}");document.Branding.DocumentLabel="AUDIT CONSERVAZIONE CAPA";document.AddTitle("Registro audit conservazione esportazioni CAPA");document.AddKeyValue("Data elaborazione",DateTime.Now.ToString("dd/MM/yyyy HH:mm"));document.AddKeyValue("Operatore",Environment.UserName);document.AddKeyValue("Filtri applicati",filters);document.AddKeyValue("Operazioni esportate",rows.Count.ToString());document.AddHeading("Cronologia operazioni");if(rows.Count==0)document.AddText("Nessuna operazione corrisponde ai filtri selezionati.");foreach(var row in rows){document.AddText($"{Date(row.PerformedAt)} - {row.Action}",11);document.AddText($"Esportazione: {(row.ExportId==0?"Configurazione generale":$"#{row.ExportId} {row.Format}")} | Operatore: {Dash(row.PerformedBy)}",9);document.AddText(row.Detail,9);}document.AddSignaturePair("Responsabile qualita","Responsabile processo");return new PdfExportService().Export(document,ExportFolder(),$"Audit-conservazione-CAPA-{DateTime.Now:yyyyMMdd-HHmmss}");
     }
 
     private void Register(string format, IReadOnlyList<SupplierRmaCapaAttestation> rows, string filters, string path)
