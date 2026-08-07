@@ -6,6 +6,25 @@ using Microsoft.Data.Sqlite;
 
 namespace Accyourate.App.AssetManagement.Services;
 
+public sealed class SupplierRmaCapaAttestationExportRecord
+{
+    public int Id { get; init; }
+    public string Format { get; init; } = "";
+    public string FilterDescription { get; init; } = "";
+    public int RecordCount { get; init; }
+    public int ValidCount { get; init; }
+    public int InvalidCount { get; init; }
+    public int MissingCount { get; init; }
+    public string FilePath { get; init; } = "";
+    public string FileHash { get; init; } = "";
+    public string ExportedBy { get; init; } = "";
+    public string ExportedAt { get; init; } = "";
+    public bool FileAvailable => File.Exists(FilePath);
+    public bool IsValid => FileAvailable && string.Equals(CurrentHash(), FileHash, StringComparison.OrdinalIgnoreCase);
+    public string IntegrityStatus => !FileAvailable ? "File mancante" : IsValid ? "Integro" : "Modificato";
+    private string CurrentHash() => FileAvailable ? Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(FilePath))) : "";
+}
+
 public sealed class SupplierRmaCapaAttestationExportService
 {
     private readonly string _connectionString;
@@ -67,6 +86,15 @@ public sealed class SupplierRmaCapaAttestationExportService
         var path = new PdfExportService().Export(document, ExportFolder(), $"Registro-attestazioni-CAPA-{DateTime.Now:yyyyMMdd-HHmmss}");
         Register("PDF", rows, filters, path);
         return path;
+    }
+
+    public IReadOnlyList<SupplierRmaCapaAttestationExportRecord> GetExports()
+    {
+        using var connection = Open(); using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Id,Format,FilterDescription,RecordCount,ValidCount,InvalidCount,MissingCount,FilePath,FileHash,ExportedBy,ExportedAt FROM SupplierRmaCapaAttestationExports ORDER BY Id DESC;";
+        using var reader = command.ExecuteReader(); var rows = new List<SupplierRmaCapaAttestationExportRecord>();
+        while (reader.Read()) rows.Add(new SupplierRmaCapaAttestationExportRecord { Id=reader.GetInt32(0), Format=reader.GetString(1), FilterDescription=reader.GetString(2), RecordCount=reader.GetInt32(3), ValidCount=reader.GetInt32(4), InvalidCount=reader.GetInt32(5), MissingCount=reader.GetInt32(6), FilePath=reader.GetString(7), FileHash=reader.GetString(8), ExportedBy=reader.GetString(9), ExportedAt=reader.GetString(10) });
+        return rows;
     }
 
     private void Register(string format, IReadOnlyList<SupplierRmaCapaAttestation> rows, string filters, string path)

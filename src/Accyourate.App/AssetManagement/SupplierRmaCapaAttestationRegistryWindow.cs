@@ -31,6 +31,7 @@ public sealed class SupplierRmaCapaAttestationRegistryWindow : Window
         var title = new StackPanel { Children = { new TextBlock { Text = "Registro attestazioni CAPA", FontSize = 28, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Impronte, validita, approvatori e verbali.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } };
         Grid.SetColumn(title, 0); head.Children.Add(title);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Storico esportazioni", () => new SupplierRmaCapaAttestationExportHistoryWindow().Show(this)));
         actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Esporta CSV", () => Export(false)));
         actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report PDF", () => Export(true)));
         actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Verifica tutte", VerifyAll, true));
