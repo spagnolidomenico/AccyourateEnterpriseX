@@ -3,6 +3,7 @@ using System.Text;
 using Accyourate.App.Platform.Pdf;
 using Accyourate.App.Platform.Settings;
 using Microsoft.Data.Sqlite;
+using Accyourate.App.Platform.Notifications;
 
 namespace Accyourate.App.AssetManagement.Services;
 
@@ -19,9 +20,14 @@ public sealed class SupplierRmaCapaAttestationExportRecord
     public string FileHash { get; init; } = "";
     public string ExportedBy { get; init; } = "";
     public string ExportedAt { get; init; } = "";
+    public string RetainUntil { get; init; } = "";
+    public string ArchivedAt { get; init; } = "";
+    public string ArchiveCopyPath { get; init; } = "";
     public bool FileAvailable => File.Exists(FilePath);
     public bool IsValid => FileAvailable && string.Equals(CurrentHash(), FileHash, StringComparison.OrdinalIgnoreCase);
     public string IntegrityStatus => !FileAvailable ? "File mancante" : IsValid ? "Integro" : "Modificato";
+    public int DaysRemaining => DateTime.TryParse(RetainUntil, out var date) ? (date.Date - DateTime.Today).Days : 0;
+    public string RetentionStatus => !string.IsNullOrWhiteSpace(ArchivedAt) ? "Archiviata" : DaysRemaining < 0 ? "Scaduta" : DaysRemaining <= 30 ? "In scadenza" : "In conservazione";
     private string CurrentHash() => FileAvailable ? Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(FilePath))) : "";
 }
 
@@ -39,6 +45,11 @@ public sealed class SupplierRmaCapaAttestationExportService
         using var command = connection.CreateCommand();
         command.CommandText = "CREATE TABLE IF NOT EXISTS SupplierRmaCapaAttestationExports(Id INTEGER PRIMARY KEY AUTOINCREMENT,Format TEXT NOT NULL,FilterDescription TEXT NOT NULL,RecordCount INTEGER NOT NULL,ValidCount INTEGER NOT NULL,InvalidCount INTEGER NOT NULL,MissingCount INTEGER NOT NULL,FilePath TEXT NOT NULL,FileHash TEXT NOT NULL,ExportedBy TEXT NOT NULL,ExportedAt TEXT NOT NULL);";
         command.ExecuteNonQuery();
+        EnsureColumn(connection, "SupplierRmaCapaAttestationExports", "RetainUntil", "TEXT NOT NULL DEFAULT ''");
+        EnsureColumn(connection, "SupplierRmaCapaAttestationExports", "ArchivedAt", "TEXT NOT NULL DEFAULT ''");
+        EnsureColumn(connection, "SupplierRmaCapaAttestationExports", "ArchiveCopyPath", "TEXT NOT NULL DEFAULT ''");
+        using var setup = connection.CreateCommand(); setup.CommandText = "CREATE TABLE IF NOT EXISTS SupplierRmaCapaAttestationRetentionSettings(Id INTEGER PRIMARY KEY CHECK(Id=1),RetentionDays INTEGER NOT NULL);INSERT OR IGNORE INTO SupplierRmaCapaAttestationRetentionSettings(Id,RetentionDays) VALUES(1,365);CREATE TABLE IF NOT EXISTS SupplierRmaCapaAttestationRetentionAudit(Id INTEGER PRIMARY KEY AUTOINCREMENT,ExportId INTEGER NOT NULL,Action TEXT NOT NULL,Detail TEXT NOT NULL,PerformedBy TEXT NOT NULL,PerformedAt TEXT NOT NULL);CREATE TABLE IF NOT EXISTS SupplierRmaCapaAttestationRetentionNotifications(NotificationKey TEXT PRIMARY KEY,ExportId INTEGER NOT NULL,CreatedAt TEXT NOT NULL);"; setup.ExecuteNonQuery();
+        using var migrate = connection.CreateCommand(); migrate.CommandText = "UPDATE SupplierRmaCapaAttestationExports SET RetainUntil=date(ExportedAt, '+' || (SELECT RetentionDays FROM SupplierRmaCapaAttestationRetentionSettings WHERE Id=1) || ' days') WHERE RetainUntil='';"; migrate.ExecuteNonQuery();
     }
 
     public string ExportCsv(IReadOnlyList<SupplierRmaCapaAttestation> rows, string filters)
@@ -91,10 +102,24 @@ public sealed class SupplierRmaCapaAttestationExportService
     public IReadOnlyList<SupplierRmaCapaAttestationExportRecord> GetExports()
     {
         using var connection = Open(); using var command = connection.CreateCommand();
-        command.CommandText = "SELECT Id,Format,FilterDescription,RecordCount,ValidCount,InvalidCount,MissingCount,FilePath,FileHash,ExportedBy,ExportedAt FROM SupplierRmaCapaAttestationExports ORDER BY Id DESC;";
+        command.CommandText = "SELECT Id,Format,FilterDescription,RecordCount,ValidCount,InvalidCount,MissingCount,FilePath,FileHash,ExportedBy,ExportedAt,COALESCE(RetainUntil,''),COALESCE(ArchivedAt,''),COALESCE(ArchiveCopyPath,'') FROM SupplierRmaCapaAttestationExports ORDER BY Id DESC;";
         using var reader = command.ExecuteReader(); var rows = new List<SupplierRmaCapaAttestationExportRecord>();
-        while (reader.Read()) rows.Add(new SupplierRmaCapaAttestationExportRecord { Id=reader.GetInt32(0), Format=reader.GetString(1), FilterDescription=reader.GetString(2), RecordCount=reader.GetInt32(3), ValidCount=reader.GetInt32(4), InvalidCount=reader.GetInt32(5), MissingCount=reader.GetInt32(6), FilePath=reader.GetString(7), FileHash=reader.GetString(8), ExportedBy=reader.GetString(9), ExportedAt=reader.GetString(10) });
+        while (reader.Read()) rows.Add(new SupplierRmaCapaAttestationExportRecord { Id=reader.GetInt32(0), Format=reader.GetString(1), FilterDescription=reader.GetString(2), RecordCount=reader.GetInt32(3), ValidCount=reader.GetInt32(4), InvalidCount=reader.GetInt32(5), MissingCount=reader.GetInt32(6), FilePath=reader.GetString(7), FileHash=reader.GetString(8), ExportedBy=reader.GetString(9), ExportedAt=reader.GetString(10), RetainUntil=reader.GetString(11), ArchivedAt=reader.GetString(12), ArchiveCopyPath=reader.GetString(13) });
         return rows;
+    }
+
+    public int GetRetentionDays(){using var c=Open();using var q=c.CreateCommand();q.CommandText="SELECT RetentionDays FROM SupplierRmaCapaAttestationRetentionSettings WHERE Id=1;";return Convert.ToInt32(q.ExecuteScalar());}
+    public void SetRetentionDays(int days){if(days<1||days>36500)throw new InvalidOperationException("Indica un periodo tra 1 e 36500 giorni.");using var c=Open();using var q=c.CreateCommand();q.CommandText="UPDATE SupplierRmaCapaAttestationRetentionSettings SET RetentionDays=$d WHERE Id=1;";q.Parameters.AddWithValue("$d",days);q.ExecuteNonQuery();Audit(c,0,"Configurazione conservazione",$"Periodo impostato a {days} giorni");}
+    public void Extend(int id,int days=365){using var c=Open();using var q=c.CreateCommand();q.CommandText="UPDATE SupplierRmaCapaAttestationExports SET RetainUntil=date(CASE WHEN date(RetainUntil)>date('now') THEN RetainUntil ELSE date('now') END,'+'||$d||' days') WHERE Id=$id;";q.Parameters.AddWithValue("$d",days);q.Parameters.AddWithValue("$id",id);q.ExecuteNonQuery();Audit(c,id,"Proroga conservazione",$"Proroga di {days} giorni");}
+    public string Archive(int id)
+    {
+        var item=GetExports().FirstOrDefault(x=>x.Id==id)??throw new InvalidOperationException("Esportazione non trovata.");if(!item.FileAvailable)throw new InvalidOperationException("Il file originale non e disponibile.");
+        var folder=Path.Combine(ExportFolder(),"Conservazione");Directory.CreateDirectory(folder);var target=Path.Combine(folder,$"{item.Id}-{Path.GetFileName(item.FilePath)}");File.Copy(item.FilePath,target,true);var hash=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(target)));if(!string.Equals(hash,item.FileHash,StringComparison.OrdinalIgnoreCase)){File.Delete(target);throw new InvalidOperationException("La copia non supera la verifica di integrita.");}
+        using var c=Open();using var q=c.CreateCommand();q.CommandText="UPDATE SupplierRmaCapaAttestationExports SET ArchivedAt=$a,ArchiveCopyPath=$p WHERE Id=$id;";q.Parameters.AddWithValue("$a",DateTime.Now.ToString("s"));q.Parameters.AddWithValue("$p",target);q.Parameters.AddWithValue("$id",id);q.ExecuteNonQuery();Audit(c,id,"Archiviazione controllata",target);return target;
+    }
+    public int PublishRetentionNotifications(NotificationService? notifications=null)
+    {
+        notifications??=new NotificationService();var count=0;foreach(var x in GetExports().Where(x=>string.IsNullOrWhiteSpace(x.ArchivedAt)&&x.DaysRemaining<=30)){var key=$"capa-export-retention:{x.Id}:{DateTime.Today:yyyyMMdd}";using var c=Open();using var check=c.CreateCommand();check.CommandText="SELECT COUNT(*) FROM SupplierRmaCapaAttestationRetentionNotifications WHERE NotificationKey=$k;";check.Parameters.AddWithValue("$k",key);if(Convert.ToInt32(check.ExecuteScalar())>0)continue;var title=x.DaysRemaining<0?"Conservazione esportazione CAPA scaduta":"Conservazione esportazione CAPA in scadenza";notifications.Publish(title,$"Esportazione {x.Format} del {Date(x.ExportedAt)}: {x.RetentionStatus}.",NotificationCategory.Asset,x.DaysRemaining<0?NotificationPriority.Critical:NotificationPriority.High,"Conservazione attestazioni CAPA","open-rma-corrective-actions",x.Id.ToString());using var add=c.CreateCommand();add.CommandText="INSERT INTO SupplierRmaCapaAttestationRetentionNotifications(NotificationKey,ExportId,CreatedAt) VALUES($k,$id,$d);";add.Parameters.AddWithValue("$k",key);add.Parameters.AddWithValue("$id",x.Id);add.Parameters.AddWithValue("$d",DateTime.Now.ToString("s"));add.ExecuteNonQuery();count++;}return count;
     }
 
     private void Register(string format, IReadOnlyList<SupplierRmaCapaAttestation> rows, string filters, string path)
@@ -103,7 +128,7 @@ public sealed class SupplierRmaCapaAttestationExportService
         var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
         File.WriteAllText(path + ".sha256", hash, Encoding.ASCII);
         using var connection = Open(); using var command = connection.CreateCommand();
-        command.CommandText = "INSERT INTO SupplierRmaCapaAttestationExports(Format,FilterDescription,RecordCount,ValidCount,InvalidCount,MissingCount,FilePath,FileHash,ExportedBy,ExportedAt) VALUES($f,$d,$n,$v,$i,$m,$p,$h,$u,$a);";
+        command.CommandText = "INSERT INTO SupplierRmaCapaAttestationExports(Format,FilterDescription,RecordCount,ValidCount,InvalidCount,MissingCount,FilePath,FileHash,ExportedBy,ExportedAt,RetainUntil) VALUES($f,$d,$n,$v,$i,$m,$p,$h,$u,$a,date($a,'+'||(SELECT RetentionDays FROM SupplierRmaCapaAttestationRetentionSettings WHERE Id=1)||' days'));";
         command.Parameters.AddWithValue("$f", format); command.Parameters.AddWithValue("$d", filters); command.Parameters.AddWithValue("$n", rows.Count); command.Parameters.AddWithValue("$v", valid); command.Parameters.AddWithValue("$i", invalid); command.Parameters.AddWithValue("$m", missing); command.Parameters.AddWithValue("$p", path); command.Parameters.AddWithValue("$h", hash); command.Parameters.AddWithValue("$u", Environment.UserName); command.Parameters.AddWithValue("$a", DateTime.Now.ToString("s")); command.ExecuteNonQuery();
     }
 
@@ -119,4 +144,6 @@ public sealed class SupplierRmaCapaAttestationExportService
     private static string Date(string value)=>DateTime.TryParse(value,out var date)?date.ToString("dd/MM/yyyy HH:mm"):value;
     private static string Dash(string value)=>string.IsNullOrWhiteSpace(value)?"Non specificato":value;
     private SqliteConnection Open(){var connection=new SqliteConnection(_connectionString);connection.Open();return connection;}
+    private static void EnsureColumn(SqliteConnection c,string table,string column,string definition){using var check=c.CreateCommand();check.CommandText=$"PRAGMA table_info({table});";using var r=check.ExecuteReader();while(r.Read())if(string.Equals(r.GetString(1),column,StringComparison.OrdinalIgnoreCase))return;r.Close();using var alter=c.CreateCommand();alter.CommandText=$"ALTER TABLE {table} ADD COLUMN {column} {definition};";alter.ExecuteNonQuery();}
+    private static void Audit(SqliteConnection c,int id,string action,string detail){using var q=c.CreateCommand();q.CommandText="INSERT INTO SupplierRmaCapaAttestationRetentionAudit(ExportId,Action,Detail,PerformedBy,PerformedAt) VALUES($id,$a,$d,$u,$t);";q.Parameters.AddWithValue("$id",id);q.Parameters.AddWithValue("$a",action);q.Parameters.AddWithValue("$d",detail);q.Parameters.AddWithValue("$u",Environment.UserName);q.Parameters.AddWithValue("$t",DateTime.Now.ToString("s"));q.ExecuteNonQuery();}
 }
