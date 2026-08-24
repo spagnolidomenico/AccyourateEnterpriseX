@@ -27,6 +27,7 @@ public sealed class SupplierRmaCapaGovernanceDashboardWindow : Window
         var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 0, 0, 14) };
         Add(head, new StackPanel { Children = { new TextBlock { Text = "Dashboard Governance CAPA", FontSize = 30, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Fascicoli, riesami periodici, attestazioni e conservazione.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } }, 0);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Criticita", () => new SupplierRmaCapaGovernanceCriticalitiesWindow().Show(this)));
         actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Riesami governance", () => new SupplierRmaCapaGovernanceReviewsWindow().Show(this)));
         actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Piano azioni", () => new SupplierRmaCapaGovernanceActionsWindow().Show(this), true));
         actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report PDF", Report));
