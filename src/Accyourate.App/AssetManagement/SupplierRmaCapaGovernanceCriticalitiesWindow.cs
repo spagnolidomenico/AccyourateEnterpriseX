@@ -10,6 +10,7 @@ namespace Accyourate.App.AssetManagement;
 public sealed class SupplierRmaCapaGovernanceCriticalitiesWindow : Window
 {
     private readonly SupplierRmaCapaGovernanceDashboardService _service = new();
+    private readonly SupplierRmaCapaGovernanceActionService _actions = new();
     private readonly StackPanel _rows = new();
     private readonly TextBlock _summary = new();
 
@@ -67,13 +68,59 @@ public sealed class SupplierRmaCapaGovernanceCriticalitiesWindow : Window
     private void Add(string title, int count, string severity, string guidance, Action open)
     {
         if (count <= 0) return;
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("90,*,150"), Margin = new Thickness(0) };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("90,*,150,160"), Margin = new Thickness(0) };
         var number = new TextBlock { Text = count.ToString(), FontSize = 24, FontWeight = FontWeight.Bold, Foreground = UiTokens.Brush(severity == "Critica" ? UiTokens.Danger : UiTokens.Warning), VerticalAlignment = VerticalAlignment.Center };
         Grid.SetColumn(number, 0); grid.Children.Add(number);
         var detail = new StackPanel { Spacing = 3, Children = { new TextBlock { Text = title, FontSize = 16, FontWeight = FontWeight.SemiBold }, new TextBlock { Text = $"{severity} - {guidance}", TextWrapping = TextWrapping.Wrap, Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } };
         Grid.SetColumn(detail, 1); grid.Children.Add(detail);
         var button = SupplierRmaCorrectiveActionsWindow.Button("Apri registro", open, true);
         Grid.SetColumn(button, 2); grid.Children.Add(button);
+        var active = _actions.GetAll().Any(x => x.Status != "Completata" && x.SourceType == "Criticita Governance CAPA" && x.SourceReference == title);
+        var take = SupplierRmaCorrectiveActionsWindow.Button(active ? "Gia in carico" : "Prendi in carico", () => new SupplierRmaCapaCriticalityAssignmentDialog(title, severity, guidance, _actions, Load).Show(this));
+        take.IsEnabled = !active;
+        Grid.SetColumn(take, 3); grid.Children.Add(take);
         _rows.Children.Add(new Border { Padding = new Thickness(14, 11), BorderBrush = UiTokens.Brush(UiTokens.Border), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Background = UiTokens.Brush(UiTokens.Surface), Child = grid });
+    }
+}
+
+public sealed class SupplierRmaCapaCriticalityAssignmentDialog : Window
+{
+    private readonly string _title;
+    private readonly string _severity;
+    private readonly SupplierRmaCapaGovernanceActionService _service;
+    private readonly Action _saved;
+    private readonly TextBox _owner = new() { Text = Environment.UserName };
+    private readonly ComboBox _priority = new() { ItemsSource = new[] { "Bassa", "Media", "Alta", "Critica" }, SelectedItem = "Alta" };
+    private readonly TextBox _due = new() { Text = DateTime.Today.AddDays(14).ToString("yyyy-MM-dd") };
+    private readonly TextBox _description = new() { AcceptsReturn = true, MinHeight = 100, TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock _message = new() { TextWrapping = TextWrapping.Wrap };
+
+    public SupplierRmaCapaCriticalityAssignmentDialog(string title, string severity, string guidance, SupplierRmaCapaGovernanceActionService service, Action saved)
+    {
+        _title = title; _severity = severity; _service = service; _saved = saved;
+        _priority.SelectedItem = severity == "Critica" ? "Critica" : "Alta";
+        _due.Text = DateTime.Today.AddDays(severity == "Critica" ? 7 : 14).ToString("yyyy-MM-dd");
+        _description.Text = guidance;
+        Title = "Presa in carico criticita"; Width = 620; Height = 570; WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        var root = new StackPanel { Margin = new Thickness(24), Spacing = 9, Children = { new TextBlock { Text = "Prendi in carico", FontSize = 26, FontWeight = FontWeight.Bold }, new TextBlock { Text = title, FontSize = 18, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap }, new TextBlock { Text = $"Gravita rilevata: {severity}", Foreground = UiTokens.Brush(severity == "Critica" ? UiTokens.Danger : UiTokens.Warning) } } };
+        Field(root, "Responsabile", _owner); Field(root, "Priorita", _priority); Field(root, "Scadenza (AAAA-MM-GG)", _due); Field(root, "Descrizione e azione richiesta", _description);
+        root.Children.Add(_message); root.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Crea azione CAPA", Save, true));
+        Content = new ScrollViewer { Content = root };
+    }
+
+    private void Save()
+    {
+        try
+        {
+            if (_service.GetAll().Any(x => x.Status != "Completata" && x.SourceType == "Criticita Governance CAPA" && x.SourceReference == _title)) throw new InvalidOperationException("La criticita e gia associata a un'azione aperta.");
+            _service.Create("Criticita Governance CAPA", _title, _title, _description.Text ?? "", _owner.Text ?? "", _priority.SelectedItem?.ToString() ?? "Alta", _due.Text ?? "", Environment.UserName);
+            _saved(); Close();
+        }
+        catch (Exception ex) { _message.Text = ex.Message; _message.Foreground = UiTokens.Brush(UiTokens.Danger); }
+    }
+
+    private static void Field(Panel root, string label, Control control)
+    {
+        root.Children.Add(new TextBlock { Text = label, FontWeight = FontWeight.SemiBold }); root.Children.Add(control);
     }
 }
