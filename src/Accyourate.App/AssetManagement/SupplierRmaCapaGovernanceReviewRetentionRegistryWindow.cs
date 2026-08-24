@@ -46,6 +46,7 @@ public sealed class SupplierRmaCapaGovernanceReviewRetentionRegistryWindow : Win
             }
         }, 0);
         var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report PDF", ExportReport, true));
         commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Verifica integrita", LoadData, true));
         commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", LoadData));
         Add(header, commands, 1);
@@ -70,6 +71,22 @@ public sealed class SupplierRmaCapaGovernanceReviewRetentionRegistryWindow : Win
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
         });
         return root;
+    }
+
+    private void ExportReport()
+    {
+        try
+        {
+            var path = new SupplierRmaCapaGovernanceReviewRetentionReportService().Export(_search.Text ?? "", _status.SelectedItem?.ToString() ?? "Tutti gli stati");
+            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+            _message.Text = "Report audit generato correttamente.";
+            _message.Foreground = UiTokens.Brush(UiTokens.Success);
+        }
+        catch (Exception exception)
+        {
+            _message.Text = $"Errore generazione report: {exception.Message}";
+            _message.Foreground = UiTokens.Brush(UiTokens.Danger);
+        }
     }
 
     private void LoadData()
