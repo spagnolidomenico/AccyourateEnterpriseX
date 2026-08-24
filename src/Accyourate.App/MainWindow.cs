@@ -610,37 +610,45 @@ public sealed class MainWindow : Window
 
     private void OpenSparePartQuarantine()
     {
-        var window = new SparePartQuarantineWindow();
-        window.Show(this);
-        SetBreadcrumb("Workspace > Asset > Quarantena ricambi");
+        OpenWindowContentInWorkspace(new SparePartQuarantineWindow(), "asset:spare-part-quarantine", "Asset > Quarantena ricambi");
     }
 
     private void OpenSparePartRma()
     {
-        var window = new SparePartRmaWindow();
-        window.Show(this);
-        SetBreadcrumb("Workspace > Asset > RMA fornitori");
+        OpenWindowContentInWorkspace(new SparePartRmaWindow(), "asset:supplier-rma", "Asset > RMA fornitori");
     }
 
     private void OpenSupplierRmaPerformance()
     {
-        var window = new SupplierRmaPerformanceWindow();
-        window.Show(this);
-        SetBreadcrumb("Workspace > Asset > SLA fornitori RMA");
+        OpenWindowContentInWorkspace(new SupplierRmaPerformanceWindow(), "asset:supplier-rma-sla", "Asset > SLA fornitori RMA");
     }
 
     private void OpenSupplierFollowUpDashboard()
     {
-        var window = new SupplierFollowUpDashboardWindow();
-        window.Show(this);
-        SetBreadcrumb("Workspace > Asset > Solleciti fornitori");
+        OpenWindowContentInWorkspace(new SupplierFollowUpDashboardWindow(), "asset:supplier-follow-ups", "Asset > Solleciti fornitori");
     }
 
     private void OpenSupplierCommunicationRegister()
     {
-        var window = new SupplierCommunicationRegisterWindow();
-        window.Show(this);
-        SetBreadcrumb("Workspace > Asset > Registro comunicazioni");
+        OpenWindowContentInWorkspace(new SupplierCommunicationRegisterWindow(), "asset:supplier-communications", "Asset > Registro comunicazioni");
+    }
+
+    private void OpenWindowContentInWorkspace(Window module, string key, string breadcrumb)
+    {
+        if (_workspaceContent is null)
+            return;
+        if (string.Equals(_currentWorkspaceKey, key, StringComparison.Ordinal))
+            return;
+
+        var content = module.Content as Control;
+        module.Content = null;
+        _workspaceContent.Content = content ?? new TextBlock
+        {
+            Text = "Contenuto del modulo non disponibile.",
+            Margin = new Thickness(24)
+        };
+        _currentWorkspaceKey = key;
+        SetBreadcrumb($"Workspace > {breadcrumb}");
     }
 
     private void OpenSparePartReplenishment()
