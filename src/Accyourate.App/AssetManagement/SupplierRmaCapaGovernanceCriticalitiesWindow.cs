@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -11,6 +12,7 @@ public sealed class SupplierRmaCapaGovernanceCriticalitiesWindow : Window
 {
     private readonly SupplierRmaCapaGovernanceDashboardService _service = new();
     private readonly SupplierRmaCapaGovernanceActionService _actions = new();
+    private readonly SupplierRmaCapaGovernanceCriticalityReportService _report = new();
     private readonly StackPanel _rows = new();
     private readonly TextBlock _summary = new();
     private readonly HashSet<string> _current = new(StringComparer.OrdinalIgnoreCase);
@@ -31,13 +33,21 @@ public sealed class SupplierRmaCapaGovernanceCriticalitiesWindow : Window
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 0, 0, 16) };
         var title = new StackPanel { Spacing = 3, Children = { new TextBlock { Text = "Registro criticita Governance CAPA", FontSize = 28, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Anomalie consolidate e collegamenti alle funzioni di risoluzione.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } };
         Grid.SetColumn(title, 0); header.Children.Add(title);
-        var refresh = SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load, true);
-        Grid.SetColumn(refresh, 1); header.Children.Add(refresh);
+        var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report audit PDF", ExportReport));
+        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load, true));
+        Grid.SetColumn(commands, 1); header.Children.Add(commands);
         DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
         _summary.Margin = new Thickness(0, 0, 0, 12); _summary.FontWeight = FontWeight.SemiBold;
         DockPanel.SetDock(_summary, Dock.Top); root.Children.Add(_summary);
         root.Children.Add(new ScrollViewer { Content = _rows, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto });
         return root;
+    }
+
+    private void ExportReport()
+    {
+        try { var path = _report.Export(); _summary.Text = $"Report creato: {Path.GetFileName(path)}"; _summary.Foreground = UiTokens.Brush(UiTokens.Success); Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true }); }
+        catch (Exception ex) { _summary.Text = $"Report non creato: {ex.Message}"; _summary.Foreground = UiTokens.Brush(UiTokens.Danger); }
     }
 
     private void Load()
