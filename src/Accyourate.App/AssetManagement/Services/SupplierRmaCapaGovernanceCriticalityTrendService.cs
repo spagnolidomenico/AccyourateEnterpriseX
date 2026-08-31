@@ -1,4 +1,7 @@
 using Microsoft.Data.Sqlite;
+using System.Text;
+using Accyourate.App.Platform.Pdf;
+using Accyourate.App.Platform.Settings;
 
 namespace Accyourate.App.AssetManagement.Services;
 
@@ -20,6 +23,7 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendService
     private readonly string _connectionString;
     private readonly SupplierRmaCapaGovernanceDashboardService _dashboard = new();
     private readonly SupplierRmaCapaGovernanceActionService _actions = new();
+    private readonly SettingsService _settings = new();
 
     public SupplierRmaCapaGovernanceCriticalityTrendService(string? databasePath = null)
     {
@@ -70,7 +74,38 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendService
         return values;
     }
 
+    public string ExportCsv()
+    {
+        var values = GetAll().OrderBy(x => x.Id).ToList(); if (values.Count == 0) throw new InvalidOperationException("Registra almeno una rilevazione prima dell'esportazione.");
+        var builder = new StringBuilder("Data;Criticita;Avvisi;Azioni attive;Azioni scadute;Completate;Verifiche fallite;Operatore\r\n");
+        foreach (var x in values) builder.AppendLine(string.Join(";", new[] { Csv(Date(x.CapturedAt)), x.CriticalCount.ToString(), x.WarningCount.ToString(), x.ActiveActions.ToString(), x.OverdueActions.ToString(), x.CompletedActions.ToString(), x.FailedVerifications.ToString(), Csv(x.CapturedBy) }));
+        var path = Path.Combine(Folder(), $"Trend-Criticita-CAPA-{DateTime.Now:yyyyMMdd-HHmmss}.csv"); File.WriteAllText(path, builder.ToString(), new UTF8Encoding(true)); return path;
+    }
+
+    public string ExportPdf()
+    {
+        var values = GetAll(); if (values.Count == 0) throw new InvalidOperationException("Registra almeno una rilevazione prima dell'esportazione.");
+        var latest = values[0]; var first = values[^1]; var settings = _settings.Load(); var template = settings.DocumentTemplate ?? new DocumentTemplateSettings();
+        var document = new SimplePdfDocument { Title = "Storico e trend criticita Governance CAPA" }; Brand(document, settings, template, $"CAPA-TREND-{DateTime.Now:yyyyMMdd-HHmm}");
+        document.AddTitle("Storico e trend criticita Governance CAPA"); document.AddKeyValue("Data elaborazione", DateTime.Now.ToString("dd/MM/yyyy HH:mm")); document.AddKeyValue("Operatore", Environment.UserName); document.AddKeyValue("Rilevazioni", values.Count.ToString());
+        document.AddHeading("Situazione piu recente"); document.AddStatus("Esito", latest.CriticalCount == 0 ? "Conforme" : $"{latest.CriticalCount} criticita"); document.AddKeyValue("Avvisi", latest.WarningCount.ToString()); document.AddKeyValue("Azioni attive", latest.ActiveActions.ToString()); document.AddKeyValue("Azioni scadute", latest.OverdueActions.ToString()); document.AddKeyValue("Azioni completate", latest.CompletedActions.ToString()); document.AddKeyValue("Verifiche non superate", latest.FailedVerifications.ToString());
+        document.AddHeading("Variazione dalla baseline"); document.AddKeyValue("Criticita", Difference(latest.CriticalCount, first.CriticalCount)); document.AddKeyValue("Avvisi", Difference(latest.WarningCount, first.WarningCount)); document.AddKeyValue("Azioni scadute", Difference(latest.OverdueActions, first.OverdueActions)); document.AddKeyValue("Azioni completate", Difference(latest.CompletedActions, first.CompletedActions));
+        document.AddHeading("Rilevazioni storiche"); foreach (var x in values) { document.AddText($"{Date(x.CapturedAt)} - {x.CapturedBy}", 10); document.AddText($"Criticita {x.CriticalCount} | Avvisi {x.WarningCount} | Attive {x.ActiveActions} | Scadute {x.OverdueActions} | Completate {x.CompletedActions} | Verifiche fallite {x.FailedVerifications}", 9); }
+        document.AddSignaturePair("Responsabile qualita", "Responsabile processo"); return new PdfExportService().Export(document, Folder(), $"Trend-Criticita-CAPA-{DateTime.Now:yyyyMMdd-HHmmss}");
+    }
+
     private static bool Same(SupplierRmaCapaGovernanceCriticalityTrendPoint left, SupplierRmaCapaGovernanceCriticalityTrendPoint right) => left.CriticalCount == right.CriticalCount && left.WarningCount == right.WarningCount && left.ActiveActions == right.ActiveActions && left.OverdueActions == right.OverdueActions && left.CompletedActions == right.CompletedActions && left.FailedVerifications == right.FailedVerifications;
+
+    private static string Difference(int current, int baseline) { var value = current - baseline; return value == 0 ? "Nessuna variazione" : value > 0 ? $"+{value}" : value.ToString(); }
+    private static string Date(string value) => DateTime.TryParse(value, out var date) ? date.ToString("dd/MM/yyyy HH:mm") : value;
+    private static string Csv(string value) => $"\"{(value ?? "").Replace("\"", "\"\"")}\"";
+    private static string Folder() { var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Accyourate Enterprise X", "Governance CAPA", "Trend criticita"); Directory.CreateDirectory(folder); return folder; }
+    private static void Brand(SimplePdfDocument document, ApplicationSettings settings, DocumentTemplateSettings template, string code)
+    {
+        document.Branding.CompanyName = string.IsNullOrWhiteSpace(settings.Company.LegalName) ? settings.Company.CompanyName : settings.Company.LegalName;
+        document.Branding.CompanyDetailLines.AddRange(new[] { settings.Company.Address, string.Join(" ", new[] { settings.Company.City, settings.Company.Province }.Where(x => !string.IsNullOrWhiteSpace(x))), string.Join(" - ", new[] { settings.Company.Phone, settings.Company.Email }.Where(x => !string.IsNullOrWhiteSpace(x))) }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        document.Branding.HeaderLayout = template.HeaderLayout; document.Branding.LogoPath = settings.Company.LogoPath; document.Branding.LogoSize = template.LogoSize; document.Branding.LogoPosition = template.LogoPosition; document.Branding.PrimaryColor = template.PrimaryColor; document.Branding.DocumentLabel = "TREND CRITICITA GOVERNANCE CAPA"; document.Branding.DocumentCode = code; document.Branding.DocumentVersion = template.DocumentVersion; document.Branding.FooterText = template.FooterText; document.Branding.ConfidentialityText = template.ConfidentialityText; document.Branding.ShowLogo = template.ShowLogo; document.Branding.ShowCompanyDetails = template.ShowCompanyDetails; document.Branding.ShowDocumentMetadata = template.ShowDocumentMetadata; document.Branding.ShowFooter = template.ShowFooter; document.Branding.ShowPageNumber = template.ShowPageNumber; document.Branding.ShowPrintTimestamp = template.ShowPrintTimestamp;
+    }
 
     private SqliteConnection Open() { var connection = new SqliteConnection(_connectionString); connection.Open(); return connection; }
 }

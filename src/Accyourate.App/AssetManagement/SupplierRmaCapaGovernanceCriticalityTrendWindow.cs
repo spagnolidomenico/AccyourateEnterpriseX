@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -26,7 +27,7 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendWindow : Window
         var title = new StackPanel { Children = { new TextBlock { Text = "Storico e trend criticita CAPA", FontSize = 28, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Rilevazioni consolidate per confrontare l'andamento della governance.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } };
         Grid.SetColumn(title, 0); header.Children.Add(title);
         var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Registra rilevazione", Capture, true)); commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Rimuovi duplicati", RemoveDuplicates)); commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load));
+        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Registra rilevazione", Capture, true)); commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Esporta CSV", () => Export(false))); commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report PDF", () => Export(true))); commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Rimuovi duplicati", RemoveDuplicates)); commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load));
         Grid.SetColumn(commands, 1); header.Children.Add(commands); DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
         _message.Margin = new Thickness(0, 0, 0, 10); DockPanel.SetDock(_message, Dock.Top); root.Children.Add(_message);
         root.Children.Add(new ScrollViewer { Content = _content, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto }); return root;
@@ -42,6 +43,12 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendWindow : Window
     {
         try { var removed = _service.RemoveConsecutiveDuplicates(); Load(); _message.Text = removed == 0 ? "Nessun duplicato rilevato." : $"{removed} rilevazioni duplicate eliminate."; _message.Foreground = UiTokens.Brush(removed == 0 ? UiTokens.TextSecondary : UiTokens.Success); }
         catch (Exception ex) { _message.Text = ex.Message; _message.Foreground = UiTokens.Brush(UiTokens.Danger); }
+    }
+
+    private void Export(bool pdf)
+    {
+        try { var path = pdf ? _service.ExportPdf() : _service.ExportCsv(); _message.Text = $"File creato: {Path.GetFileName(path)}"; _message.Foreground = UiTokens.Brush(UiTokens.Success); Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true }); }
+        catch (Exception ex) { _message.Text = $"Esportazione non riuscita: {ex.Message}"; _message.Foreground = UiTokens.Brush(UiTokens.Danger); }
     }
 
     private void Load()
