@@ -200,6 +200,26 @@ public sealed class NotificationCenterView : UserControl
             };
             actions.Children.Add(openDashboard);
         }
+        var governanceAction = item.Action == "open-rma-capa-governance-actions"
+            || (item.Action == "open-rma-corrective-actions" && item.CreatedBy.Contains("Governance CAPA", StringComparison.OrdinalIgnoreCase));
+        if (governanceAction)
+        {
+            var openGovernance = new Button
+            {
+                Content = "Apri piano",
+                Background = UiTokens.Brush(UiTokens.BrandBlue),
+                Foreground = Brushes.White,
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(8, 6)
+            };
+            openGovernance.Click += (_, _) =>
+            {
+                _service.MarkAsRead(item.Id);
+                new SupplierRmaCapaGovernanceActionsWindow().Show();
+                Load();
+            };
+            actions.Children.Add(openGovernance);
+        }
         var button = new Button
         {
             Content = item.IsRead ? "Letta" : "Segna letta",

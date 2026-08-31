@@ -13,6 +13,7 @@ public sealed class SupplierRmaCapaGovernanceCriticalitiesWindow : Window
     private readonly SupplierRmaCapaGovernanceDashboardService _service = new();
     private readonly SupplierRmaCapaGovernanceActionService _actions = new();
     private readonly SupplierRmaCapaGovernanceCriticalityReportService _report = new();
+    private readonly SupplierRmaCapaGovernanceCriticalityNotificationService _notifications = new();
     private readonly StackPanel _rows = new();
     private readonly TextBlock _summary = new();
     private readonly HashSet<string> _current = new(StringComparer.OrdinalIgnoreCase);
@@ -35,6 +36,7 @@ public sealed class SupplierRmaCapaGovernanceCriticalitiesWindow : Window
         Grid.SetColumn(title, 0); header.Children.Add(title);
         var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report audit PDF", ExportReport));
+        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna e notifica", PublishAlerts, true));
         commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load, true));
         Grid.SetColumn(commands, 1); header.Children.Add(commands);
         DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
@@ -48,6 +50,12 @@ public sealed class SupplierRmaCapaGovernanceCriticalitiesWindow : Window
     {
         try { var path = _report.Export(); _summary.Text = $"Report creato: {Path.GetFileName(path)}"; _summary.Foreground = UiTokens.Brush(UiTokens.Success); Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true }); }
         catch (Exception ex) { _summary.Text = $"Report non creato: {ex.Message}"; _summary.Foreground = UiTokens.Brush(UiTokens.Danger); }
+    }
+
+    private void PublishAlerts()
+    {
+        try { var count = _notifications.Publish(); Load(); _summary.Text = count == 0 ? "Nessun nuovo avviso da pubblicare." : $"{count} nuovi avvisi pubblicati nel Centro notifiche."; _summary.Foreground = UiTokens.Brush(count == 0 ? UiTokens.TextSecondary : UiTokens.Success); }
+        catch (Exception ex) { _summary.Text = $"Notifiche non aggiornate: {ex.Message}"; _summary.Foreground = UiTokens.Brush(UiTokens.Danger); }
     }
 
     private void Load()
