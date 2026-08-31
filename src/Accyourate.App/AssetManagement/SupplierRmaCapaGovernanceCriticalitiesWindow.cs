@@ -35,6 +35,7 @@ public sealed class SupplierRmaCapaGovernanceCriticalitiesWindow : Window
         var title = new StackPanel { Spacing = 3, Children = { new TextBlock { Text = "Registro criticita Governance CAPA", FontSize = 28, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Anomalie consolidate e collegamenti alle funzioni di risoluzione.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } };
         Grid.SetColumn(title, 0); header.Children.Add(title);
         var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Indicatori SLA", () => new SupplierRmaCapaGovernanceActionAnalyticsWindow("Criticita Governance CAPA").Show(this)));
         commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report audit PDF", ExportReport));
         commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna e notifica", PublishAlerts, true));
         commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load, true));
