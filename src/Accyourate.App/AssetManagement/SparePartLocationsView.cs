@@ -17,6 +17,9 @@ public sealed class SparePartLocationsView : UserControl
     private readonly SparePartsInventoryRepository _inventory=new();
     private readonly SparePartLabelPdfService _labels=new();
     private readonly StackPanel _rows=new();private readonly TextBlock _message=new();private readonly TextBox _search=new();
+    public event Action? PickRequestsRequested;
+    public event Action? PickHistoryRequested;
+    public event Action? TransferHistoryRequested;
     public SparePartLocationsView(){Background=UiTokens.Brush(UiTokens.Background);_repository.EnsureInitialAllocations(_inventory.GetItems());Content=Build();Load();}
     private Control Build()
     {
@@ -54,9 +57,9 @@ public sealed class SparePartLocationsView : UserControl
     }
     private async void NewLocation(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;var location=await new WarehouseLocationDialog().ShowDialog<SparePartWarehouseLocation?>(owner);if(location is null)return;try{_repository.SaveLocation(location);Show("Ubicazione salvata.");Load();}catch(Exception ex){Show($"Ubicazione non salvata: {ex.Message}",true);}}
     private async void Transfer(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;var items=_inventory.GetItems();var locations=_repository.GetLocations().Where(x=>x.IsActive).ToList();var balances=_repository.GetBalances();if(locations.Count<2){Show("Crea almeno due ubicazioni.",true);return;}var request=await new LocationTransferDialog(items,locations,balances).ShowDialog<LocationTransferRequest?>(owner);if(request is null)return;try{_repository.Transfer(request.ItemId,request.FromId,request.ToId,request.Quantity,request.Reference,request.Notes,Environment.UserName);Show("Trasferimento registrato.");Load();}catch(Exception ex){Show($"Trasferimento non eseguito: {ex.Message}",true);}}
-    private async void History(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;await new LocationTransfersWindow(_repository,_inventory.GetItems()).ShowDialog(owner);}
-    private async void PickHistory(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;await new LocationPicksWindow(_repository,_inventory.GetItems()).ShowDialog(owner);}
-    private async void PickRequests(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;await new SparePartPickRequestsWindow().ShowDialog(owner);Load();}
+    private void History()=>TransferHistoryRequested?.Invoke();
+    private void PickHistory()=>PickHistoryRequested?.Invoke();
+    private void PickRequests()=>PickRequestsRequested?.Invoke();
     private void Labels(){try{var path=_labels.GenerateLocations(_repository.GetLocations());Process.Start(new ProcessStartInfo{FileName=path,UseShellExecute=true});Show($"Etichette create: {path}");}catch(Exception ex){Show($"Etichette non create: {ex.Message}",true);}}
     private async void CheckConsistency()
     {

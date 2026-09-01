@@ -13,6 +13,7 @@ using Accyourate.App.Shared.Theme;
 using Accyourate.App.UIFramework.Foundation;
 using Accyourate.App.AssetManagement;
 using Accyourate.App.AssetManagement.Deliveries;
+using Accyourate.App.AssetManagement.Services;
 
 namespace Accyourate.App;
 
@@ -682,9 +683,32 @@ public sealed class MainWindow : Window
         const string key = "asset:spare-parts-locations";
         if (string.Equals(_currentWorkspaceKey, key, StringComparison.Ordinal))
             return;
-        _workspaceContent.Content = new SparePartLocationsView();
+        var view = new SparePartLocationsView();
+        view.PickRequestsRequested += OpenSparePartPickRequests;
+        view.PickHistoryRequested += OpenLocationPickHistory;
+        view.TransferHistoryRequested += OpenLocationTransferHistory;
+        _workspaceContent.Content = view;
         _currentWorkspaceKey = key;
         SetBreadcrumb("Workspace > Asset > Ubicazioni magazzino");
+    }
+
+    private void OpenSparePartPickRequests()
+    {
+        OpenWindowContentInWorkspace(new SparePartPickRequestsWindow(), "asset:spare-part-pick-requests", "Asset > Richieste prelievo");
+    }
+
+    private void OpenLocationPickHistory()
+    {
+        var repository = new SparePartLocationsRepository();
+        var inventory = new SparePartsInventoryRepository();
+        OpenWindowContentInWorkspace(new LocationPicksWindow(repository, inventory.GetItems()), "asset:location-pick-history", "Asset > Registro prelievi");
+    }
+
+    private void OpenLocationTransferHistory()
+    {
+        var repository = new SparePartLocationsRepository();
+        var inventory = new SparePartsInventoryRepository();
+        OpenWindowContentInWorkspace(new LocationTransfersWindow(repository, inventory.GetItems()), "asset:location-transfer-history", "Asset > Storico trasferimenti");
     }
 
     private void OpenLocationStocktake()
