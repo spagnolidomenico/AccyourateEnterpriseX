@@ -17,7 +17,8 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendWindow : Window
     public SupplierRmaCapaGovernanceCriticalityTrendWindow()
     {
         Title = "Trend criticita Governance CAPA"; Width = 1180; Height = 760; WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        Content = Build(); Load();
+        Content = Build(); var captured = _service.CaptureDaily("Automazione Governance CAPA"); Load();
+        if (captured) { _message.Text = "Rilevazione giornaliera automatica registrata."; _message.Foreground = UiTokens.Brush(UiTokens.Success); }
     }
 
     private Control Build()

@@ -37,22 +37,17 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendService
 
     public bool Capture(string user)
     {
-        var snapshot = _dashboard.Load();
-        var actions = _actions.GetAll().Where(x => x.SourceType == "Criticita Governance CAPA").ToList();
-        var failed = actions.Sum(x => _actions.History(x.Id).Count(e => e.EventType == "Verifica non superata"));
-        var value = new SupplierRmaCapaGovernanceCriticalityTrendPoint
-        {
-            CapturedAt = DateTime.Now.ToString("s"), CriticalCount = snapshot.CriticalCount,
-            WarningCount = snapshot.ReviewsDue + snapshot.RetentionDue + snapshot.PeriodicReviewRetentionsDue,
-            ActiveActions = actions.Count(x => x.Status != "Completata"), OverdueActions = actions.Count(x => x.IsOverdue),
-            CompletedActions = actions.Count(x => x.Status == "Completata"), FailedVerifications = failed, CapturedBy = user
-        };
+        var value = Current(user);
         var latest = GetAll().FirstOrDefault();
         if (latest is not null && Same(latest, value)) return false;
-        using var connection = Open(); using var command = connection.CreateCommand();
-        command.CommandText = "INSERT INTO SupplierRmaCapaGovernanceCriticalityTrend(CapturedAt,CriticalCount,WarningCount,ActiveActions,OverdueActions,CompletedActions,FailedVerifications,CapturedBy) VALUES($at,$critical,$warning,$active,$overdue,$completed,$failed,$user);SELECT last_insert_rowid();";
-        command.Parameters.AddWithValue("$at", value.CapturedAt); command.Parameters.AddWithValue("$critical", value.CriticalCount); command.Parameters.AddWithValue("$warning", value.WarningCount); command.Parameters.AddWithValue("$active", value.ActiveActions); command.Parameters.AddWithValue("$overdue", value.OverdueActions); command.Parameters.AddWithValue("$completed", value.CompletedActions); command.Parameters.AddWithValue("$failed", value.FailedVerifications); command.Parameters.AddWithValue("$user", user);
-        command.ExecuteScalar(); return true;
+        Insert(value); return true;
+    }
+
+    public bool CaptureDaily(string user)
+    {
+        var latest = GetAll().FirstOrDefault();
+        if (latest is not null && DateTime.TryParse(latest.CapturedAt, out var captured) && captured.Date == DateTime.Today) return false;
+        Insert(Current(user)); return true;
     }
 
     public int RemoveConsecutiveDuplicates()
@@ -95,6 +90,19 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendService
     }
 
     private static bool Same(SupplierRmaCapaGovernanceCriticalityTrendPoint left, SupplierRmaCapaGovernanceCriticalityTrendPoint right) => left.CriticalCount == right.CriticalCount && left.WarningCount == right.WarningCount && left.ActiveActions == right.ActiveActions && left.OverdueActions == right.OverdueActions && left.CompletedActions == right.CompletedActions && left.FailedVerifications == right.FailedVerifications;
+
+    private SupplierRmaCapaGovernanceCriticalityTrendPoint Current(string user)
+    {
+        var snapshot = _dashboard.Load(); var actions = _actions.GetAll().Where(x => x.SourceType == "Criticita Governance CAPA").ToList();
+        return new SupplierRmaCapaGovernanceCriticalityTrendPoint { CapturedAt = DateTime.Now.ToString("s"), CriticalCount = snapshot.CriticalCount, WarningCount = snapshot.ReviewsDue + snapshot.RetentionDue + snapshot.PeriodicReviewRetentionsDue, ActiveActions = actions.Count(x => x.Status != "Completata"), OverdueActions = actions.Count(x => x.IsOverdue), CompletedActions = actions.Count(x => x.Status == "Completata"), FailedVerifications = actions.Sum(x => _actions.History(x.Id).Count(e => e.EventType == "Verifica non superata")), CapturedBy = user };
+    }
+
+    private void Insert(SupplierRmaCapaGovernanceCriticalityTrendPoint value)
+    {
+        using var connection = Open(); using var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO SupplierRmaCapaGovernanceCriticalityTrend(CapturedAt,CriticalCount,WarningCount,ActiveActions,OverdueActions,CompletedActions,FailedVerifications,CapturedBy) VALUES($at,$critical,$warning,$active,$overdue,$completed,$failed,$user);";
+        command.Parameters.AddWithValue("$at", value.CapturedAt); command.Parameters.AddWithValue("$critical", value.CriticalCount); command.Parameters.AddWithValue("$warning", value.WarningCount); command.Parameters.AddWithValue("$active", value.ActiveActions); command.Parameters.AddWithValue("$overdue", value.OverdueActions); command.Parameters.AddWithValue("$completed", value.CompletedActions); command.Parameters.AddWithValue("$failed", value.FailedVerifications); command.Parameters.AddWithValue("$user", value.CapturedBy); command.ExecuteNonQuery();
+    }
 
     private static string Difference(int current, int baseline) { var value = current - baseline; return value == 0 ? "Nessuna variazione" : value > 0 ? $"+{value}" : value.ToString(); }
     private static string Date(string value) => DateTime.TryParse(value, out var date) ? date.ToString("dd/MM/yyyy HH:mm") : value;
