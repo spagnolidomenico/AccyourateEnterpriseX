@@ -35,6 +35,7 @@ public sealed class SupplierRmaCapaGovernanceCriticalitiesWindow : Window
         var title = new StackPanel { Spacing = 3, Children = { new TextBlock { Text = "Registro criticita Governance CAPA", FontSize = 28, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Anomalie consolidate e collegamenti alle funzioni di risoluzione.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } };
         Grid.SetColumn(title, 0); header.Children.Add(title);
         var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Regole", () => new SupplierRmaCapaCriticalityAssignmentRulesWindow().Show(this)));
         commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Trend", () => new SupplierRmaCapaGovernanceCriticalityTrendWindow().Show(this)));
         commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Indicatori SLA", () => new SupplierRmaCapaGovernanceActionAnalyticsWindow("Criticita Governance CAPA").Show(this)));
         commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report audit PDF", ExportReport));
@@ -166,8 +167,10 @@ public sealed class SupplierRmaCapaCriticalityAssignmentDialog : Window
     public SupplierRmaCapaCriticalityAssignmentDialog(string title, string severity, string guidance, SupplierRmaCapaGovernanceActionService service, Action saved)
     {
         _title = title; _severity = severity; _service = service; _saved = saved;
-        _priority.SelectedItem = severity == "Critica" ? "Critica" : "Alta";
-        _due.Text = DateTime.Today.AddDays(severity == "Critica" ? 7 : 14).ToString("yyyy-MM-dd");
+        var rule = new SupplierRmaCapaCriticalityAssignmentRuleService().Get(title);
+        _owner.Text = rule?.DefaultOwner ?? Environment.UserName;
+        _priority.SelectedItem = rule?.Priority ?? (severity == "Critica" ? "Critica" : "Alta");
+        _due.Text = DateTime.Today.AddDays(rule?.DueDays ?? (severity == "Critica" ? 7 : 14)).ToString("yyyy-MM-dd");
         _description.Text = guidance;
         Title = "Presa in carico criticita"; Width = 620; Height = 570; WindowStartupLocation = WindowStartupLocation.CenterOwner;
         var root = new StackPanel { Margin = new Thickness(24), Spacing = 9, Children = { new TextBlock { Text = "Prendi in carico", FontSize = 26, FontWeight = FontWeight.Bold }, new TextBlock { Text = title, FontSize = 18, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap }, new TextBlock { Text = $"Gravita rilevata: {severity}", Foreground = UiTokens.Brush(severity == "Critica" ? UiTokens.Danger : UiTokens.Warning) } } };
