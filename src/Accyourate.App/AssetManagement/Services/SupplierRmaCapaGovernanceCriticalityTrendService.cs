@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using System.Text;
 using Accyourate.App.Platform.Pdf;
 using Accyourate.App.Platform.Settings;
+using Accyourate.App.Platform.Notifications;
 
 namespace Accyourate.App.AssetManagement.Services;
 
@@ -47,7 +48,9 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendService
     {
         var latest = GetAll().FirstOrDefault();
         if (latest is not null && DateTime.TryParse(latest.CapturedAt, out var captured) && captured.Date == DateTime.Today) return false;
-        Insert(Current(user)); return true;
+        var current = Current(user); Insert(current);
+        if (latest is not null) PublishRegression(latest, current);
+        return true;
     }
 
     public int RemoveConsecutiveDuplicates()
@@ -102,6 +105,14 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendService
         using var connection = Open(); using var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO SupplierRmaCapaGovernanceCriticalityTrend(CapturedAt,CriticalCount,WarningCount,ActiveActions,OverdueActions,CompletedActions,FailedVerifications,CapturedBy) VALUES($at,$critical,$warning,$active,$overdue,$completed,$failed,$user);";
         command.Parameters.AddWithValue("$at", value.CapturedAt); command.Parameters.AddWithValue("$critical", value.CriticalCount); command.Parameters.AddWithValue("$warning", value.WarningCount); command.Parameters.AddWithValue("$active", value.ActiveActions); command.Parameters.AddWithValue("$overdue", value.OverdueActions); command.Parameters.AddWithValue("$completed", value.CompletedActions); command.Parameters.AddWithValue("$failed", value.FailedVerifications); command.Parameters.AddWithValue("$user", value.CapturedBy); command.ExecuteNonQuery();
+    }
+
+    private static void PublishRegression(SupplierRmaCapaGovernanceCriticalityTrendPoint previous, SupplierRmaCapaGovernanceCriticalityTrendPoint current)
+    {
+        var criticalDelta = current.CriticalCount - previous.CriticalCount; var overdueDelta = current.OverdueActions - previous.OverdueActions; var failedDelta = current.FailedVerifications - previous.FailedVerifications;
+        if (criticalDelta <= 0 && overdueDelta <= 0 && failedDelta <= 0) return;
+        var changes = new List<string>(); if (criticalDelta > 0) changes.Add($"criticita +{criticalDelta}"); if (overdueDelta > 0) changes.Add($"azioni scadute +{overdueDelta}"); if (failedDelta > 0) changes.Add($"verifiche non superate +{failedDelta}");
+        new NotificationService().Publish("Peggioramento trend Governance CAPA", $"La rilevazione giornaliera segnala: {string.Join(", ", changes)}.", NotificationCategory.Asset, criticalDelta > 0 || overdueDelta > 0 ? NotificationPriority.Critical : NotificationPriority.High, "Automazione Governance CAPA", "open-rma-capa-criticality-trend", current.Id.ToString());
     }
 
     private static string Difference(int current, int baseline) { var value = current - baseline; return value == 0 ? "Nessuna variazione" : value > 0 ? $"+{value}" : value.ToString(); }

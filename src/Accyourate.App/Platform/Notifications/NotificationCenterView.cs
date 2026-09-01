@@ -220,6 +220,24 @@ public sealed class NotificationCenterView : UserControl
             };
             actions.Children.Add(openGovernance);
         }
+        if (item.Action == "open-rma-capa-criticality-trend")
+        {
+            var openTrend = new Button
+            {
+                Content = "Apri trend",
+                Background = UiTokens.Brush(UiTokens.BrandBlue),
+                Foreground = Brushes.White,
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(8, 6)
+            };
+            openTrend.Click += (_, _) =>
+            {
+                _service.MarkAsRead(item.Id);
+                new SupplierRmaCapaGovernanceCriticalityTrendWindow().Show();
+                Load();
+            };
+            actions.Children.Add(openTrend);
+        }
         var button = new Button
         {
             Content = item.IsRead ? "Letta" : "Segna letta",
