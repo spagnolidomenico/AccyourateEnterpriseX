@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Accyourate.App.AssetManagement.Services;
+using Accyourate.App.UIFramework.DesignSystem;
 using Accyourate.App.UIFramework.Tokens;
 
 namespace Accyourate.App.AssetManagement;
@@ -31,17 +32,17 @@ public sealed class SupplierRmaCapaGovernanceCriticalitiesWindow : Window
     private Control Build()
     {
         var root = new DockPanel { Margin = new Thickness(24) };
-        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 0, 0, 16) };
-        var title = new StackPanel { Spacing = 3, Children = { new TextBlock { Text = "Registro criticita Governance CAPA", FontSize = 28, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Anomalie consolidate e collegamenti alle funzioni di risoluzione.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } };
-        Grid.SetColumn(title, 0); header.Children.Add(title);
-        var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Regole", () => new SupplierRmaCapaCriticalityAssignmentRulesWindow().Show(this)));
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Trend", () => new SupplierRmaCapaGovernanceCriticalityTrendWindow().Show(this)));
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Indicatori SLA", () => new SupplierRmaCapaGovernanceActionAnalyticsWindow("Criticita Governance CAPA").Show(this)));
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report audit PDF", ExportReport));
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna e notifica", PublishAlerts, true));
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load, true));
-        Grid.SetColumn(commands, 1); header.Children.Add(commands);
+        var header = AxResponsivePageHeader.Create(
+            "Registro criticita Governance CAPA",
+            "Anomalie consolidate e collegamenti alle funzioni di risoluzione.",
+            SupplierRmaCorrectiveActionsWindow.Button("Carichi", () => new SupplierRmaCapaGovernanceWorkloadWindow().Show(this)),
+            SupplierRmaCorrectiveActionsWindow.Button("Regole", () => new SupplierRmaCapaCriticalityAssignmentRulesWindow().Show(this)),
+            SupplierRmaCorrectiveActionsWindow.Button("Trend", () => new SupplierRmaCapaGovernanceCriticalityTrendWindow().Show(this)),
+            SupplierRmaCorrectiveActionsWindow.Button("Indicatori SLA", () => new SupplierRmaCapaGovernanceActionAnalyticsWindow("Criticita Governance CAPA").Show(this)),
+            SupplierRmaCorrectiveActionsWindow.Button("Report audit PDF", ExportReport),
+            SupplierRmaCorrectiveActionsWindow.Button("Aggiorna e notifica", PublishAlerts, true),
+            SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load, true));
+        header.Margin = new Thickness(0, 0, 0, 16);
         DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
         _summary.Margin = new Thickness(0, 0, 0, 12); _summary.FontWeight = FontWeight.SemiBold;
         DockPanel.SetDock(_summary, Dock.Top); root.Children.Add(_summary);
