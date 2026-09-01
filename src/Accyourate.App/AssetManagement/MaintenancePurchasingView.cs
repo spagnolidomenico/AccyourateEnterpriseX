@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
 using Accyourate.App.UIFramework.Tokens;
+using Accyourate.App.UIFramework.DesignSystem;
 
 namespace Accyourate.App.AssetManagement;
 
@@ -23,7 +24,7 @@ public sealed class MaintenancePurchasingView : UserControl
     private readonly StackPanel _rows = new();
     private readonly TextBlock _summary = new();
     private readonly TextBlock _message = new();
-    private readonly Grid _kpis = new() { ColumnDefinitions = new ColumnDefinitions("*,*,*,*,*") };
+    private readonly WrapPanel _kpis = new();
     private bool _suppliersMode;
 
     public MaintenancePurchasingView()
@@ -36,31 +37,23 @@ public sealed class MaintenancePurchasingView : UserControl
     private Control BuildLayout()
     {
         var root = new DockPanel();
-        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(24, 20, 24, 12) };
-        var heading = new StackPanel { Spacing = 4, Children =
-        {
-            new TextBlock { Text = "Acquisti e Fornitori", FontSize = 30, FontWeight = FontWeight.Bold },
-            new TextBlock { Text = "Ordini ricambi, consegne, costi e anagrafiche fornitori.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) }
-        }};
-        header.Children.Add(heading);
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        actions.Children.Add(Button("Nuovo fornitore", NewSupplier));
-        actions.Children.Add(Button("Nuovo ordine", NewOrder, true));
-        actions.Children.Add(Button("Ordini", () => { _suppliersMode = false; Load(); }));
-        actions.Children.Add(Button("Fornitori", () => { _suppliersMode = true; Load(); }));
-        Grid.SetColumn(actions, 1); header.Children.Add(actions);
+        var header = AxResponsivePageHeader.Create("Acquisti e Fornitori", "Ordini ricambi, consegne, costi e anagrafiche fornitori.",
+            Button("Nuovo fornitore", NewSupplier), Button("Nuovo ordine", NewOrder, true),
+            Button("Ordini", () => { _suppliersMode = false; Load(); }), Button("Fornitori", () => { _suppliersMode = true; Load(); }));
+        header.Margin = new Thickness(24, 20, 24, 12);
         DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
 
         _kpis.Margin = new Thickness(24, 0, 24, 10);
         DockPanel.SetDock(_kpis, Dock.Top); root.Children.Add(_kpis);
 
-        var filters = new Grid { ColumnDefinitions = new ColumnDefinitions("*,180"), Margin = new Thickness(24, 0, 24, 8) };
+        var filters = new WrapPanel { Margin = new Thickness(24, 0, 24, 8) };
         _search.Watermark = "Cerca ordine, fornitore o articolo...";
+        _search.Width = 380;
         _search.TextChanged += (_, _) => Load();
         filters.Children.Add(_search);
         _status.ItemsSource = new[] { "Tutti gli stati", PurchaseOrderStatus.Draft, PurchaseOrderStatus.Sent, PurchaseOrderStatus.Confirmed, PurchaseOrderStatus.Received, PurchaseOrderStatus.Cancelled };
         _status.SelectedIndex = 0; _status.SelectionChanged += (_, _) => Load();
-        Grid.SetColumn(_status, 1); filters.Children.Add(_status);
+        _status.Width = 180; filters.Children.Add(_status);
         DockPanel.SetDock(filters, Dock.Top); root.Children.Add(filters);
         _message.Margin = new Thickness(24, 0, 24, 6); DockPanel.SetDock(_message, Dock.Top); root.Children.Add(_message);
         _summary.Margin = new Thickness(24, 0, 24, 8); _summary.Foreground = UiTokens.Brush(UiTokens.TextSecondary);
@@ -68,7 +61,7 @@ public sealed class MaintenancePurchasingView : UserControl
         root.Children.Add(new ScrollViewer
         {
             Content = _rows, Margin = new Thickness(24, 0, 24, 24),
-            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
         });
         return root;
@@ -103,13 +96,13 @@ public sealed class MaintenancePurchasingView : UserControl
     private void AddKpi(int column, string label, object value, string color)
     {
         var card = Kpi(label, value, color);
-        Grid.SetColumn(card, column);
+        card.Width = 220; card.Margin = new Thickness(0, 0, 10, 10);
         _kpis.Children.Add(card);
     }
 
     private void LoadOrders(IReadOnlyList<MaintenancePurchaseOrder> orders, IReadOnlyDictionary<int, MaintenanceSupplier> suppliers)
     {
-        _rows.MinWidth = 1120; _rows.Children.Add(OrderHeader());
+        _rows.MinWidth = 0; _rows.Spacing = 8;
         var query = (_search.Text ?? "").Trim();
         var visible = orders.Where(order => _status.SelectedIndex <= 0 || order.Status == _status.SelectedItem?.ToString())
             .Where(order =>
@@ -128,18 +121,19 @@ public sealed class MaintenancePurchasingView : UserControl
 
     private void LoadSuppliers(IReadOnlyList<MaintenanceSupplier> suppliers, IReadOnlyList<MaintenancePurchaseOrder> orders)
     {
-        _rows.MinWidth = 900;
+        _rows.MinWidth = 0; _rows.Spacing = 8;
         var query = (_search.Text ?? "").Trim();
         var visible = suppliers.Where(item => query.Length == 0 || $"{item.Name} {item.VatNumber} {item.ContactPerson} {item.Email}".Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
         for (var i = 0; i < visible.Count; i++)
         {
             var supplier = visible[i];
-            var panel = new Grid { ColumnDefinitions = new ColumnDefinitions("220,140,180,180,110,100") };
-            AddText(panel, supplier.Name, 0, true); AddText(panel, supplier.VatNumber, 1);
-            AddText(panel, supplier.ContactPerson, 2); AddText(panel, supplier.Email, 3);
-            AddText(panel, orders.Count(order => order.SupplierId == supplier.Id).ToString(), 4);
-            Add(panel, Button("Modifica", () => EditSupplier(supplier)), 5);
-            _rows.Children.Add(Row(panel, i));
+            _rows.Children.Add(AxResponsiveRecordCard.Create(supplier.Name, new[]
+            {
+                new AxResponsiveRecordField("Partita IVA", supplier.VatNumber, 150),
+                new AxResponsiveRecordField("Referente", supplier.ContactPerson, 190),
+                new AxResponsiveRecordField("E-mail", supplier.Email, 260),
+                new AxResponsiveRecordField("Ordini", orders.Count(order => order.SupplierId == supplier.Id).ToString(), 90)
+            }, Button("Modifica", () => EditSupplier(supplier))));
         }
         _summary.Text = $"{visible.Count} fornitori visualizzati";
     }
@@ -154,17 +148,17 @@ public sealed class MaintenancePurchasingView : UserControl
 
     private Control OrderRow(MaintenancePurchaseOrder order, MaintenanceSupplier? supplier, int index)
     {
-        var grid = OrderGrid();
-        AddText(grid, order.OrderNumber, 0, true); AddText(grid, supplier?.Name ?? $"Fornitore #{order.SupplierId}", 1);
-        Add(grid, Badge(order.Status, IsLate(order) ? UiTokens.Danger : StatusColor(order.Status)), 2);
-        AddText(grid, Date(order.OrderDate), 3); AddText(grid, Date(order.ExpectedDate), 4, false, IsLate(order));
-        AddText(grid, $"EUR {order.Total:N2}", 5, true);
-        Add(grid, Button("PDF", () => OpenPdf(order, supplier)), 6);
+        var pdf = Button("PDF", () => OpenPdf(order, supplier));
         var advance = Button("Avanza", () => Advance(order)); advance.IsEnabled = order.Status is PurchaseOrderStatus.Draft or PurchaseOrderStatus.Sent;
-        Add(grid, advance, 7);
         var receive = Button("Ricevi", () => Receive(order, supplier)); receive.IsEnabled = order.Status == PurchaseOrderStatus.Confirmed;
-        Add(grid, receive, 8);
-        return Row(grid, index, IsLate(order));
+        return AxResponsiveRecordCard.Create(order.OrderNumber, new[]
+        {
+            new AxResponsiveRecordField("Fornitore", supplier?.Name ?? $"Fornitore #{order.SupplierId}", 220),
+            new AxResponsiveRecordField("Stato", order.Status, 130, IsLate(order) ? UiTokens.Danger : StatusColor(order.Status)),
+            new AxResponsiveRecordField("Data", Date(order.OrderDate), 120),
+            new AxResponsiveRecordField("Consegna", Date(order.ExpectedDate), 120, IsLate(order) ? UiTokens.Danger : null),
+            new AxResponsiveRecordField("Totale", $"EUR {order.Total:N2}", 130)
+        }, pdf, advance, receive);
     }
 
     private async void NewSupplier()

@@ -7,6 +7,7 @@ using Accyourate.App.AssetManagement.DeliveryReports;
 using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
 using Accyourate.App.UIFramework.Tokens;
+using Accyourate.App.UIFramework.DesignSystem;
 
 namespace Accyourate.App.AssetManagement.Deliveries;
 
@@ -39,47 +40,29 @@ public sealed class DeliveryRegisterView : UserControl
     {
         var root = new DockPanel();
 
-        var header = new StackPanel
-        {
-            Margin = new Thickness(24, 20, 24, 14),
-            Spacing = 4
-        };
-        header.Children.Add(new TextBlock
-        {
-            Text = "Registro Consegne",
-            FontSize = 30,
-            FontWeight = FontWeight.Bold,
-            Foreground = UiTokens.Brush(UiTokens.TextPrimary)
-        });
-        header.Children.Add(new TextBlock
-        {
-            Text = "Consegne, riconsegne e verbali collegati agli asset aziendali.",
-            Foreground = UiTokens.Brush(UiTokens.TextSecondary)
-        });
+        var header = AxResponsivePageHeader.Create("Registro Consegne", "Consegne, riconsegne e verbali collegati agli asset aziendali.");
+        header.Margin = new Thickness(24, 20, 24, 14);
         DockPanel.SetDock(header, Dock.Top);
         root.Children.Add(header);
 
-        var filters = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("*,150,130,130,110"),
-            Margin = new Thickness(24, 0, 24, 12)
-        };
+        var filters = new WrapPanel { Margin = new Thickness(24, 0, 24, 12) };
         _search.Watermark = "Cerca asset, dipendente o note...";
+        _search.Width = 340;
         _search.TextChanged += (_, _) => Load();
-        Add(filters, _search, 0);
+        filters.Children.Add(_search);
 
         _status.ItemsSource = new[] { "Tutti", "Attive", "Riconsegnate", "Annullate", "Pianificate" };
         _status.SelectedIndex = 0;
         _status.SelectionChanged += (_, _) => Load();
-        Add(filters, _status, 1);
+        _status.Width = 150; filters.Children.Add(_status);
 
         _fromDate.Watermark = "Dal: AAAA-MM-GG";
         _toDate.Watermark = "Al: AAAA-MM-GG";
-        Add(filters, _fromDate, 2);
-        Add(filters, _toDate, 3);
+        _fromDate.Width = 150; _toDate.Width = 150;
+        filters.Children.Add(_fromDate); filters.Children.Add(_toDate);
 
         var apply = Button("Applica", Load, true);
-        Add(filters, apply, 4);
+        filters.Children.Add(apply);
         DockPanel.SetDock(filters, Dock.Top);
         root.Children.Add(filters);
 
@@ -94,15 +77,11 @@ public sealed class DeliveryRegisterView : UserControl
         DockPanel.SetDock(_summary, Dock.Top);
         root.Children.Add(_summary);
 
-        var table = new StackPanel { Spacing = 0, MinWidth = 1120 };
-        table.Children.Add(BuildHeader());
-        table.Children.Add(_rows);
-
         root.Children.Add(new ScrollViewer
         {
-            Content = table,
+            Content = _rows,
             Margin = new Thickness(24, 0, 24, 24),
-            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
         });
 
@@ -166,40 +145,29 @@ public sealed class DeliveryRegisterView : UserControl
 
     private Control BuildRow(DeliveryRecord record, Asset? asset, string? employee, int index)
     {
-        var grid = RowGrid();
-        AddText(grid, asset?.AssetCode ?? $"Asset #{record.AssetId}", 0, true);
-        AddText(grid, employee ?? $"Dipendente #{record.EmployeeId}", 1);
-        AddText(grid, FormatDate(record.DeliveryDate), 2);
-        AddText(grid, FormatDate(record.ReturnDate), 3);
-        Add(grid, StatusBadge(record.Status), 4);
-
         var openAsset = Button("Apri", () =>
         {
             _message.Text = string.Empty;
             AssetRequested?.Invoke(record.AssetId);
         });
-        Add(grid, openAsset, 5);
 
         var report = Button(
             record.Status == DeliveryRecordStatus.Returned ? "PDF reso" : "PDF",
             () => OpenReport(record, asset, employee));
-        Add(grid, report, 6);
 
         var returnButton = Button(
             record.IsActive ? "Riconsegna" : "Chiusa",
             () => Return(record, asset, employee));
         returnButton.IsEnabled = record.IsActive;
-        Add(grid, returnButton, 7);
-
-        return new Border
-        {
-            Background = UiTokens.Brush(index % 2 == 0 ? UiTokens.Surface : UiTokens.SurfaceAlt),
-            BorderBrush = UiTokens.Brush(UiTokens.Border),
-            BorderThickness = new Thickness(1, 0, 1, 1),
-            Padding = new Thickness(10, 7),
-            MinHeight = 50,
-            Child = grid
-        };
+        return AxResponsiveRecordCard.Create(
+            asset?.AssetCode ?? $"Asset #{record.AssetId}",
+            new[]
+            {
+                new AxResponsiveRecordField("Dipendente", employee ?? $"Dipendente #{record.EmployeeId}", 220),
+                new AxResponsiveRecordField("Consegna", FormatDate(record.DeliveryDate), 130),
+                new AxResponsiveRecordField("Riconsegna", FormatDate(record.ReturnDate), 130),
+                new AxResponsiveRecordField("Stato", record.Status.ToString(), 130)
+            }, openAsset, report, returnButton);
     }
 
     private async void Return(DeliveryRecord record, Asset? asset, string? employee)

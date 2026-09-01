@@ -7,6 +7,7 @@ using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
 using Accyourate.App.Platform.Notifications;
 using Accyourate.App.UIFramework.Tokens;
+using Accyourate.App.UIFramework.DesignSystem;
 
 namespace Accyourate.App.AssetManagement;
 
@@ -170,14 +171,11 @@ public sealed class MaintenanceOperationsView : UserControl
 
     private Control BuildList()
     {
-        var table = new StackPanel { MinWidth = 1190 };
-        table.Children.Add(BuildHeader());
-        table.Children.Add(_rows);
         return new ScrollViewer
         {
-            Content = table,
+            Content = _rows,
             Margin = new Thickness(24, 0, 24, 24),
-            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
         };
     }
@@ -614,22 +612,12 @@ public sealed class MaintenanceOperationsView : UserControl
 
     private Control BuildRow(MaintenanceTicket ticket, Asset? asset, int index)
     {
-        var grid = RowGrid();
-        AddText(grid, asset?.AssetCode ?? $"Asset #{ticket.AssetId}", 0, true);
-        AddText(grid, ticket.Title, 1, true);
-        Add(grid, Badge(ticket.Status, StatusColor(ticket)), 2);
-        Add(grid, Badge(ticket.Priority, PriorityColor(ticket.Priority)), 3);
-        AddText(grid, ticket.Technician, 4);
-        AddText(grid, Date(ticket.ScheduledAt), 5, false, IsOverdue(ticket));
-        Add(grid, Badge(SlaLabel(ticket), SlaColor(ticket)), 6);
         var combinedCost = ticket.Cost + PartCost(ticket.Id);
-        AddText(grid, combinedCost > 0 ? $"EUR {combinedCost:N2}" : "—", 7);
-        Add(grid, ActionButton("Apri", () => AssetRequested?.Invoke(ticket.AssetId)), 8);
+        var open = ActionButton("Apri", () => AssetRequested?.Invoke(ticket.AssetId));
 
         var pdf = ActionButton("PDF", () => OpenPdf(ticket));
         pdf.IsEnabled = !string.IsNullOrWhiteSpace(ticket.PdfPath) && File.Exists(ticket.PdfPath);
-        Add(grid, pdf, 9);
-        Add(grid, ActionButton("Ricambi", () => OpenParts(ticket)), 10);
+        var parts = ActionButton("Ricambi", () => OpenParts(ticket));
 
         var action = ticket.Status switch
         {
@@ -638,17 +626,15 @@ public sealed class MaintenanceOperationsView : UserControl
             _ => ActionButton("Chiusa", () => { })
         };
         action.IsEnabled = ticket.Status != "Completato";
-        Add(grid, action, 11);
-
-        return new Border
+        return AxResponsiveRecordCard.Create($"{asset?.AssetCode ?? $"Asset #{ticket.AssetId}"} · {ticket.Title}", new[]
         {
-            Background = UiTokens.Brush(index % 2 == 0 ? UiTokens.Surface : UiTokens.SurfaceAlt),
-            BorderBrush = IsOverdue(ticket) ? UiTokens.Brush(UiTokens.Danger) : UiTokens.Brush(UiTokens.Border),
-            BorderThickness = IsOverdue(ticket) ? new Thickness(3, 0, 1, 1) : new Thickness(1, 0, 1, 1),
-            Padding = new Thickness(10, 7),
-            MinHeight = 52,
-            Child = grid
-        };
+            new AxResponsiveRecordField("Stato", ticket.Status, 130, StatusColor(ticket)),
+            new AxResponsiveRecordField("Priorità", ticket.Priority, 120, PriorityColor(ticket.Priority)),
+            new AxResponsiveRecordField("Tecnico", ticket.Technician, 180),
+            new AxResponsiveRecordField("Scadenza", Date(ticket.ScheduledAt), 130, IsOverdue(ticket) ? UiTokens.Danger : null),
+            new AxResponsiveRecordField("SLA", SlaLabel(ticket), 120, SlaColor(ticket)),
+            new AxResponsiveRecordField("Costo", combinedCost > 0 ? $"EUR {combinedCost:N2}" : "—", 120)
+        }, open, pdf, parts, action);
     }
 
     private void Start(MaintenanceTicket ticket)

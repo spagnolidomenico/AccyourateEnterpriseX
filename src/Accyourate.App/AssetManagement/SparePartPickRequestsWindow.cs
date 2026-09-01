@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
 using Accyourate.App.UIFramework.Tokens;
+using Accyourate.App.UIFramework.DesignSystem;
 
 namespace Accyourate.App.AssetManagement;
 
@@ -22,21 +23,18 @@ public sealed class SparePartPickRequestsWindow : Window
 
     public SparePartPickRequestsWindow()
     {
-        Title="Richieste di prelievo";Width=1320;Height=760;MinWidth=980;MinHeight=560;WindowStartupLocation=WindowStartupLocation.CenterOwner;
+        Title="Richieste di prelievo";Width=1320;Height=760;MinWidth=560;MinHeight=560;WindowStartupLocation=WindowStartupLocation.CenterOwner;
         _search.TextChanged+=(_,_)=>Load();_status.SelectionChanged+=(_,_)=>Load();Content=Build();Load();
     }
     private Control Build()
     {
         var root=new DockPanel{Margin=new Thickness(24)};
-        var header=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(0,0,0,12)};
-        header.Children.Add(new StackPanel{Spacing=3,Children={new TextBlock{Text="Richieste di prelievo",FontSize=28,FontWeight=FontWeight.Bold},new TextBlock{Text="Prenotazione, preparazione e consegna controllata dei ricambi.",Foreground=UiTokens.Brush(UiTokens.TextSecondary)}}});
-        var headerActions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=5};
-        headerActions.Children.Add(Button("Quarantena",Quarantine));headerActions.Children.Add(Button("Storico resi",ReturnHistory));headerActions.Children.Add(Button("Nuova richiesta",NewRequest,true));
-        Grid.SetColumn(headerActions,1);header.Children.Add(headerActions);DockPanel.SetDock(header,Dock.Top);root.Children.Add(header);
-        var filters=new Grid{ColumnDefinitions=new ColumnDefinitions("*,190"),Margin=new Thickness(0,0,0,8)};Add(filters,_search,0);Add(filters,_status,1);DockPanel.SetDock(filters,Dock.Top);root.Children.Add(filters);
+        var header=AxResponsivePageHeader.Create("Richieste di prelievo","Prenotazione, preparazione e consegna controllata dei ricambi.",Button("Quarantena",Quarantine),Button("Storico resi",ReturnHistory),Button("Nuova richiesta",NewRequest,true));
+        header.Margin=new Thickness(0,0,0,12);DockPanel.SetDock(header,Dock.Top);root.Children.Add(header);
+        var filters=new WrapPanel{Margin=new Thickness(0,0,0,8)};_search.Width=360;_status.Width=190;filters.Children.Add(_search);filters.Children.Add(_status);DockPanel.SetDock(filters,Dock.Top);root.Children.Add(filters);
         _message.Margin=new Thickness(0,0,0,5);DockPanel.SetDock(_message,Dock.Top);root.Children.Add(_message);
         _summary.Foreground=UiTokens.Brush(UiTokens.TextSecondary);_summary.Margin=new Thickness(0,0,0,8);DockPanel.SetDock(_summary,Dock.Top);root.Children.Add(_summary);
-        root.Children.Add(new ScrollViewer{Content=_rows,HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto});return root;
+        root.Children.Add(new ScrollViewer{Content=_rows,HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto});return root;
     }
     private void Load()
     {
@@ -48,26 +46,23 @@ public sealed class SparePartPickRequestsWindow : Window
             var requests=_repository.GetAll().Where(x=>selected=="Tutti gli stati"||x.Status==selected)
                 .Where(x=>{items.TryGetValue(x.InventoryItemId,out var item);return q.Length==0||$"{x.RequestNumber} {item?.PartCode} {item?.Description} {x.Technician} {x.RequestedBy}".Contains(q,StringComparison.OrdinalIgnoreCase);}).ToList();
             _summary.Text=$"{requests.Count} richieste · prenotate {requests.Where(x=>x.Status is SparePartPickRequestStatus.Approved or SparePartPickRequestStatus.Preparing).Sum(x=>x.Quantity):N2}";
-            _rows.Children.Clear();_rows.MinWidth=1220;_rows.Children.Add(Header());
+            _rows.Children.Clear();_rows.MinWidth=0;_rows.Spacing=8;
             for(var i=0;i<requests.Count;i++)_rows.Children.Add(Row(requests[i],items,locations,i));
         }catch(Exception ex){Status($"Errore caricamento richieste: {ex.Message}",true);}
     }
     private Control Header(){var g=GridRow();foreach(var x in new[]{("Richiesta",0),("Ricambio",1),("Quantità",2),("Ubicazione",3),("Tecnico",4),("Stato",5),("Creata",6),("Azioni",7)})Text(g,x.Item1,x.Item2,true);return new Border{Background=UiTokens.Brush(UiTokens.SurfaceAlt),Padding=new Thickness(8),Child=g};}
     private Control Row(SparePartPickRequest request,IReadOnlyDictionary<int,SparePartInventoryItem> items,IReadOnlyDictionary<int,SparePartWarehouseLocation> locations,int index)
     {
-        items.TryGetValue(request.InventoryItemId,out var item);locations.TryGetValue(request.PreferredLocationId,out var location);var g=GridRow();
-        Text(g,request.RequestNumber,0,true);Text(g,item is null?$"ID {request.InventoryItemId}":$"{item.PartCode} · {item.Description}",1);
-        Text(g,request.Quantity.ToString("N2"),2,true);Text(g,location?.Code??"Automatico",3);Text(g,request.Technician,4);Add(g,Badge(request.Status),5);Text(g,Date(request.CreatedAt),6);
-        var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=3};
-        if(request.Status==SparePartPickRequestStatus.Draft)actions.Children.Add(Button("Approva",()=>Run(()=>_repository.Approve(request.Id),"Richiesta approvata.")));
-        if(request.Status==SparePartPickRequestStatus.Approved)actions.Children.Add(Button("Prepara",()=>Run(()=>_repository.StartPreparation(request.Id),"Preparazione avviata.")));
-        if(request.Status==SparePartPickRequestStatus.Preparing)actions.Children.Add(Button("Consegna",()=>Run(()=>_repository.Deliver(request.Id,Environment.UserName),"Ricambi consegnati e giacenze aggiornate."),true));
+        items.TryGetValue(request.InventoryItemId,out var item);locations.TryGetValue(request.PreferredLocationId,out var location);var actions=new List<Control>();
+        if(request.Status==SparePartPickRequestStatus.Draft)actions.Add(Button("Approva",()=>Run(()=>_repository.Approve(request.Id),"Richiesta approvata.")));
+        if(request.Status==SparePartPickRequestStatus.Approved)actions.Add(Button("Prepara",()=>Run(()=>_repository.StartPreparation(request.Id),"Preparazione avviata.")));
+        if(request.Status==SparePartPickRequestStatus.Preparing)actions.Add(Button("Consegna",()=>Run(()=>_repository.Deliver(request.Id,Environment.UserName),"Ricambi consegnati e giacenze aggiornate."),true));
         var remaining=request.Quantity-_returns.ReturnedQuantity(request.Id);
         if(request.Status==SparePartPickRequestStatus.Delivered&&remaining>0)
-            actions.Children.Add(Button($"Reso ({remaining:N2})",()=>Return(request,item)));
-        if(request.Status is not (SparePartPickRequestStatus.Delivered or SparePartPickRequestStatus.Cancelled))actions.Children.Add(Button("Annulla",()=>Run(()=>_repository.Cancel(request.Id),"Richiesta annullata.")));
-        actions.Children.Add(Button("PDF",()=>Pdf(request,item,location)));Add(g,actions,7);
-        return new Border{Background=UiTokens.Brush(index%2==0?UiTokens.Surface:UiTokens.SurfaceAlt),BorderBrush=UiTokens.Brush(UiTokens.Border),BorderThickness=new Thickness(0,0,0,1),Padding=new Thickness(8,6),Child=g};
+            actions.Add(Button($"Reso ({remaining:N2})",()=>Return(request,item)));
+        if(request.Status is not (SparePartPickRequestStatus.Delivered or SparePartPickRequestStatus.Cancelled))actions.Add(Button("Annulla",()=>Run(()=>_repository.Cancel(request.Id),"Richiesta annullata.")));
+        actions.Add(Button("PDF",()=>Pdf(request,item,location)));
+        return AxResponsiveRecordCard.Create(request.RequestNumber,new[]{new AxResponsiveRecordField("Ricambio",item is null?$"ID {request.InventoryItemId}":$"{item.PartCode} · {item.Description}",270),new AxResponsiveRecordField("Quantità",request.Quantity.ToString("N2"),100),new AxResponsiveRecordField("Ubicazione",location?.Code??"Automatico",130),new AxResponsiveRecordField("Tecnico",request.Technician,170),new AxResponsiveRecordField("Stato",request.Status,130),new AxResponsiveRecordField("Creata",Date(request.CreatedAt),150)},actions.ToArray());
     }
     private async void NewRequest()
     {

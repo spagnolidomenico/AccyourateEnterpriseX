@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Accyourate.App.AssetManagement.Models;
 using Accyourate.App.AssetManagement.Services;
 using Accyourate.App.UIFramework.Tokens;
+using Accyourate.App.UIFramework.DesignSystem;
 
 namespace Accyourate.App.AssetManagement;
 
@@ -28,7 +29,7 @@ public sealed class SparePartLocationsView : UserControl
         DockPanel.SetDock(header,Dock.Top);root.Children.Add(header);
         _search.Watermark="Cerca ubicazione, magazzino o ricambio...";_search.Margin=new Thickness(24,0,24,8);_search.TextChanged+=(_,_)=>Load();DockPanel.SetDock(_search,Dock.Top);root.Children.Add(_search);
         _message.Margin=new Thickness(24,0,24,8);DockPanel.SetDock(_message,Dock.Top);root.Children.Add(_message);
-        root.Children.Add(new ScrollViewer{Content=_rows,Margin=new Thickness(24,0,24,24),HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto});return root;
+        root.Children.Add(new ScrollViewer{Content=_rows,Margin=new Thickness(24,0,24,24),HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto});return root;
     }
     private void Load()
     {
@@ -36,7 +37,7 @@ public sealed class SparePartLocationsView : UserControl
         {
             _repository.EnsureInitialAllocations(_inventory.GetItems());
             var locations=_repository.GetLocations();var balances=_repository.GetBalances();var items=_inventory.GetItems().ToDictionary(x=>x.Id);var q=(_search.Text??"").Trim();
-            _rows.Children.Clear();_rows.MinWidth=1000;_rows.Children.Add(Header());
+            _rows.Children.Clear();_rows.MinWidth=0;_rows.Spacing=8;
             var visible=locations.Where(location=>q.Length==0||$"{location.Code} {location.Name} {location.Warehouse} {location.Aisle} {location.Shelf} {string.Join(" ",balances.Where(x=>x.LocationId==location.Id).Select(x=>items.TryGetValue(x.InventoryItemId,out var item)?$"{item.PartCode} {item.Description}":""))}".Contains(q,StringComparison.OrdinalIgnoreCase)).ToList();
             for(var i=0;i<visible.Count;i++)_rows.Children.Add(Row(visible[i],balances,items,i));
         }catch(Exception ex){Show($"Errore ubicazioni: {ex.Message}",true);}
@@ -44,8 +45,12 @@ public sealed class SparePartLocationsView : UserControl
     private Control Header(){var g=GridRow();foreach(var x in new[]{("Codice",0),("Nome",1),("Magazzino",2),("Corridoio",3),("Scaffale",4),("Articoli",5),("Quantità",6),("Stato",7)})AddText(g,x.Item1,x.Item2,true);return new Border{Background=UiTokens.Brush(UiTokens.SurfaceAlt),Padding=new Thickness(9),Child=g};}
     private Control Row(SparePartWarehouseLocation location,IReadOnlyList<SparePartLocationBalance> balances,IReadOnlyDictionary<int,SparePartInventoryItem> items,int index)
     {
-        var local=balances.Where(x=>x.LocationId==location.Id&&x.Quantity!=0).ToList();var g=GridRow();AddText(g,location.Code,0,true);AddText(g,location.Name,1);AddText(g,location.Warehouse,2);AddText(g,location.Aisle,3);AddText(g,location.Shelf,4);AddText(g,local.Count.ToString(),5);AddText(g,local.Sum(x=>x.Quantity).ToString("N2"),6,true);AddText(g,location.IsActive?"Attiva":"Disattiva",7,false,!location.IsActive);
-        return new Border{Background=UiTokens.Brush(index%2==0?UiTokens.Surface:UiTokens.SurfaceAlt),BorderBrush=UiTokens.Brush(UiTokens.Border),BorderThickness=new Thickness(0,0,0,1),Padding=new Thickness(9,7),Child=g};
+        var local=balances.Where(x=>x.LocationId==location.Id&&x.Quantity!=0).ToList();
+        return AxResponsiveRecordCard.Create($"{location.Code} · {location.Name}",new[]{
+            new AxResponsiveRecordField("Magazzino",location.Warehouse,190),new AxResponsiveRecordField("Corridoio",location.Aisle,120),
+            new AxResponsiveRecordField("Scaffale",location.Shelf,120),new AxResponsiveRecordField("Articoli",local.Count.ToString(),90),
+            new AxResponsiveRecordField("Quantità",local.Sum(x=>x.Quantity).ToString("N2"),110),
+            new AxResponsiveRecordField("Stato",location.IsActive?"Attiva":"Disattiva",110,location.IsActive?UiTokens.Success:UiTokens.Danger)});
     }
     private async void NewLocation(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;var location=await new WarehouseLocationDialog().ShowDialog<SparePartWarehouseLocation?>(owner);if(location is null)return;try{_repository.SaveLocation(location);Show("Ubicazione salvata.");Load();}catch(Exception ex){Show($"Ubicazione non salvata: {ex.Message}",true);}}
     private async void Transfer(){var owner=TopLevel.GetTopLevel(this) as Window;if(owner is null)return;var items=_inventory.GetItems();var locations=_repository.GetLocations().Where(x=>x.IsActive).ToList();var balances=_repository.GetBalances();if(locations.Count<2){Show("Crea almeno due ubicazioni.",true);return;}var request=await new LocationTransferDialog(items,locations,balances).ShowDialog<LocationTransferRequest?>(owner);if(request is null)return;try{_repository.Transfer(request.ItemId,request.FromId,request.ToId,request.Quantity,request.Reference,request.Notes,Environment.UserName);Show("Trasferimento registrato.");Load();}catch(Exception ex){Show($"Trasferimento non eseguito: {ex.Message}",true);}}
