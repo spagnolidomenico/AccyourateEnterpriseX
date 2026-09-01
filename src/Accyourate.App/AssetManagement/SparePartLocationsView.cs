@@ -21,6 +21,7 @@ public sealed class SparePartLocationsView : UserControl
     public event Action? PickHistoryRequested;
     public event Action? TransferHistoryRequested;
     public SparePartLocationsView(){Background=UiTokens.Brush(UiTokens.Background);_repository.EnsureInitialAllocations(_inventory.GetItems());Content=Build();Load();}
+    public void Refresh()=>Load();
     private Control Build()
     {
         var root=new DockPanel();var header=new Grid{RowDefinitions=new RowDefinitions("Auto,Auto"),Margin=new Thickness(24,20,24,12)};

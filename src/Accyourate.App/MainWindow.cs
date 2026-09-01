@@ -35,6 +35,7 @@ public sealed class MainWindow : Window
     private bool _commandPaletteOpening;
     private ContentControl? _workspaceContent;
     private Window? _embeddedModuleWindow;
+    private SparePartLocationsView? _sparePartLocationsView;
     private readonly Dictionary<string, Button> _areaButtons = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Button> _contextButtons = new(StringComparer.OrdinalIgnoreCase);
     private string _activeArea = "Home";
@@ -634,7 +635,7 @@ public sealed class MainWindow : Window
         OpenWindowContentInWorkspace(new SupplierCommunicationRegisterWindow(), "asset:supplier-communications", "Asset > Registro comunicazioni");
     }
 
-    private void OpenWindowContentInWorkspace(Window module, string key, string breadcrumb)
+    private void OpenWindowContentInWorkspace(Window module, string key, string breadcrumb, Action? backAction = null)
     {
         if (_workspaceContent is null)
             return;
@@ -643,11 +644,32 @@ public sealed class MainWindow : Window
 
         var content = module.Content as Control;
         module.Content = null;
-        _workspaceContent.Content = content ?? new TextBlock
+        _embeddedModuleWindow = module;
+        var page = content ?? new TextBlock
         {
             Text = "Contenuto del modulo non disponibile.",
             Margin = new Thickness(24)
         };
+        if (backAction is null)
+        {
+            _workspaceContent.Content = page;
+        }
+        else
+        {
+            var back = new Button
+            {
+                Content = "← Ubicazioni magazzino",
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(24, 16, 24, 8),
+                Padding = new Thickness(12, 8)
+            };
+            back.Click += (_, _) => backAction();
+            var wrapper = new DockPanel();
+            DockPanel.SetDock(back, Dock.Top);
+            wrapper.Children.Add(back);
+            wrapper.Children.Add(page);
+            _workspaceContent.Content = wrapper;
+        }
         _currentWorkspaceKey = key;
         SetBreadcrumb($"Workspace > {breadcrumb}");
     }
@@ -683,32 +705,39 @@ public sealed class MainWindow : Window
         const string key = "asset:spare-parts-locations";
         if (string.Equals(_currentWorkspaceKey, key, StringComparison.Ordinal))
             return;
-        var view = new SparePartLocationsView();
-        view.PickRequestsRequested += OpenSparePartPickRequests;
-        view.PickHistoryRequested += OpenLocationPickHistory;
-        view.TransferHistoryRequested += OpenLocationTransferHistory;
-        _workspaceContent.Content = view;
+        if (_sparePartLocationsView is null)
+        {
+            _sparePartLocationsView = new SparePartLocationsView();
+            _sparePartLocationsView.PickRequestsRequested += OpenSparePartPickRequests;
+            _sparePartLocationsView.PickHistoryRequested += OpenLocationPickHistory;
+            _sparePartLocationsView.TransferHistoryRequested += OpenLocationTransferHistory;
+        }
+        else
+        {
+            _sparePartLocationsView.Refresh();
+        }
+        _workspaceContent.Content = _sparePartLocationsView;
         _currentWorkspaceKey = key;
         SetBreadcrumb("Workspace > Asset > Ubicazioni magazzino");
     }
 
     private void OpenSparePartPickRequests()
     {
-        OpenWindowContentInWorkspace(new SparePartPickRequestsWindow(), "asset:spare-part-pick-requests", "Asset > Richieste prelievo");
+        OpenWindowContentInWorkspace(new SparePartPickRequestsWindow(), "asset:spare-part-pick-requests", "Asset > Richieste prelievo", OpenSparePartLocations);
     }
 
     private void OpenLocationPickHistory()
     {
         var repository = new SparePartLocationsRepository();
         var inventory = new SparePartsInventoryRepository();
-        OpenWindowContentInWorkspace(new LocationPicksWindow(repository, inventory.GetItems()), "asset:location-pick-history", "Asset > Registro prelievi");
+        OpenWindowContentInWorkspace(new LocationPicksWindow(repository, inventory.GetItems()), "asset:location-pick-history", "Asset > Registro prelievi", OpenSparePartLocations);
     }
 
     private void OpenLocationTransferHistory()
     {
         var repository = new SparePartLocationsRepository();
         var inventory = new SparePartsInventoryRepository();
-        OpenWindowContentInWorkspace(new LocationTransfersWindow(repository, inventory.GetItems()), "asset:location-transfer-history", "Asset > Storico trasferimenti");
+        OpenWindowContentInWorkspace(new LocationTransfersWindow(repository, inventory.GetItems()), "asset:location-transfer-history", "Asset > Storico trasferimenti", OpenSparePartLocations);
     }
 
     private void OpenLocationStocktake()
