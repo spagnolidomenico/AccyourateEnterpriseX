@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Accyourate.App.AssetManagement.Services;
+using Accyourate.App.UIFramework.DesignSystem;
 using Accyourate.App.UIFramework.Tokens;
 
 namespace Accyourate.App.AssetManagement;
@@ -14,7 +15,7 @@ public sealed class SupplierRmaCapaGovernanceReviewRetentionRegistryWindow : Win
     private readonly SupplierRmaCapaGovernanceReviewRetentionService _retention = new();
     private readonly TextBox _search = new() { Watermark = "Cerca numero riesame, responsabile o custode..." };
     private readonly ComboBox _status = new() { ItemsSource = new[] { "Tutti gli stati", "Valida", "In scadenza", "Scaduta", "Non valida", "Superata" }, SelectedIndex = 0 };
-    private readonly StackPanel _kpis = new() { Orientation = Orientation.Horizontal, Spacing = 10 };
+    private readonly WrapPanel _kpis = new();
     private readonly StackPanel _rows = new();
     private readonly TextBlock _summary = new();
     private readonly TextBlock _message = new();
@@ -35,29 +36,15 @@ public sealed class SupplierRmaCapaGovernanceReviewRetentionRegistryWindow : Win
     private Control Build()
     {
         var root = new DockPanel { Margin = new Thickness(24) };
-        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 0, 0, 14) };
-        Add(header, new StackPanel
-        {
-            Spacing = 3,
-            Children =
-            {
-                new TextBlock { Text = "Registro conservazioni Governance CAPA", FontSize = 28, FontWeight = FontWeight.Bold },
-                new TextBlock { Text = "Audit centralizzato, scadenze e integrita degli archivi dei riesami.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) }
-            }
-        }, 0);
-        var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report PDF", ExportReport, true));
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Verifica integrita", LoadData, true));
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", LoadData));
-        Add(header, commands, 1);
+        var header = AxResponsivePageHeader.Create("Registro conservazioni Governance CAPA", "Audit centralizzato, scadenze e integrita degli archivi dei riesami.", SupplierRmaCorrectiveActionsWindow.Button("Report PDF", ExportReport, true), SupplierRmaCorrectiveActionsWindow.Button("Verifica integrita", LoadData, true), SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", LoadData));
+        header.Margin = new Thickness(0, 0, 0, 14);
         DockPanel.SetDock(header, Dock.Top);
         root.Children.Add(header);
 
         DockPanel.SetDock(_kpis, Dock.Top);
         root.Children.Add(_kpis);
-        var filters = new Grid { ColumnDefinitions = new ColumnDefinitions("*,210"), Margin = new Thickness(0, 12, 0, 8) };
-        Add(filters, _search, 0);
-        Add(filters, _status, 1);
+        _search.MinWidth = 320; _status.MinWidth = 210;
+        var filters = AxResponsiveFilterBar.Create(_search, _status); filters.Margin = new Thickness(0, 12, 0, 0);
         DockPanel.SetDock(filters, Dock.Top);
         root.Children.Add(filters);
         DockPanel.SetDock(_message, Dock.Top);
@@ -67,7 +54,7 @@ public sealed class SupplierRmaCapaGovernanceReviewRetentionRegistryWindow : Win
         root.Children.Add(new ScrollViewer
         {
             Content = _rows,
-            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
         });
         return root;
@@ -126,8 +113,7 @@ public sealed class SupplierRmaCapaGovernanceReviewRetentionRegistryWindow : Win
         var selected = _status.SelectedItem?.ToString() ?? "Tutti gli stati";
         var filtered = _entries.Where(x => MatchesSearch(x, term) && MatchesStatus(x.Record, selected)).ToList();
         _rows.Children.Clear();
-        _rows.MinWidth = 1320;
-        _rows.Children.Add(Header());
+        _rows.MinWidth = 0; _rows.Spacing = 8;
         foreach (var entry in filtered) _rows.Children.Add(Row(entry));
         _summary.Text = $"{filtered.Count} di {_entries.Count} conservazioni visualizzate";
         _summary.Foreground = UiTokens.Brush(UiTokens.TextSecondary);
@@ -180,17 +166,9 @@ public sealed class SupplierRmaCapaGovernanceReviewRetentionRegistryWindow : Win
     private static Control Row(Entry entry)
     {
         var record = entry.Record;
-        var grid = GridLayout();
-        Cell(grid, entry.Review.Id.ToString("D6"), 0, true); Cell(grid, $"R{record.Revision}", 1, true);
-        Cell(grid, entry.Review.Reviewer, 2); Cell(grid, record.Custodian, 3); Cell(grid, DateTimeValue(record.ArchivedAt), 4);
-        Cell(grid, DateValue(record.RetentionUntil), 5, record.IsExpired); Cell(grid, record.ValidationStatus, 6, !record.IsValid);
-        Cell(grid, record.ArchiveHash.Length > 14 ? record.ArchiveHash[..14] + "..." : record.ArchiveHash, 7);
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 };
         var open = SupplierRmaCorrectiveActionsWindow.Button("Archivio", () => Open(record.ArchivePath), true);
         open.IsEnabled = record.ArchiveAvailable;
-        actions.Children.Add(open);
-        Add(grid, actions, 8);
-        return new Border { Padding = new Thickness(9), BorderBrush = UiTokens.Brush(UiTokens.Border), BorderThickness = new Thickness(0, 0, 0, 1), Child = grid };
+        return AxResponsiveRecordCard.Create($"Riesame {entry.Review.Id:D6} · R{record.Revision}", new[] { new AxResponsiveRecordField("Responsabile", entry.Review.Reviewer, 190), new AxResponsiveRecordField("Custode", record.Custodian, 190), new AxResponsiveRecordField("Archiviazione", DateTimeValue(record.ArchivedAt), 170), new AxResponsiveRecordField("Conservazione", DateValue(record.RetentionUntil), 160, record.IsExpired ? UiTokens.Danger : null), new AxResponsiveRecordField("Stato", record.ValidationStatus, 190, record.IsValid ? UiTokens.Success : UiTokens.Danger), new AxResponsiveRecordField("SHA-256", record.ArchiveHash.Length > 14 ? record.ArchiveHash[..14] + "..." : record.ArchiveHash, 190) }, open);
     }
 
     private static Grid GridLayout() => new() { ColumnDefinitions = new ColumnDefinitions("90,65,170,170,145,145,170,170,120") };

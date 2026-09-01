@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Accyourate.App.AssetManagement.Services;
+using Accyourate.App.UIFramework.DesignSystem;
 using Accyourate.App.UIFramework.Tokens;
 
 namespace Accyourate.App.AssetManagement;
@@ -24,12 +25,8 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendWindow : Window
     private Control Build()
     {
         var root = new DockPanel { Margin = new Thickness(24) };
-        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 0, 0, 14) };
-        var title = new StackPanel { Children = { new TextBlock { Text = "Storico e trend criticita CAPA", FontSize = 28, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Rilevazioni consolidate per confrontare l'andamento della governance.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } };
-        Grid.SetColumn(title, 0); header.Children.Add(title);
-        var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Registra rilevazione", Capture, true)); commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Esporta CSV", () => Export(false))); commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report PDF", () => Export(true))); commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Rimuovi duplicati", RemoveDuplicates)); commands.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load));
-        Grid.SetColumn(commands, 1); header.Children.Add(commands); DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
+        var header = AxResponsivePageHeader.Create("Storico e trend criticita CAPA", "Rilevazioni consolidate per confrontare l'andamento della governance.", SupplierRmaCorrectiveActionsWindow.Button("Registra rilevazione", Capture, true), SupplierRmaCorrectiveActionsWindow.Button("Esporta CSV", () => Export(false)), SupplierRmaCorrectiveActionsWindow.Button("Report PDF", () => Export(true)), SupplierRmaCorrectiveActionsWindow.Button("Rimuovi duplicati", RemoveDuplicates), SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load));
+        header.Margin = new Thickness(0, 0, 0, 14); DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
         _message.Margin = new Thickness(0, 0, 0, 10); DockPanel.SetDock(_message, Dock.Top); root.Children.Add(_message);
         root.Children.Add(new ScrollViewer { Content = _content, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto }); return root;
     }
@@ -68,7 +65,7 @@ public sealed class SupplierRmaCapaGovernanceCriticalityTrendWindow : Window
     }
 
     private static Control Card(string label, int value, string delta, string color) => new Border { Width = 170, Height = 100, Margin = new Thickness(0, 0, 10, 10), Padding = new Thickness(13), BorderBrush = UiTokens.Brush(UiTokens.Border), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Child = new StackPanel { Children = { new TextBlock { Text = value.ToString(), FontSize = 25, FontWeight = FontWeight.Bold, Foreground = UiTokens.Brush(color) }, new TextBlock { Text = label }, new TextBlock { Text = delta, FontSize = 11, Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } } };
-    private static Control Row(SupplierRmaCapaGovernanceCriticalityTrendPoint x) { var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("170,100,100,120,110,120,130,*") }; Cell(grid, Date(x.CapturedAt), 0, true); Cell(grid, x.CriticalCount.ToString(), 1); Cell(grid, x.WarningCount.ToString(), 2); Cell(grid, x.ActiveActions.ToString(), 3); Cell(grid, x.OverdueActions.ToString(), 4); Cell(grid, x.CompletedActions.ToString(), 5); Cell(grid, x.FailedVerifications.ToString(), 6); Cell(grid, x.CapturedBy, 7); return new Border { Padding = new Thickness(10), BorderBrush = UiTokens.Brush(UiTokens.Border), BorderThickness = new Thickness(0, 0, 0, 1), Child = grid }; }
+    private static Control Row(SupplierRmaCapaGovernanceCriticalityTrendPoint x) => AxResponsiveRecordCard.Create(Date(x.CapturedAt), new[] { new AxResponsiveRecordField("Criticita", x.CriticalCount.ToString(), 110), new AxResponsiveRecordField("Avvisi", x.WarningCount.ToString(), 100), new AxResponsiveRecordField("Azioni attive", x.ActiveActions.ToString(), 130), new AxResponsiveRecordField("Azioni scadute", x.OverdueActions.ToString(), 140, x.OverdueActions > 0 ? UiTokens.Danger : UiTokens.Success), new AxResponsiveRecordField("Completate", x.CompletedActions.ToString(), 120), new AxResponsiveRecordField("Verifiche fallite", x.FailedVerifications.ToString(), 150), new AxResponsiveRecordField("Operatore", x.CapturedBy, 180) });
     private static void Cell(Grid grid, string text, int column, bool bold = false) { var value = new TextBlock { Text = text, FontWeight = bold ? FontWeight.SemiBold : FontWeight.Normal, TextTrimming = TextTrimming.CharacterEllipsis }; Grid.SetColumn(value, column); grid.Children.Add(value); }
     private static string Delta(int current, int? previous) { if (previous is null) return "Baseline iniziale"; var value = current - previous.Value; return value == 0 ? "Nessuna variazione" : value > 0 ? $"+{value} dalla precedente" : $"{value} dalla precedente"; }
     private static string Date(string item) => DateTime.TryParse(item, out var date) ? date.ToString("dd/MM/yyyy HH:mm") : item;

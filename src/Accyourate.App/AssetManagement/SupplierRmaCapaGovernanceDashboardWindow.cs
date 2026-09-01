@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Accyourate.App.AssetManagement.Services;
+using Accyourate.App.UIFramework.DesignSystem;
 using Accyourate.App.UIFramework.Tokens;
 
 namespace Accyourate.App.AssetManagement;
@@ -24,15 +25,8 @@ public sealed class SupplierRmaCapaGovernanceDashboardWindow : Window
     private Control Build()
     {
         var root = new DockPanel { Margin = new Thickness(24) };
-        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 0, 0, 14) };
-        Add(head, new StackPanel { Children = { new TextBlock { Text = "Dashboard Governance CAPA", FontSize = 30, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Fascicoli, riesami periodici, attestazioni e conservazione.", Foreground = UiTokens.Brush(UiTokens.TextSecondary) } } }, 0);
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Criticita", () => new SupplierRmaCapaGovernanceCriticalitiesWindow().Show(this)));
-        actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Riesami governance", () => new SupplierRmaCapaGovernanceReviewsWindow().Show(this)));
-        actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Piano azioni", () => new SupplierRmaCapaGovernanceActionsWindow().Show(this), true));
-        actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Report PDF", Report));
-        actions.Children.Add(SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load));
-        Add(head, actions, 1); DockPanel.SetDock(head, Dock.Top); root.Children.Add(head);
+        var head = AxResponsivePageHeader.Create("Dashboard Governance CAPA", "Fascicoli, riesami periodici, attestazioni e conservazione.", SupplierRmaCorrectiveActionsWindow.Button("Criticita", () => new SupplierRmaCapaGovernanceCriticalitiesWindow().Show(this)), SupplierRmaCorrectiveActionsWindow.Button("Riesami governance", () => new SupplierRmaCapaGovernanceReviewsWindow().Show(this)), SupplierRmaCorrectiveActionsWindow.Button("Piano azioni", () => new SupplierRmaCapaGovernanceActionsWindow().Show(this), true), SupplierRmaCorrectiveActionsWindow.Button("Report PDF", Report), SupplierRmaCorrectiveActionsWindow.Button("Aggiorna", Load));
+        head.Margin = new Thickness(0, 0, 0, 14); DockPanel.SetDock(head, Dock.Top); root.Children.Add(head);
         DockPanel.SetDock(_message, Dock.Top); root.Children.Add(_message);
         root.Children.Add(new ScrollViewer { Content = _content }); return root;
     }
